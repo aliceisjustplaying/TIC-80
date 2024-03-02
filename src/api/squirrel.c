@@ -1518,7 +1518,7 @@ static SQInteger squirrel_fft(HSQUIRRELVM vm)
   {
     double freq = getSquirrelNumber(vm, 2);
 
-    sq_pushbool(vm, tic_api_fft(tic, freq));
+    sq_pushfloat(vm, (SQFloat)(tic_api_fft(tic, freq)));
     return 1;
   }
 
