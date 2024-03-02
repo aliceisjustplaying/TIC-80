@@ -141,6 +141,7 @@ class TIC {\n\
     foreign static sync(mask, bank, tocart)\n\
     foreign static reset()\n\
     foreign static exit()\n\
+    foreign static fft(freq)\n\
     foreign static map_width__\n\
     foreign static map_height__\n\
     foreign static spritesize__\n\
@@ -1563,6 +1564,9 @@ static WrenForeignMethodFn foreignTicMethods(const char* signature)
     if (strcmp(signature, "static TIC.exit()"                   ) == 0) return wren_exit;
     if (strcmp(signature, "static TIC.fget(_,_)"                ) == 0) return wren_fget;
     if (strcmp(signature, "static TIC.fset(_,_,_)"              ) == 0) return wren_fset;
+
+    //bytebattle patch
+    if (strcmp(signature, "static TIC.fft(_)"                   ) == 0) return wren_fft;
 
     // internal functions
     if (strcmp(signature, "static TIC.map_width__"              ) == 0) return wren_map_width;
