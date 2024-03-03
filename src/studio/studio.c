@@ -2163,6 +2163,7 @@ static void processMouseStates(Studio* studio)
     }
 }
 
+#if defined(BUILD_EDITORS)
 static void doCodeExport(Studio* studio)
 {
     char pos[sizeof studio->lovebyte.last.postag];
@@ -2242,6 +2243,7 @@ static void doCodeImport(Studio* studio)
         fclose(file);
     }
 }
+#endif
 
 static void blitCursor(Studio* studio)
 {
@@ -2750,11 +2752,14 @@ Studio* studio_create(s32 argc, char **argv, s32 samplerate, tic80_pixel_color_f
     if(args.cli)
         args.skip = true;
 
+#if defined(BUILD_EDITORS)
     if(args.skip)
     {
         studio->console->tick(studio->console);
         gotoCode(studio);
     }
+#endif
+
 
     return studio;
 }
