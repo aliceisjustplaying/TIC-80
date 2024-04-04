@@ -195,7 +195,7 @@ static void setDefault(Config* config)
             .integerScale   = INTEGER_SCALE_DEFAULT,
 #if defined(BUILD_EDITORS)
             .keybindMode    = KEYBIND_STANDARD,
-            .devmode        = false,
+            .devmode        = true,
             .tabMode        = TAB_AUTO,
             .tabSize        = 1,
 #endif
