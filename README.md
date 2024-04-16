@@ -17,14 +17,14 @@ Contributors:
 Tested on:
 * Windows 11 amd64 (Steam Deck, all versions)
 * Windows 11 arm64 (VMWare Fusion 13, winxp version)
-* Windows 11 arm64 (Parallels 18; windows version)
-* macOS 14 amd64 (M1 Pro; thru Rosetta 2)
+* Windows 11 arm64 (Parallels 18, windows version)
+* macOS 14 amd64 (M1 Pro thru Rosetta 2)
 * macOS 14 arm64 (M1 Pro)
 * Linux amd64 (Steam Deck, Arch Linux)
 * Linux arm64 (M1 Pro, Asahi Linux) - experimental - colors glitch sometimes, terminal/app needs restarting sometimes to work - may be an Asahi thing
 
 ![FFT screenshot](fft-screenshot.png)
-*the answer to "how many versions can you run at the same time that fits a screenshot" appears to be four*
+*the answer to "how many versions can you run at the same time that fits a screenshot" appears to be "four"*
 
 ---
 
