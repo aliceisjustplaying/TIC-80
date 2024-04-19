@@ -18,6 +18,10 @@ float sampleBuf[FFT_SIZE * 2];
 float fAmplification = 1.0f;
 bool bCreated = false;
 kiss_fft_cpx fftBuf[FFT_SIZE + 1];
+bool bPeakNormalization = true;
+float fPeakSmoothValue = 0.0f;
+float fPeakMinValue = 0.01f;
+float fPeakSmoothing = 0.995f;
 
 void OnReceiveFrames(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount)
 {
@@ -192,6 +196,39 @@ void FFT_Close()
 }
 
 //////////////////////////////////////////////////////////////////////////
+
+double tic_api_fftns(tic_mem* memory, s32 freq)
+{
+  u32 interval = FFT_SIZE / 256 / 2; // the 2 is to discard super high frequencies, they suck
+  freq = freq * interval;
+  freq = fmin(freq, FFT_SIZE);
+  freq = fmax(freq, 0);
+
+  float res = 0;
+
+  if (bPeakNormalization) {
+    float peakValue = fPeakMinValue;
+    for (int i = freq; i < freq + interval; ++i) {
+      float val = 2.0f * sqrtf(fftBuf[i].r * fftBuf[i].r + fftBuf[i].i * fftBuf[i].i);
+      if (val > peakValue) peakValue = val;
+      res += val * fAmplification;
+    }
+    if (peakValue > fPeakSmoothValue) {
+      fPeakSmoothValue = peakValue;
+    }
+    if (peakValue < fPeakSmoothValue) {
+      fPeakSmoothValue = fPeakSmoothValue * fPeakSmoothing + peakValue * (1 - fPeakSmoothing);
+    }
+    fAmplification = 1.0f / fPeakSmoothValue;
+  } else {
+    static const float scaling = 1.0f / (float)FFT_SIZE;
+    for (int i = freq; i < freq + interval; ++i) {
+      res += 2.0 * sqrtf(fftBuf[i].r * fftBuf[i].r + fftBuf[i].i * fftBuf[i].i) * scaling * fAmplification;
+    }
+  }
+
+  return res;
+}
 
 double tic_api_fft(tic_mem* memory, s32 freq)
 {

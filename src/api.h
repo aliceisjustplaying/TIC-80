@@ -836,7 +836,21 @@ enum
         "fft(freq)",                                                                                                    \
                                                                                                                         \
         "Creates 256 buckets that map to a region of audible frequencies.\n"                                            \
-        "Each returns a value 0-1 based on the intensity of sound at that frequency at that time.\n"                    \
+        "Not normalized so high frequencies will be rapidly approaching 0.\n"                                           \
+        "Only works if tic80 was started with the `--fft` CLI flag, otherwise always returns 0.0.\n",                   \
+        1,                                                                                                              \
+        1,                                                                                                              \
+        0,                                                                                                              \
+        double,                                                                                                         \
+        tic_mem*, s32 freq)                                                                                             \
+                                                                                                                        \
+                                                                                                                        \
+    macro(fftns,                                                                                                        \
+        "fftns(freq)",                                                                                                  \
+                                                                                                                        \
+        "Creates 256 buckets that map to a region of audible frequencies.\n"                                            \
+        "Normalized and smoothed based on TheNuSan's Bonzomatic fork.\n"                                                \
+        "Code converted with Claude Opus. God help us.\n"                                                               \
         "Only works if tic80 was started with the `--fft` CLI flag, otherwise always returns 0.0.\n",                   \
         1,                                                                                                              \
         1,                                                                                                              \

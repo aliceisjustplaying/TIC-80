@@ -2,7 +2,6 @@
 #define FFT_SIZE 2048
 #include <stdbool.h>
 
-// typedef int                 BOOL;
   //////////////////////////////////////////////////////////////////////////
 
   typedef struct FFT_Settings
@@ -20,7 +19,6 @@
   bool FFT_Create();
   bool FFT_Destroy();
   bool FFT_Open(FFT_Settings* pSettings);
-  bool FFT_GetFFT(float* _samples);
   void FFT_Close();
 
   //////////////////////////////////////////////////////////////////////////

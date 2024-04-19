@@ -742,6 +742,14 @@ s7_pointer scheme_fft(s7_scheme* sc, s7_pointer args)
     return s7_make_real(sc, tic_api_fft(tic, freq));
 }
 
+s7_pointer scheme_fftns(s7_scheme* sc, s7_pointer args)
+{
+    // fftns(int freq_bucket) -> float_value
+    tic_mem* tic = (tic_mem*)getSchemeCore(sc);
+    const s32 freq = s7_integer(s7_car(args));
+    return s7_make_real(sc, tic_api_fftns(tic, freq));
+}
+
 static void initAPI(tic_core* core)
 {
     s7_scheme* sc = core->currentVM;

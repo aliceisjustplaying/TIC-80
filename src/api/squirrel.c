@@ -1523,6 +1523,25 @@ static SQInteger squirrel_fft(HSQUIRRELVM vm)
   return 0;
 }
 
+static SQInteger squirrel_fftns(HSQUIRRELVM vm)
+{
+  tic_mem* tic = (tic_mem*)getSquirrelCore(vm);
+
+  SQInteger top = sq_gettop(vm);
+
+  if (top >= 2)
+  {
+    double freq = getSquirrelNumber(vm, 2);
+
+    sq_pushfloat(vm, (SQFloat)(tic_api_fftns(tic, freq)));
+    return 1;
+  }
+
+  sq_throwerror(vm, "invalid params, fftns(freq)\n");
+
+  return 0;
+}
+
 static SQInteger squirrel_dofile(HSQUIRRELVM vm)
 {
     return sq_throwerror(vm, "unknown method: \"dofile\"\n");
