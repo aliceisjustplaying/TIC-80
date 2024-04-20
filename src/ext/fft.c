@@ -210,7 +210,7 @@ float tic_api_fft2(tic_mem* memory, s32 freq, bool normalize, float smooth)
   float res = 0;
 
   if (normalize) {
-    printf("normalized\n");
+    // printf("normalized\n");
     float peakValue = fPeakMinValue;
     for (int i = freq; i < freq + interval; ++i) {
       float val = 2.0f * sqrtf(fftBuf[i].r * fftBuf[i].r + fftBuf[i].i * fftBuf[i].i);
@@ -218,7 +218,7 @@ float tic_api_fft2(tic_mem* memory, s32 freq, bool normalize, float smooth)
       res += val * fAmplification;
 
       if (smooth > 0) {
-        printf("smoothed\n");
+        // printf("smoothed\n");
         fftDataSmoothed[i] = fftDataSmoothed[i] * smooth + (1 - smooth) * val;
         res = fftDataSmoothed[i];
       }
@@ -240,106 +240,6 @@ float tic_api_fft2(tic_mem* memory, s32 freq, bool normalize, float smooth)
 
   return res;
 }
-
-// double tic_api_fft(tic_mem* memory, s32 freq)
-// {
-//   u32 interval = FFT_SIZE / 256 / 2; // the 2 is to discard super high frequencies, they suck
-//   freq = freq * interval;
-//   freq = fmin(freq, FFT_SIZE);
-//   freq = fmax(freq, 0);
-
-//   static const float scaling = 1.0f / (float)FFT_SIZE;
-//   float res = 0;
-//   for (int i = freq; i < freq + interval; ++i) {
-//     res += 2.0 * sqrtf(fftBuf[i].r * fftBuf[i].r + fftBuf[i].i * fftBuf[i].i) * scaling;
-//   }
-
-//   return res;
-// }
-
-// bad
-// float tic_api_fft2(tic_mem* memory, s32 freq, bool normalize, float smooth)
-// {
-//   u32 interval = FFT_SIZE / 256 / 2; // the 2 is to discard super high frequencies, they suck
-//   freq = freq * interval;
-//   freq = fmin(freq, FFT_SIZE);
-//   freq = fmax(freq, 0);
-
-//   float res = 0;
-
-//   if (normalize) {
-//     printf("normalized\n");
-//     float peakValue = fPeakMinValue;
-//     for (int i = freq; i < freq + interval; ++i) {
-//       float val = 2.0f * sqrtf(fftBuf[i].r * fftBuf[i].r + fftBuf[i].i * fftBuf[i].i);
-//       if (val > peakValue) peakValue = val;
-//       res += val * fAmplification;
-
-//       if (smooth > 0) {
-//         printf("normalized and smoothed\n");
-//         fftDataSmoothed[i] = fftDataSmoothed[i] * smooth + (1 - smooth) * val;
-//         res = fftDataSmoothed[i];
-//       }
-//     }
-//     if (peakValue > fPeakSmoothValue) {
-//       fPeakSmoothValue = peakValue;
-//     }
-//     if (peakValue < fPeakSmoothValue) {
-//       fPeakSmoothValue = fPeakSmoothValue * fPeakSmoothing + peakValue * (1 - fPeakSmoothing);
-//     }
-//     fAmplification = 1.0f / fPeakSmoothValue;
-//   } else {
-//     printf("regular\n");
-//     static const float scaling = 1.0f / (float)FFT_SIZE;
-//     for (int i = freq; i < freq + interval; ++i) {
-//       float val = 2.0 * sqrtf(fftBuf[i].r * fftBuf[i].r + fftBuf[i].i * fftBuf[i].i) * scaling * fAmplification;
-//       res += val;
-
-//       if (smooth > 0) {
-//         printf("regular and smooth\n");
-//         fftDataSmoothed[i] = fftDataSmoothed[i] * smooth + (1 - smooth) * val;
-//         res = fftDataSmoothed[i];
-//       }
-//     }
-//   }
-
-//   return res;
-// }
-
-// float tic_api_fft2(tic_mem* memory, s32 freq, bool normalize, float smooth)
-// {
-//   u32 interval = FFT_SIZE / 256 / 2; // the 2 is to discard super high frequencies, they suck
-//   freq = freq * interval;
-//   freq = fmin(freq, FFT_SIZE);
-//   freq = fmax(freq, 0);
-//   printf("normalize value: %d\n", normalize);
-//   printf("smooth value: %.2f\n", smooth);
-
-//   float res = 0;
-
-//   if (normalize) {
-//     float peakValue = fPeakMinValue;
-//     for (int i = freq; i < freq + interval; ++i) {
-//       float val = 2.0f * sqrtf(fftBuf[i].r * fftBuf[i].r + fftBuf[i].i * fftBuf[i].i);
-//       if (val > peakValue) peakValue = val;
-//       res += val * fAmplification;
-//     }
-//     if (peakValue > fPeakSmoothValue) {
-//       fPeakSmoothValue = peakValue;
-//     }
-//     if (peakValue < fPeakSmoothValue) {
-//       fPeakSmoothValue = fPeakSmoothValue * fPeakSmoothing + peakValue * (1 - fPeakSmoothing);
-//     }
-//     fAmplification = 1.0f / fPeakSmoothValue;
-//   } else {
-//     static const float scaling = 1.0f / (float)FFT_SIZE;
-//     for (int i = freq; i < freq + interval; ++i) {
-//       res += 2.0 * sqrtf(fftBuf[i].r * fftBuf[i].r + fftBuf[i].i * fftBuf[i].i) * scaling * fAmplification;
-//     }
-//   }
-
-//   return res;
-// }
 
 double tic_api_fft(tic_mem* memory, s32 freq)
 {
