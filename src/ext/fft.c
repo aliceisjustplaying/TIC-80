@@ -200,7 +200,7 @@ void FFT_Close()
 //////////////////////////////////////////////////////////////////////////
 
 
-float tic_api_fft2(tic_mem* memory, s32 freq, bool normalize, float smooth)
+double tic_api_fft2(tic_mem* memory, s32 freq, bool normalize, double smooth)
 {
   u32 interval = FFT_SIZE / 256 / 2; // the 2 is to discard super high frequencies, they suck
   freq = freq * interval;

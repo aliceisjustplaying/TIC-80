@@ -854,8 +854,8 @@ enum
         3,                                                                                                              \
         1,                                                                                                              \
         0,                                                                                                              \
-        float,                                                                                                          \
-        tic_mem*, s32 freq, bool normalize, float smooth)
+        double,                                                                                                          \
+        tic_mem*, s32 freq, bool normalize, double smooth)
 
 #define TIC_API_DEF(name, _, __, ___, ____, _____, ret, ...) ret tic_api_##name(__VA_ARGS__);
 TIC_API_LIST(TIC_API_DEF)
