@@ -1515,7 +1515,7 @@ static s32 lua_fft2(lua_State* lua)
   {
     s32 freq = getLuaNumber(lua, 1);
     bool normalize = false;
-    float smooth = 0.9;
+    float smooth = 0;
     
     if (top >= 2)
     {
