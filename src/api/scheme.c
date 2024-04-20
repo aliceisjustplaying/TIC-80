@@ -742,12 +742,15 @@ s7_pointer scheme_fft(s7_scheme* sc, s7_pointer args)
     return s7_make_real(sc, tic_api_fft(tic, freq));
 }
 
-s7_pointer scheme_fftns(s7_scheme* sc, s7_pointer args)
+s7_pointer scheme_fft2(s7_scheme* sc, s7_pointer args)
 {
-    // fftns(int freq_bucket) -> float_value
+    // fft2(int freq_bucket) -> float_value
     tic_mem* tic = (tic_mem*)getSchemeCore(sc);
+    const int argn = s7_list_length(sc, args);
     const s32 freq = s7_integer(s7_car(args));
-    return s7_make_real(sc, tic_api_fftns(tic, freq));
+    const bool normalize = argn > 0 ? s7_boolean(sc, s7_cadr(args)) : false;
+    const s7_double smooth = argn > 1 ? s7_real(s7_caddr(args)) : 0.9;
+    return s7_make_real(sc, tic_api_fft2(tic, freq, normalize, smooth));
 }
 
 static void initAPI(tic_core* core)

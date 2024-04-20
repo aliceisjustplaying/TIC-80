@@ -77,6 +77,7 @@ static Janet janet_keyp(int32_t argc, Janet* argv);
 static Janet janet_fget(int32_t argc, Janet* argv);
 static Janet janet_fset(int32_t argc, Janet* argv);
 static Janet janet_fft(int32_t argc, Janet* argv);
+// static Janet janet_fft2(int32_t argc, Janet* argv);
 
 static void closeJanet(tic_mem* tic);
 static bool initJanet(tic_mem* tic, const char* code);
@@ -140,6 +141,8 @@ static const JanetReg janet_c_functions[] =
     {"fget", janet_fget, NULL},
     {"fset", janet_fset, NULL},
     {"fft", janet_fft, NULL},
+    // TODO
+    // {"fft2", janet_fft2, NULL},
     {NULL, NULL, NULL}
 };
 

@@ -1523,7 +1523,7 @@ static SQInteger squirrel_fft(HSQUIRRELVM vm)
   return 0;
 }
 
-static SQInteger squirrel_fftns(HSQUIRRELVM vm)
+static SQInteger squirrel_fft2(HSQUIRRELVM vm)
 {
   tic_mem* tic = (tic_mem*)getSquirrelCore(vm);
 
@@ -1532,12 +1532,26 @@ static SQInteger squirrel_fftns(HSQUIRRELVM vm)
   if (top >= 2)
   {
     double freq = getSquirrelNumber(vm, 2);
+    bool normalize = false;
+    float smooth = 0.9f;
 
-    sq_pushfloat(vm, (SQFloat)(tic_api_fftns(tic, freq)));
+    if (top >= 3)
+    {
+        SQBool b = SQTrue;
+        sq_getbool(vm, 3, &b);
+        normalize = (b != SQTrue);
+
+        if (top >= 4)
+        {
+            smooth = getSquirrelFloat(vm, 4);
+        }
+    }
+
+    sq_pushfloat(vm, (SQFloat)(tic_api_fft2(tic, freq, normalize, smooth)));
     return 1;
   }
 
-  sq_throwerror(vm, "invalid params, fftns(freq)\n");
+  sq_throwerror(vm, "invalid params, fft2(freq)\n");
 
   return 0;
 }

@@ -1003,12 +1003,15 @@ static JSValue js_fft(JSContext *ctx, JSValueConst this_val, s32 argc, JSValueCo
     return JS_NewFloat64(ctx, tic_api_fft(tic, freq));
 }
 
-static JSValue js_fftns(JSContext *ctx, JSValueConst this_val, s32 argc, JSValueConst *argv)
+static JSValue js_fft2(JSContext *ctx, JSValueConst this_val, s32 argc, JSValueConst *argv)
 {
     tic_mem* tic = (tic_mem*)getCore(ctx);
     s32 freq = getInteger(ctx, argv[0]);
+    // TODO: default values - how?
+    s32 normalize = JS_ToBool(ctx, argv[1]);
+    float smooth = getNumber(ctx, argv[2]);
 
-    return JS_NewFloat64(ctx, tic_api_fftns(tic, freq));
+    return JS_NewFloat64(ctx, tic_api_fft2(tic, freq, normalize, smooth));
 }
 
 static bool initJavascript(tic_mem* tic, const char* code)

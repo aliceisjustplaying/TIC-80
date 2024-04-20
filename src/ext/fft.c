@@ -22,6 +22,7 @@ bool bPeakNormalization = true;
 float fPeakSmoothValue = 0.0f;
 float fPeakMinValue = 0.01f;
 float fPeakSmoothing = 0.995f;
+float fSmoothFactor = 0.9f;
 
 void OnReceiveFrames(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount)
 {
@@ -197,16 +198,18 @@ void FFT_Close()
 
 //////////////////////////////////////////////////////////////////////////
 
-double tic_api_fftns(tic_mem* memory, s32 freq)
+float tic_api_fft2(tic_mem* memory, s32 freq, bool normalize, float smooth)
 {
   u32 interval = FFT_SIZE / 256 / 2; // the 2 is to discard super high frequencies, they suck
   freq = freq * interval;
   freq = fmin(freq, FFT_SIZE);
   freq = fmax(freq, 0);
+  printf("normalize value: %d\n", normalize);
+  printf("smooth value: %.2f\n", smooth);
 
   float res = 0;
 
-  if (bPeakNormalization) {
+  if (normalize) {
     float peakValue = fPeakMinValue;
     for (int i = freq; i < freq + interval; ++i) {
       float val = 2.0f * sqrtf(fftBuf[i].r * fftBuf[i].r + fftBuf[i].i * fftBuf[i].i);

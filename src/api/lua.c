@@ -36,6 +36,11 @@ static inline s32 getLuaNumber(lua_State* lua, s32 index)
     return (s32)lua_tonumber(lua, index);
 }
 
+static inline float getLuaFloat(lua_State* lua, s32 index)
+{
+    return (float)lua_tonumber(lua, index);
+}
+
 static void registerLuaFunction(tic_core* core, lua_CFunction func, const char *name)
 {
     lua_pushlightuserdata(core->currentVM, core);
@@ -1500,7 +1505,7 @@ static s32 lua_fft(lua_State* lua)
   return 0;
 }
 
-static s32 lua_fftns(lua_State* lua)
+static s32 lua_fft2(lua_State* lua)
 {
 
   tic_mem* tic = (tic_mem*)getLuaCore(lua);
@@ -1509,12 +1514,23 @@ static s32 lua_fftns(lua_State* lua)
   if (top >= 1)
   {
     s32 freq = getLuaNumber(lua, 1);
+    bool normalize = true;
+    float smooth = 0.9;
+    
+    if (top >= 2)
+    {
+        normalize = getLuaNumber(lua, 2);
+        if (top >= 3)
+        {
+            smooth = getLuaFloat(lua, 3);
+        }
+    }
 
-    lua_pushnumber(lua, tic_api_fftns(tic, freq));
+    lua_pushnumber(lua, tic_api_fft2(tic, freq, normalize, smooth));
     return 1;
   }
 
-  luaL_error(lua, "invalid params, fftns(freq)\n");
+  luaL_error(lua, "invalid params, fft2(freq)\n");
   return 0;
 }
 

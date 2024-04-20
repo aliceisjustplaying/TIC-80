@@ -526,14 +526,17 @@ static mrb_value mrb_fft(mrb_state* mrb, mrb_value self)
   return mrb_float_value(mrb, tic_api_fft(tic, index));
 }
 
-static mrb_value mrb_fftns(mrb_state* mrb, mrb_value self)
+static mrb_value mrb_fft2(mrb_state* mrb, mrb_value self)
 {
   mrb_int index;
-  mrb_get_args(mrb, "i", &index);
+  bool normalize = false;
+  mrb_float smooth = 0.9;
+
+  mrb_get_args(mrb, "i", &index, &normalize, &smooth);
 
   tic_mem* tic = (tic_mem*)getMRubyMachine(mrb);
 
-  return mrb_float_value(mrb, tic_api_fftns(tic, index));
+  return mrb_float_value(mrb, tic_api_fft2(tic, index, normalize, smooth));
 }
 
 typedef struct

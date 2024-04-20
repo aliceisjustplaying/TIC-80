@@ -845,18 +845,17 @@ enum
         tic_mem*, s32 freq)                                                                                             \
                                                                                                                         \
                                                                                                                         \
-    macro(fftns,                                                                                                        \
-        "fftns(freq)",                                                                                                  \
+    macro(fft2,                                                                                                         \
+        "fft2(freq, normalize=false, smooth=0.9) -> float",                                                             \
                                                                                                                         \
         "Creates 256 buckets that map to a region of audible frequencies.\n"                                            \
-        "Normalized and smoothed based on TheNuSan's Bonzomatic fork.\n"                                                \
-        "Code converted with Claude Opus. God help us.\n"                                                               \
+        "Documentation goes here.\n"                                                                                    \
         "Only works if tic80 was started with the `--fft` CLI flag, otherwise always returns 0.0.\n",                   \
-        1,                                                                                                              \
+        3,                                                                                                              \
         1,                                                                                                              \
         0,                                                                                                              \
-        double,                                                                                                         \
-        tic_mem*, s32 freq)
+        float,                                                                                                          \
+        tic_mem*, s32 freq, bool normalize, float smooth)
 
 #define TIC_API_DEF(name, _, __, ___, ____, _____, ret, ...) ret tic_api_##name(__VA_ARGS__);
 TIC_API_LIST(TIC_API_DEF)
