@@ -20,6 +20,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+#include "fftdata.h"
+#include "../ext/fft.h"
+
 #include "api.h"
 #include "core.h"
 #include "tilesheet.h"
@@ -462,6 +465,9 @@ void tic_core_tick(tic_mem* tic, tic_tick_data* data)
 
     core->data = data;
 
+    FFT_GetFFT(fftData);
+    printf("FFT_GetFFT has been called\n");
+
     if (!core->state.initialized)
     {
         const char* code = tic->cart.code.data;
@@ -734,11 +740,14 @@ void tic_core_blit(tic_mem* tic)
     tic_core_blit_ex(tic, (tic_blit_callback){scanline, border, NULL});
 }
 
+
 tic_mem* tic_core_create(s32 samplerate, tic80_pixel_color_format format)
 {
     tic_core* core = (tic_core*)malloc(sizeof(tic_core));
     memset(core, 0, sizeof(tic_core));
 
+    // fftData memset
+    memset(fftData, 0, sizeof(float) * FFT_SIZE);
     tic80* product = &core->memory.product;
 
     core->screen_format = format;
