@@ -192,9 +192,6 @@ void FFT_Close()
 }
 
 //////////////////////////////////////////////////////////////////////////
-static const float fPeakMinValue = 0.01f;
-static const float fPeakSmoothing = 0.995f;
-static float fPeakSmoothValue = 0.0f;
 
 bool FFT_GetFFT( float * _samples )
 {
