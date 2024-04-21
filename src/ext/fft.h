@@ -1,6 +1,8 @@
 #pragma once
-#define FFT_SIZE 2048
+// #define FFT_SIZE 2048
+#define FFT_SIZE 1024
 #include <stdbool.h>
+
 
 // typedef int                 BOOL;
   //////////////////////////////////////////////////////////////////////////
