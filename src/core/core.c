@@ -466,7 +466,7 @@ void tic_core_tick(tic_mem* tic, tic_tick_data* data)
     core->data = data;
 
     FFT_GetFFT(fftData);
-    printf("FFT_GetFFT has been called\n");
+    // printf("FFT_GetFFT has been called\n");
 
     if (!core->state.initialized)
     {
