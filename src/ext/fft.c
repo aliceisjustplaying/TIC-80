@@ -217,6 +217,12 @@ bool FFT_GetFFT(float* _samples)
             float val = 2.0f * sqrtf(out[i].r * out[i].r + out[i].i * out[i].i);
             _samples[i] = val * fAmplification;
         }
+
+        float fFFTSmoothingFactor = 0.9;
+        for ( int i = 0; i < FFT_SIZE; i++ )
+        {
+          _samples[i] = _samples[i] * fFFTSmoothingFactor + (1 - fFFTSmoothingFactor) * _samples[i];
+        }
     } else {
         for (int i = 0; i < FFT_SIZE; i++)
         {
@@ -227,77 +233,6 @@ bool FFT_GetFFT(float* _samples)
 
     return true;
 }
-
-// bool FFT_GetFFT( float * _samples )
-// {
-//   kiss_fft_cpx out[ FFT_SIZE + 1 ];
-//   kiss_fftr( fftcfg, sampleBuf, out );
-
-//   bool bPeakNormalization = true;
-//   if (bPeakNormalization) {
-//     float peakValue = fPeakMinValue;
-//     for ( int i = 0; i < FFT_SIZE; i++ )
-//     {
-//       float val = 2.0f * sqrtf(out[i].r * out[i].r + out[i].i * out[i].i);
-//       if (val > peakValue) peakValue = val;
-//       _samples[ i ] = val * fAmplification;
-//     }
-//     if (peakValue > fPeakSmoothValue) {
-//       fPeakSmoothValue = peakValue;
-//     }
-//     if (peakValue < fPeakSmoothValue) {
-//       fPeakSmoothValue = fPeakSmoothValue * fPeakSmoothing + peakValue * (1 - fPeakSmoothing);
-//     }
-//     fAmplification = 1.0f / fPeakSmoothValue;
-//   } else {
-//     for (int i = 0; i < FFT_SIZE; i++)
-//     {
-//       static const float scaling = 1.0f / (float)FFT_SIZE;
-//       _samples[i] = 2.0f * sqrtf(out[i].r * out[i].r + out[i].i * out[i].i) * scaling * fAmplification;
-//     }
-//   }
-
-//   return true;
-// }
-
-
-// bool FFT_GetFFT( float * _samples )
-// {
-//   kiss_fft_cpx out[ FFT_SIZE + 1 ];
-//   kiss_fftr( fftcfg, sampleBuf, out );
-
-//   // TODO: make it an option?
-//   bool bPeakNormalization = true;
-//   if (bPeakNormalization) {
-//     float peakValue = fPeakMinValue;
-//     for ( int i = 0; i < FFT_SIZE; i++ )
-//     {
-//       float val = 2.0f * sqrtf(out[i].r * out[i].r + out[i].i * out[i].i);
-//       if (val > peakValue) peakValue = val;
-//       _samples[ i ] = val * fAmplification;
-//     }
-//     if (peakValue > fPeakSmoothValue) {
-//       fPeakSmoothValue = peakValue;
-//     }
-//     if (peakValue < fPeakSmoothValue) {
-//       fPeakSmoothValue = fPeakSmoothValue * fPeakSmoothing + peakValue * (1 - fPeakSmoothing);
-//     }
-//     fAmplification = 1.0f / fPeakSmoothValue;
-//   } else {
-//     for (int i = 0; i < FFT_SIZE; i++)
-//     {
-//       static const float scaling = 1.0f / (float)FFT_SIZE;
-//       _samples[i] = 2.0f * sqrtf(out[i].r * out[i].r + out[i].i * out[i].i) * scaling * fAmplification;
-//     }
-//   }
-//   float fFFTSmoothingFactor = 0.9;
-//   for ( int i = 0; i < FFT_SIZE; i++ )
-//   {
-//     _samples[i] = _samples[i] * fFFTSmoothingFactor + (1 - fFFTSmoothingFactor) * _samples[i];
-//   }
-
-//   return true;
-// }
 
 double tic_api_fft(tic_mem* memory, s32 freq)
 {
