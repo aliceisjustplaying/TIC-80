@@ -1,6 +1,7 @@
 //TODO: disable this in the end
 #define MA_DEBUG_OUTPUT
 #define MINIAUDIO_IMPLEMENTATION
+#include "../fftdata.h"
 #include "fft.h"
 #include "miniaudio.h"
 
@@ -229,11 +230,6 @@ bool FFT_GetFFT(float* _samples)
       fPeakSmoothValue = fPeakSmoothValue * fPeakSmoothing + peakValue * (1 - fPeakSmoothing);
     }
     fAmplification = 1.0f / fPeakSmoothValue;
-    float fFFTSmoothingFactor = 0.9;
-    for ( int i = 0; i < FFT_SIZE; i++ )
-    {
-      _samples[i] = _samples[i] * fFFTSmoothingFactor + (1 - fFFTSmoothingFactor) * _samples[i];
-    }
   } else {
     for (int i = 0; i < FFT_SIZE; i++)
     {
@@ -242,10 +238,35 @@ bool FFT_GetFFT(float* _samples)
     }
   }
 
-    return true;
+  float fFFTSmoothingFactor = 0.9;
+  bool bSmoothing = true;
+  if (bSmoothing)
+  {
+    for ( int i = 0; i < FFT_SIZE; i++ )
+    {
+      fftSmoothingData[i] = fftSmoothingData[i] * fFFTSmoothingFactor + (1 - fFFTSmoothingFactor) * _samples[i];
+    }
+  }
+
+  bool bNormalization = true;
+  if (bNormalization)
+  {
+    for ( int i = 0; i < FFT_SIZE; i++ )
+    {
+      float v = fftSmoothingData[i];
+      fftNormalizedMaxData[i] = MAX(fftNormalizedMaxData[i], v);
+      fftNormalizedData[i] = v / MAX(0.001, fftNormalizedMaxData[i]);
+      fftNormalizedMaxData[i] = fftNormalizedMaxData[i] * 0.9999;
+    }
+  }
+
+  return true;
 }
 
-double tic_api_fft(tic_mem* memory, s32 freq)
+double tic_api_fft(tic_mem* memory, s32 freq/*, bool bSmoothing, bool bNormalization*/)
 {
-  return fftData[freq];
+  // if (bSmoothing) return fftSmoothingData[freq];
+  // return fftData[freq];
+  return fftSmoothingData[freq];
+  // return fftNormalizedData[freq];
 }

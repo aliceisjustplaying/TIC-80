@@ -5,3 +5,6 @@ extern float fPeakSmoothing;
 extern float fPeakSmoothValue;
 extern float fAmplification;
 extern float fftData[FFT_SIZE];
+extern float fftSmoothingData[FFT_SIZE];
+extern float fftNormalizedData[FFT_SIZE];
+extern float fftNormalizedMaxData[FFT_SIZE];
