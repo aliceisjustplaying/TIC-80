@@ -38,38 +38,38 @@ void OnReceiveFrames(ma_device* pDevice, void* pOutput, const void* pInput, ma_u
   // kiss_fftr(fftcfg, sampleBuf, fftBuf);
 }
 
-void FFT_EnumerateDevices(FFT_ENUMERATE_FUNC pEnumerationFunction, void* pUserContext)
-{
-  if (!bCreated)
-  {
-    return;
-  }
+// void FFT_EnumerateDevices(FFT_ENUMERATE_FUNC pEnumerationFunction, void* pUserContext)
+// {
+//   if (!bCreated)
+//   {
+//     return;
+//   }
 
-  ma_device_info* pPlaybackDevices = NULL;
-  ma_device_info* pCaptureDevices = NULL;
-  ma_uint32 nPlaybackDeviceCount = 0;
-  ma_uint32 nCaptureDeviceCount = 0;
-  ma_result result = ma_context_get_devices(&context, &pPlaybackDevices, &nPlaybackDeviceCount, &pCaptureDevices, &nCaptureDeviceCount);
-  if (result != MA_SUCCESS)
-  {
-    printf("[FFT] Failed to enumerate audio devices: %d\n", result);
-    return;
-  }
+//   ma_device_info* pPlaybackDevices = NULL;
+//   ma_device_info* pCaptureDevices = NULL;
+//   ma_uint32 nPlaybackDeviceCount = 0;
+//   ma_uint32 nCaptureDeviceCount = 0;
+//   ma_result result = ma_context_get_devices(&context, &pPlaybackDevices, &nPlaybackDeviceCount, &pCaptureDevices, &nCaptureDeviceCount);
+//   if (result != MA_SUCCESS)
+//   {
+//     printf("[FFT] Failed to enumerate audio devices: %d\n", result);
+//     return;
+//   }
 
-  pEnumerationFunction(true, "<default device>", NULL, pUserContext);
-  for (ma_uint32 i = 0; i < nCaptureDeviceCount; i++)
-  {
-    pEnumerationFunction(true, pCaptureDevices[i].name, &pCaptureDevices[i].id, pUserContext);
-  }
-  if (ma_is_loopback_supported(context.backend))
-  {
-    pEnumerationFunction(false, "<default device>", NULL, pUserContext);
-    for (ma_uint32 i = 0; i < nPlaybackDeviceCount; i++)
-    {
-      pEnumerationFunction(false, pPlaybackDevices[i].name, &pPlaybackDevices[i].id, pUserContext);
-    }
-  }
-}
+//   pEnumerationFunction(true, "<default device>", NULL, pUserContext);
+//   for (ma_uint32 i = 0; i < nCaptureDeviceCount; i++)
+//   {
+//     pEnumerationFunction(true, pCaptureDevices[i].name, &pCaptureDevices[i].id, pUserContext);
+//   }
+//   if (ma_is_loopback_supported(context.backend))
+//   {
+//     pEnumerationFunction(false, "<default device>", NULL, pUserContext);
+//     for (ma_uint32 i = 0; i < nPlaybackDeviceCount; i++)
+//     {
+//       pEnumerationFunction(false, pPlaybackDevices[i].name, &pPlaybackDevices[i].id, pUserContext);
+//     }
+//   }
+// }
 
 void miniaudioLogCallback(void *userData, ma_uint32 level, const char *message)
 {
@@ -77,26 +77,26 @@ void miniaudioLogCallback(void *userData, ma_uint32 level, const char *message)
     return;
 }
 
-bool FFT_Create()
-{
-  bCreated = false;
-  ma_context_config context_config = ma_context_config_init();
-  ma_log log;
-  ma_log_init(NULL, &log);
-  ma_log_register_callback(&log, ma_log_callback_init(miniaudioLogCallback, NULL));
+// bool FFT_Create()
+// {
+//   bCreated = false;
+//   ma_context_config context_config = ma_context_config_init();
+//   ma_log log;
+//   ma_log_init(NULL, &log);
+//   ma_log_register_callback(&log, ma_log_callback_init(miniaudioLogCallback, NULL));
 
-  context_config.pLog = &log;
-  ma_result result = ma_context_init(NULL, 0, &context_config, &context);
-  if (result != MA_SUCCESS)
-  {
-    printf("[FFT] Failed to initialize context: %d", result);
-    return false;
-  }
+//   context_config.pLog = &log;
+//   ma_result result = ma_context_init(NULL, 0, &context_config, &context);
+//   if (result != MA_SUCCESS)
+//   {
+//     printf("[FFT] Failed to initialize context: %d", result);
+//     return false;
+//   }
 
-  printf("[FFT] MAL context initialized, backend is '%s'\n", ma_get_backend_name(context.backend));
-  bCreated = true;
-  return true;
-}
+//   printf("[FFT] MAL context initialized, backend is '%s'\n", ma_get_backend_name(context.backend));
+//   bCreated = true;
+//   return true;
+// }
 
 bool FFT_Destroy()
 {
@@ -112,32 +112,46 @@ bool FFT_Destroy()
   return true;
 }
 
-bool FFT_Open(FFT_Settings* pSettings)
+
+bool FFT_Open(bool CapturePlaybackDevices, const char* CaptureDeviceSearchString)
 {
-  if (!bCreated)
+  memset( sampleBuf, 0, sizeof( float ) * FFT_SIZE * 2 );
+
+  fftcfg = kiss_fftr_alloc( FFT_SIZE * 2, false, NULL, NULL );
+
+  ma_context_config context_config = ma_context_config_init();
+  ma_log log;
+  ma_log_init(NULL, &log);
+  ma_log_register_callback(&log, ma_log_callback_init(miniaudioLogCallback, NULL));
+
+  context_config.pLog = &log;
+
+  ma_result result = ma_context_init( NULL, 0, &context_config, &context );
+  if ( result != MA_SUCCESS )
   {
+    printf( "[FFT] Failed to initialize context: %d", result );
     return false;
   }
 
-  memset(sampleBuf, 0, sizeof(float) * FFT_SIZE * 2);
+  printf( "[FFT] MAL context initialized, backend is '%s'\n", ma_get_backend_name( context.backend ) );
 
-  fftcfg = kiss_fftr_alloc(FFT_SIZE * 2, false, NULL, NULL);
+  ma_device_id* TargetDevice = NULL;
 
   ma_device_info* pPlaybackDeviceInfos;
   ma_uint32 playbackDeviceCount;
   ma_device_info* pCaptureDeviceInfos;
   ma_uint32 captureDeviceCount;
-  ma_result result = ma_context_get_devices(&context, &pPlaybackDeviceInfos, &playbackDeviceCount, &pCaptureDeviceInfos, &captureDeviceCount);
+  result = ma_context_get_devices(&context, &pPlaybackDeviceInfos, &playbackDeviceCount, &pCaptureDeviceInfos, &captureDeviceCount);
   if (result != MA_SUCCESS) {
       printf("Failed to retrieve device information.\n");
-      return false;
+      return -3;
   }
 
   printf("Playback Devices\n");
   for (ma_uint32 iDevice = 0; iDevice < playbackDeviceCount; ++iDevice) {
       printf("    %u: %s\n", iDevice, pPlaybackDeviceInfos[iDevice].name);
   }
-
+  
   printf("\n");
 
   printf("Capture Devices\n");
@@ -145,36 +159,121 @@ bool FFT_Open(FFT_Settings* pSettings)
       printf("    %u: %s\n", iDevice, pCaptureDeviceInfos[iDevice].name);
   }
 
-  bool useLoopback = ma_is_loopback_supported(context.backend) && !pSettings->bUseRecordingDevice;
-  ma_device_config config = ma_device_config_init(useLoopback ? ma_device_type_loopback : ma_device_type_capture);
-  config.capture.pDeviceID = (ma_device_id*)pSettings->pDeviceID;
+  // if(strlen(CaptureDeviceSearchString) > 0) {
+  //   if(CapturePlaybackDevices) {
+  //     for (ma_uint32 iDevice = 0; iDevice < playbackDeviceCount; ++iDevice) {
+  //       std::string DeviceName = pPlaybackDeviceInfos[iDevice].name;
+  //       if(DeviceName.find(CaptureDeviceSearchString) != std::string::npos ){
+  //         TargetDevice = &pPlaybackDeviceInfos[iDevice].id;
+  //         break;
+  //       }
+  //     }
+  //   } else {
+  //     for (ma_uint32 iDevice = 0; iDevice < captureDeviceCount; ++iDevice) {
+  //       std::string DeviceName = pCaptureDeviceInfos[iDevice].name;
+  //       if(DeviceName.find(CaptureDeviceSearchString) != std::string::npos ){
+  //         TargetDevice = &pCaptureDeviceInfos[iDevice].id;
+  //         break;
+  //       }
+  //     }
+  //   }
+  // }
+
+  printf("\n");
+
+  ma_device_config config = ma_device_config_init( CapturePlaybackDevices ? ma_device_type_loopback : ma_device_type_capture );
+  config.capture.pDeviceID = TargetDevice;
   config.capture.format = ma_format_f32;
   config.capture.channels = 2;
   config.sampleRate = 44100;
   config.dataCallback = OnReceiveFrames;
   config.pUserData = NULL;
 
-  result = ma_device_init(&context, &config, &captureDevice);
-  if (result != MA_SUCCESS)
+  result = ma_device_init( &context, &config, &captureDevice );
+  if ( result != MA_SUCCESS )
   {
-    ma_context_uninit(&context);
-    printf("[FFT] Failed to initialize capture device: %d\n", result);
+    ma_context_uninit( &context );
+    printf( "[FFT] Failed to initialize capture device: %d\n", result );
     return false;
   }
 
-  printf("[FFT] Selected capture device: %s\n", captureDevice.capture.name);
-
-  result = ma_device_start(&captureDevice);
-  if (result != MA_SUCCESS)
+  result = ma_device_start( &captureDevice );
+  if ( result != MA_SUCCESS )
   {
-    ma_device_uninit(&captureDevice);
-    ma_context_uninit(&context);
-    printf("[FFT] Failed to start capture device: %d\n", result);
+    ma_device_uninit( &captureDevice );
+    ma_context_uninit( &context );
+    printf( "[FFT] Failed to start capture device: %d\n", result );
     return false;
   }
+
+  printf( "[FFT] Capturing %s\n", captureDevice.capture.name );
 
   return true;
 }
+
+// bool FFT_Open(FFT_Settings* pSettings)
+// {
+//   if (!bCreated)
+//   {
+//     return false;
+//   }
+
+//   memset(sampleBuf, 0, sizeof(float) * FFT_SIZE * 2);
+
+//   fftcfg = kiss_fftr_alloc(FFT_SIZE * 2, false, NULL, NULL);
+
+//   ma_device_info* pPlaybackDeviceInfos;
+//   ma_uint32 playbackDeviceCount;
+//   ma_device_info* pCaptureDeviceInfos;
+//   ma_uint32 captureDeviceCount;
+//   ma_result result = ma_context_get_devices(&context, &pPlaybackDeviceInfos, &playbackDeviceCount, &pCaptureDeviceInfos, &captureDeviceCount);
+//   if (result != MA_SUCCESS) {
+//       printf("Failed to retrieve device information.\n");
+//       return false;
+//   }
+
+//   printf("Playback Devices\n");
+//   for (ma_uint32 iDevice = 0; iDevice < playbackDeviceCount; ++iDevice) {
+//       printf("    %u: %s\n", iDevice, pPlaybackDeviceInfos[iDevice].name);
+//   }
+
+//   printf("\n");
+
+//   printf("Capture Devices\n");
+//   for (ma_uint32 iDevice = 0; iDevice < captureDeviceCount; ++iDevice) {
+//       printf("    %u: %s\n", iDevice, pCaptureDeviceInfos[iDevice].name);
+//   }
+
+//   bool useLoopback = ma_is_loopback_supported(context.backend) && !pSettings->bUseRecordingDevice;
+//   ma_device_config config = ma_device_config_init(useLoopback ? ma_device_type_loopback : ma_device_type_capture);
+//   config.capture.pDeviceID = (ma_device_id*)pSettings->pDeviceID;
+//   config.capture.format = ma_format_f32;
+//   config.capture.channels = 2;
+//   config.sampleRate = 44100;
+//   config.dataCallback = OnReceiveFrames;
+//   config.pUserData = NULL;
+
+//   result = ma_device_init(&context, &config, &captureDevice);
+//   if (result != MA_SUCCESS)
+//   {
+//     ma_context_uninit(&context);
+//     printf("[FFT] Failed to initialize capture device: %d\n", result);
+//     return false;
+//   }
+
+//   printf("[FFT] Selected capture device: %s\n", captureDevice.capture.name);
+
+//   result = ma_device_start(&captureDevice);
+//   if (result != MA_SUCCESS)
+//   {
+//     ma_device_uninit(&captureDevice);
+//     ma_context_uninit(&context);
+//     printf("[FFT] Failed to start capture device: %d\n", result);
+//     return false;
+//   }
+
+//   return true;
+// }
 
 void FFT_Close()
 {
