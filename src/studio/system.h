@@ -146,6 +146,7 @@ typedef struct
     s32 uiScale;
 
     bool fft;
+    bool fftusecapturedevices;
     const char *fftdevice;
 } StudioConfig;
 

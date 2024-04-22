@@ -2393,6 +2393,7 @@ static StartArgs parseArgs(s32 argc, char **argv)
         CMD_PARAMS_LIST(CMD_PARAMS_DEF)
 #undef  CMD_PARAMS_DEF
         OPT_BOOLEAN('\0', "fft", &args.fft, "enable FFT support"),
+        OPT_BOOLEAN('\0', "fftusecapturedevices", &args.fftusecapturedevices, "Use capture devices"),
         OPT_BOOLEAN('\0', "fftlist", &args.fftlist, "list FFT devices"),
         OPT_STRING('\0', "fftdevice", &args.fftdevice, "name of the device to use with FFT"),
         OPT_END(),
