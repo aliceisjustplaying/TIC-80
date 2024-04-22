@@ -23,20 +23,22 @@ kiss_fft_cpx fftBuf[FFT_SIZE + 1];
 
 void miniaudioLogCallback(void *userData, ma_uint32 level, const char *message)
 {
-    // (void)userData;
+    FFT_DebugLog(FFT_LOG_TRACE, "miniaudioLogCallback got called\n");
+    // TODO: I don't know why we need this or if we even need this but, whatever
+    (void)userData;
     switch (level) {
     case MA_LOG_LEVEL_DEBUG:
-      printf( "[FFT] DEBUG log: %s", message );
-      break;
+        printf( "[FFT] DEBUG log: %s", message );
+        break;
     case MA_LOG_LEVEL_INFO:
-      printf( "[FFT] INFO log: %s", message );
-      break;
+        printf( "[FFT] INFO log: %s", message );
+        break;
     case MA_LOG_LEVEL_WARNING:
-      printf( "[FFT] WARNING log: %s", message );
-      break;
+        printf( "[FFT] WARNING log: %s", message );
+        break;
     case MA_LOG_LEVEL_ERROR:
-      printf( "[FFT] ERROR log: %s", message );
-      break;
+        printf( "[FFT] ERROR log: %s", message );
+        break;
     }
 
     return;
@@ -44,19 +46,19 @@ void miniaudioLogCallback(void *userData, ma_uint32 level, const char *message)
 
 void OnReceiveFrames(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount)
 {
-  frameCount = frameCount < FFT_SIZE * 2 ? frameCount : FFT_SIZE * 2;
+    frameCount = frameCount < FFT_SIZE * 2 ? frameCount : FFT_SIZE * 2;
 
   // Just rotate the buffer; copy existing, append new
-  const float* samples = (const float*)pInput;
-  float* p = sampleBuf;
-  for (int i = 0; i < FFT_SIZE * 2 - frameCount; i++)
-  {
-    *(p++) = sampleBuf[i + frameCount];
-  }
-  for (int i = 0; i < frameCount; i++)
-  {
-    *(p++) = (samples[i * 2] + samples[i * 2 + 1]) / 2.0f * fAmplification;
-  }
+    const float* samples = (const float*)pInput;
+    float* p = sampleBuf;
+    for (int i = 0; i < FFT_SIZE * 2 - frameCount; i++)
+    {
+        *(p++) = sampleBuf[i + frameCount];
+    }
+    for (int i = 0; i < frameCount; i++)
+    {
+        *(p++) = (samples[i * 2] + samples[i * 2 + 1]) / 2.0f * fAmplification;
+    }
 }
 
 // void FFT_EnumerateDevices(FFT_ENUMERATE_FUNC pEnumerationFunction, void* pUserContext)
@@ -281,6 +283,6 @@ double tic_api_fft(tic_mem* memory, s32 freq/*, bool bSmoothing, bool bNormaliza
 {
   // if (bSmoothing) return fftSmoothingData[freq];
   // return fftData[freq];
-  return fftSmoothingData[freq];
-  // return fftNormalizedData[freq];
+//   return fftSmoothingData[freq];
+  return fftNormalizedData[freq];
 }
