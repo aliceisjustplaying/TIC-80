@@ -1,5 +1,5 @@
 //TODO: disable this in the end
-#define MA_DEBUG_OUTPUT
+// #define MA_DEBUG_OUTPUT
 #define MINIAUDIO_IMPLEMENTATION
 #include "../fftdata.h"
 #include "fft.h"
@@ -24,7 +24,21 @@ kiss_fft_cpx fftBuf[FFT_SIZE + 1];
 void miniaudioLogCallback(void *userData, ma_uint32 level, const char *message)
 {
     // (void)userData;
-    printf( "[FFT] log: %s", message );
+    switch (level) {
+    case MA_LOG_LEVEL_DEBUG:
+      printf( "[FFT] DEBUG log: %s", message );
+      break;
+    case MA_LOG_LEVEL_INFO:
+      printf( "[FFT] INFO log: %s", message );
+      break;
+    case MA_LOG_LEVEL_WARNING:
+      printf( "[FFT] WARNING log: %s", message );
+      break;
+    case MA_LOG_LEVEL_ERROR:
+      printf( "[FFT] ERROR log: %s", message );
+      break;
+    }
+
     return;
 }
 
