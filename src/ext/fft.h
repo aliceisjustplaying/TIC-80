@@ -17,7 +17,8 @@
 
   bool FFT_Create();
   bool FFT_Destroy();
-  bool FFT_Open(FFT_Settings* pSettings);
+  // bool FFT_Open(FFT_Settings* pSettings);
+  bool FFT_Open(bool CapturePlaybackDevices, const char* CaptureDeviceSearchString);
   bool FFT_GetFFT(float* _samples);
   void FFT_Close();
 
