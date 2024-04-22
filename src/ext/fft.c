@@ -181,7 +181,19 @@ bool FFT_Open(bool CapturePlaybackDevices, const char* CaptureDeviceSearchString
 
   printf("\n");
 
-  ma_device_config config = ma_device_config_init( CapturePlaybackDevices ? ma_device_type_loopback : ma_device_type_capture );
+//   bool useLoopback = ma_is_loopback_supported(context.backend) && !pSettings->bUseRecordingDevice;
+//   ma_device_config config = ma_device_config_init(useLoopback ? ma_device_type_loopback : ma_device_type_capture);
+//   config.capture.pDeviceID = (ma_device_id*)pSettings->pDeviceID;
+//   config.capture.format = ma_format_f32;
+//   config.capture.channels = 2;
+//   config.sampleRate = 44100;
+//   config.dataCallback = OnReceiveFrames;
+//   config.pUserData = NULL;
+
+  bool useLoopback = ma_is_loopback_supported(context.backend);
+  ma_device_config config = ma_device_config_init(useLoopback ? ma_device_type_loopback : ma_device_type_capture);
+
+  // ma_device_config config = ma_device_config_init( CapturePlaybackDevices ? ma_device_type_loopback : ma_device_type_capture );
   config.capture.pDeviceID = TargetDevice;
   config.capture.format = ma_format_f32;
   config.capture.channels = 2;
@@ -244,8 +256,6 @@ bool FFT_Open(bool CapturePlaybackDevices, const char* CaptureDeviceSearchString
 //       printf("    %u: %s\n", iDevice, pCaptureDeviceInfos[iDevice].name);
 //   }
 
-//   bool useLoopback = ma_is_loopback_supported(context.backend) && !pSettings->bUseRecordingDevice;
-//   ma_device_config config = ma_device_config_init(useLoopback ? ma_device_type_loopback : ma_device_type_capture);
 //   config.capture.pDeviceID = (ma_device_id*)pSettings->pDeviceID;
 //   config.capture.format = ma_format_f32;
 //   config.capture.channels = 2;
