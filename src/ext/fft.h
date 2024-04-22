@@ -13,8 +13,6 @@
 
   typedef void (*FFT_ENUMERATE_FUNC)(const bool bIsCaptureDevice, const char* szDeviceName, void* pDeviceID, void* pUserContext);
 
-  extern float fAmplification;
-
   void FFT_EnumerateDevices(FFT_ENUMERATE_FUNC pEnumerationFunction, void* pUserContext);
 
   bool FFT_Create();
