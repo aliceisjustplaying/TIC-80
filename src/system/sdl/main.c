@@ -330,27 +330,7 @@ static void initSound()
 
     if (studio_config(platform.studio)->fft)
     {
-        // FFT_Create();
-        // FFT_Settings fftSettings;
-        // fftSettings.bUseRecordingDevice = false;
-        // fftSettings.pDeviceID = NULL;
-
-        // if (studio_config(platform.studio)->fftdevice != NULL)
-        // {
-        //     FFT_EnumerateDevices(find_fft_device_by_id, NULL);
-        //     if (deviceId != NULL)
-        //     {
-        //         fftSettings.pDeviceID = deviceId;
-        //     }
-        //     else
-        //     {
-        //         printf("Selected device was not found");
-        //         exit(1);
-        //     }
-        // }
-
         FFT_Open(false, NULL);
-        // FFT_Open(&fftSettings);
     }
 
     platform.audio.device = SDL_OpenAudioDevice(NULL, 0, &want, &platform.audio.spec, 0);
@@ -1994,7 +1974,6 @@ static s32 start(s32 argc, char **argv, const char* folder)
                 if (studio_config(platform.studio)->fft)
                 {
                     FFT_Close();
-                    FFT_Destroy();
                 }
             }
 
