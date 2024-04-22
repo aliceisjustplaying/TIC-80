@@ -467,6 +467,7 @@ void tic_core_tick(tic_mem* tic, tic_tick_data* data)
 
     // TODO: make it conditional
     FFT_GetFFT(fftData);
+    printf("FFT_GetFFT got called\n");
 
     if (!core->state.initialized)
     {
@@ -748,6 +749,10 @@ tic_mem* tic_core_create(s32 samplerate, tic80_pixel_color_format format)
 
     // fftData memset
     memset(fftData, 0, sizeof(float) * FFT_SIZE);
+    memset(fftSmoothingData, 0, sizeof(float) * FFT_SIZE);
+    memset(fftNormalizedData, 0, sizeof(float) * FFT_SIZE);
+    memset(fftNormalizedMaxData, 0, sizeof(float) * FFT_SIZE);
+
     tic80* product = &core->memory.product;
 
     core->screen_format = format;
