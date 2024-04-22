@@ -467,7 +467,7 @@ void tic_core_tick(tic_mem* tic, tic_tick_data* data)
 
     // TODO: make it conditional
     FFT_GetFFT(fftData);
-    printf("FFT_GetFFT got called\n");
+    FFT_DebugLog(FFT_LOG_TRACE, "FFT_GetFFT got called\n");
 
     if (!core->state.initialized)
     {
