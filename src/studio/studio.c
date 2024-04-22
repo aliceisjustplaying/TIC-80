@@ -2591,8 +2591,7 @@ Studio* studio_create(s32 argc, char **argv, s32 samplerate, tic80_pixel_color_f
 #if defined(BUILD_EDITORS)
     if (args.fftlist)
     {
-        // FFT_Create();
-        // FFT_EnumerateDevices(print_fft_devices, NULL);
+        FFT_EnumerateDevices();
         exit(0);
     }
     studio->config->data.fft = args.fft;
