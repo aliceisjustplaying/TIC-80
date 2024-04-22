@@ -140,11 +140,30 @@ bool FFT_Open(bool CapturePlaybackDevices, const char* CaptureDeviceSearchString
 
   printf("\n");
 
-  // for now always prefer loopback
-  // TODO: what about CapturePlaybackDevices?
-  bool useLoopback = ma_is_loopback_supported(context.backend);
-  ma_device_config config = ma_device_config_init(useLoopback ? ma_device_type_loopback : ma_device_type_capture);
-  // ma_device_config config = ma_device_config_init( CapturePlaybackDevices ? ma_device_type_loopback : ma_device_type_capture );
+  bool useLoopback = (ma_is_loopback_supported(context.backend) && CapturePlaybackDevices);
+  printf("[FFT] Loopback support: %s, Use loopback: %s\n", ma_is_loopback_supported(context.backend) ? "Yes" : "No", useLoopback ? "Yes" : "No");
+  
+  if(CaptureDeviceSearchString && strlen(CaptureDeviceSearchString) > 0) {
+    if(useLoopback) {
+      for (ma_uint32 iDevice = 0; iDevice < playbackDeviceCount; ++iDevice) {
+        char* DeviceName = pPlaybackDeviceInfos[iDevice].name;
+        if(strstr(DeviceName, CaptureDeviceSearchString) != NULL) {
+          TargetDevice = &pPlaybackDeviceInfos[iDevice].id;
+          break;
+        }
+      }
+    } else {
+      for (ma_uint32 iDevice = 0; iDevice < captureDeviceCount; ++iDevice) {
+        char* DeviceName = pCaptureDeviceInfos[iDevice].name;
+        if(strstr(DeviceName, CaptureDeviceSearchString) != NULL) {
+          TargetDevice = &pCaptureDeviceInfos[iDevice].id;
+          break;
+        }
+      }
+    }
+  }
+
+  ma_device_config config = ma_device_config_init( useLoopback ? ma_device_type_loopback : ma_device_type_capture );
   config.capture.pDeviceID = TargetDevice;
   config.capture.format = ma_format_f32;
   config.capture.channels = 2;

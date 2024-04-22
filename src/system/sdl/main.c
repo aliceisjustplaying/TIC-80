@@ -330,7 +330,7 @@ static void initSound()
 
     if (studio_config(platform.studio)->fft)
     {
-        FFT_Open(false, NULL);
+        FFT_Open(studio_config(platform.studio)->fftusecapturedevices, studio_config(platform.studio)->fftdevice);
     }
 
     platform.audio.device = SDL_OpenAudioDevice(NULL, 0, &want, &platform.audio.spec, 0);
