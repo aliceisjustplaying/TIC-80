@@ -1,5 +1,5 @@
 #pragma once
-#define FFT_SIZE 1024
+#define FFT_SIZE 256
 extern float fPeakMinValue;
 extern float fPeakSmoothing;
 extern float fPeakSmoothValue;
