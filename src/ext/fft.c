@@ -18,13 +18,11 @@ kiss_fftr_cfg fftcfg;
 ma_context context;
 ma_device captureDevice;
 float sampleBuf[FFT_SIZE * 2];
-bool bCreated = false;
-kiss_fft_cpx fftBuf[FFT_SIZE + 1];
 
 void miniaudioLogCallback(void *userData, ma_uint32 level, const char *message)
 {
     FFT_DebugLog(FFT_LOG_TRACE, "miniaudioLogCallback got called\n");
-    // TODO: I don't know why we need this or if we even need this but, whatever
+    // TODO: I don't know why we need this or if we even need this
     (void)userData;
     switch (level) {
     case MA_LOG_LEVEL_DEBUG:
@@ -61,7 +59,6 @@ void OnReceiveFrames(ma_device* pDevice, void* pOutput, const void* pInput, ma_u
     }
 }
 
-// void FFT_EnumerateDevices(FFT_ENUMERATE_FUNC pEnumerationFunction, void* pUserContext)
 void FFT_EnumerateDevices()
 {
 
@@ -140,7 +137,7 @@ bool FFT_Open(bool CapturePlaybackDevices, const char* CaptureDeviceSearchString
   result = ma_context_get_devices(&context, &pPlaybackDeviceInfos, &playbackDeviceCount, &pCaptureDeviceInfos, &captureDeviceCount);
   if (result != MA_SUCCESS) {
       printf("Failed to retrieve device information.\n");
-      return -3;
+      return false;
   }
 
   printf("Playback Devices\n");
@@ -212,11 +209,6 @@ bool FFT_Open(bool CapturePlaybackDevices, const char* CaptureDeviceSearchString
 
 void FFT_Close()
 {
-  if (!bCreated)
-  {
-    return;
-  }
-
   ma_device_stop(&captureDevice);
   ma_device_uninit(&captureDevice);
   ma_context_uninit(&context);
@@ -283,7 +275,8 @@ double tic_api_fft(tic_mem* memory, s32 freq/*, bool bSmoothing, bool bNormaliza
 {
   if (freq < 0 || freq >= FFT_SIZE) {
     // Handle out-of-bounds frequency request, possibly log error or return a default value
-    return 0.0; // Assuming 0.0 is a safe default value for out-of-bounds frequency
+    FFT_DebugLog(FFT_LOG_TRACE, "tic_api_fft: freq out of bounds at %d\n", freq);
+    return 0.0;
   }
   // if (bSmoothing) return fftSmoothingData[freq];
   // return fftData[freq];
