@@ -402,6 +402,7 @@ static void scrollConsole(Console* console)
 
         console->cursor.pos.y--;
     }
+    printf("scrollConsole while loop done!\n");
 
     size_t inputLines = (console->cursor.pos.x + console->input.pos) / CONSOLE_BUFFER_WIDTH;
     s32 minScroll = console->cursor.pos.y + inputLines - CONSOLE_BUFFER_HEIGHT + 1;
@@ -417,6 +418,8 @@ static void scrollConsole(Console* console)
         printf("setting console->scroll.pos to minScroll: %d\n", minScroll);
         console->scroll.pos = minScroll;
     }
+
+    printf("scrollConsole done!\n");
 }
 
 static void setSymbol(Console* console, char sym, u8 color, s32 offset)
@@ -1379,8 +1382,13 @@ static void finishTabComplete(const TabCompleteData* data)
         }
     }
 
-    free(data->options);
-    free(data->commonPrefix);
+    printf("WE ARE NOT FREEING THINGS HERE NO SIR\n");
+    // printf("freeing data->options in finishTabComplete\n");
+    // free(data->options);
+    // printf("i mean we should have freed data->options\n");
+    // printf("freeing data->commonPrefix in finishTabComplete\n");
+    // free(data->commonPrefix);
+    // printf("freed data->commonPrefix??\n");
 }
 
 static void tabCompleteLanguages(TabCompleteData* data)
@@ -1433,13 +1441,35 @@ static bool addDirToTabComplete(const char* name, const char* title, const char*
 static void finishTabCompleteAndFreeData(void* data) {
     if (data != NULL) {
         printf("finishTabCompleteAndFreeData starting\n");
-        finishTabComplete((const TabCompleteData *) data);
-        printf("freeing data in finishTabCompleteAndFreeData!!!!\n");
-        free(data);
-    } else {
-        printf("Error: NULL data pointer provided to finishTabCompleteAndFreeData\n");
+        TabCompleteData* tabCompleteData = (TabCompleteData*)data;
+        printf("casted data to TabCompleteData* in finishTabCompleteAndFreeData\n");
+        printf("tabCompleteData->options: %s\n", tabCompleteData->options);
+        printf("tabCompleteData->commonPrefix: %s\n", tabCompleteData->commonPrefix);
+        printf("tabCompleteData->incompleteWord: %s\n", tabCompleteData->incompleteWord);
+        printf("tabCompleteData->console: %p\n", tabCompleteData->console);
+        printf("calling finishTabComplete from finishTabCompleteAndFreeData\n");
+        finishTabComplete(tabCompleteData);
+        
+        // Free the pointers here
+        free(tabCompleteData->options);
+        free(tabCompleteData->commonPrefix);
+        
+        free(tabCompleteData);
     }
+
+    printf("DATA WAS NOT NULL IN FINISHTABCOMPLETEDATA\n");
 }
+
+// static void finishTabCompleteAndFreeData(void* data) {
+//     if (data != NULL) {
+//         printf("finishTabCompleteAndFreeData starting\n");
+//         finishTabComplete((const TabCompleteData *) data);
+//         printf("freeing data in finishTabCompleteAndFreeData!!!!\n");
+//         free(data);
+//     } else {
+//         printf("Error: NULL data pointer provided to finishTabCompleteAndFreeData\n");
+//     }
+// }
 
 static void tabCompleteFiles(TabCompleteData* data)
 {
@@ -3538,7 +3568,8 @@ static void processConsoleTab(Console* console)
         // THIS GOT TRIGGERED AT LEAST ONCE!!
         printf("FUCKSIE WUCKSIE POTENTIALLY!!\n");
         printf("Error: param is NULL in processConsoleTab\n");
-        return;
+        printf("we'll continue tho!!!!!!!!!!!!!\n");
+        // return;
     }
     printf("param: %s\n", param ? param : "NULL");
     if (param) {
