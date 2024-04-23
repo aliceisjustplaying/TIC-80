@@ -26,16 +26,16 @@ void miniaudioLogCallback(void *userData, ma_uint32 level, const char *message)
     (void)userData;
     switch (level) {
     case MA_LOG_LEVEL_DEBUG:
-        printf( "[FFT] DEBUG log: %s", message );
+        printf( "[MA DEBUG]: %s", message );
         break;
     case MA_LOG_LEVEL_INFO:
-        printf( "[FFT] INFO log: %s", message );
+        printf( "[MA INFO]: %s", message );
         break;
     case MA_LOG_LEVEL_WARNING:
-        printf( "[FFT] WARNING log: %s", message );
+        printf( "[MA WARNING]: %s", message );
         break;
     case MA_LOG_LEVEL_ERROR:
-        printf( "[FFT] ERROR log: %s", message );
+        printf( "[MA ERROR]: %s", message );
         break;
     }
 
@@ -72,11 +72,11 @@ void FFT_EnumerateDevices()
   ma_result result = ma_context_init(NULL, 0, &context_config, &context);
   if (result != MA_SUCCESS)
   {
-    printf("[FFT] Failed to initialize context: %s", ma_result_description(result));
+    FFT_DebugLog(FFT_LOG_ERROR, "[FFT] Failed to initialize context: %s", ma_result_description(result));
     return;
   }
 
-  printf( "[FFT] MAL context initialized, backend is '%s'\n", ma_get_backend_name( context.backend ) );
+  FFT_DebugLog(FFT_LOG_INFO, "MAL context initialized, backend is '%s'\n", ma_get_backend_name( context.backend ) );
 
   ma_device_info* pPlaybackDeviceInfos;
   ma_uint32 playbackDeviceCount;
@@ -84,21 +84,21 @@ void FFT_EnumerateDevices()
   ma_uint32 captureDeviceCount;
   result = ma_context_get_devices(&context, &pPlaybackDeviceInfos, &playbackDeviceCount, &pCaptureDeviceInfos, &captureDeviceCount);
   if (result != MA_SUCCESS) {
-      printf("Failed to retrieve device information.\n");
-      printf("Error: %s\n", ma_result_description(result));
+      FFT_DebugLog(FFT_LOG_ERROR, "Failed to retrieve device information.\n");
+      FFT_DebugLog(FFT_LOG_ERROR, "Error: %s\n", ma_result_description(result));
       return;
   }
 
-  printf("Playback Devices\n");
+  FFT_DebugLog(FFT_LOG_INFO, "Playback Devices\n");
   for (ma_uint32 iDevice = 0; iDevice < playbackDeviceCount; ++iDevice) {
-      printf("    %u: %s\n", iDevice, pPlaybackDeviceInfos[iDevice].name);
+      FFT_DebugLog(FFT_LOG_INFO, "    %u: %s\n", iDevice, pPlaybackDeviceInfos[iDevice].name);
   }
   
   printf("\n");
 
-  printf("Capture Devices\n");
+  FFT_DebugLog(FFT_LOG_INFO, "Capture Devices\n");
   for (ma_uint32 iDevice = 0; iDevice < captureDeviceCount; ++iDevice) {
-      printf("    %u: %s\n", iDevice, pCaptureDeviceInfos[iDevice].name);
+      FFT_DebugLog(FFT_LOG_INFO, "    %u: %s\n", iDevice, pCaptureDeviceInfos[iDevice].name);
   }
 
   printf("\n");
@@ -122,11 +122,11 @@ bool FFT_Open(bool CapturePlaybackDevices, const char* CaptureDeviceSearchString
   ma_result result = ma_context_init( NULL, 0, &context_config, &context );
   if ( result != MA_SUCCESS )
   {
-    printf( "[FFT] Failed to initialize context: %d", result );
+    FFT_DebugLog(FFT_LOG_ERROR, "Failed to initialize context: %d", result );
     return false;
   }
 
-  printf( "[FFT] MAL context initialized, backend is '%s'\n", ma_get_backend_name( context.backend ) );
+  FFT_DebugLog(FFT_LOG_INFO, "MAL context initialized, backend is '%s'\n", ma_get_backend_name( context.backend ) );
 
   ma_device_id* TargetDevice = NULL;
 
@@ -136,26 +136,26 @@ bool FFT_Open(bool CapturePlaybackDevices, const char* CaptureDeviceSearchString
   ma_uint32 captureDeviceCount;
   result = ma_context_get_devices(&context, &pPlaybackDeviceInfos, &playbackDeviceCount, &pCaptureDeviceInfos, &captureDeviceCount);
   if (result != MA_SUCCESS) {
-      printf("Failed to retrieve device information.\n");
+      FFT_DebugLog(FFT_LOG_ERROR, "Failed to retrieve device information.\n");
       return false;
   }
 
-  printf("Playback Devices\n");
+  FFT_DebugLog(FFT_LOG_INFO, "Playback Devices\n");
   for (ma_uint32 iDevice = 0; iDevice < playbackDeviceCount; ++iDevice) {
-      printf("    %u: %s\n", iDevice, pPlaybackDeviceInfos[iDevice].name);
+      FFT_DebugLog(FFT_LOG_INFO, "    %u: %s\n", iDevice, pPlaybackDeviceInfos[iDevice].name);
   }
   
   printf("\n");
 
-  printf("Capture Devices\n");
+  FFT_DebugLog(FFT_LOG_INFO, "Capture Devices\n");
   for (ma_uint32 iDevice = 0; iDevice < captureDeviceCount; ++iDevice) {
-      printf("    %u: %s\n", iDevice, pCaptureDeviceInfos[iDevice].name);
+      FFT_DebugLog(FFT_LOG_INFO, "    %u: %s\n", iDevice, pCaptureDeviceInfos[iDevice].name);
   }
 
   printf("\n");
 
   bool useLoopback = (ma_is_loopback_supported(context.backend) && CapturePlaybackDevices);
-  printf("[FFT] Loopback support: %s, Use loopback: %s\n", ma_is_loopback_supported(context.backend) ? "Yes" : "No", useLoopback ? "Yes" : "No");
+  FFT_DebugLog(FFT_LOG_INFO, "Loopback support: %s, Use loopback: %s\n", ma_is_loopback_supported(context.backend) ? "Yes" : "No", useLoopback ? "Yes" : "No");
   
   if(CaptureDeviceSearchString && strlen(CaptureDeviceSearchString) > 0) {
     if(useLoopback) {
@@ -189,7 +189,7 @@ bool FFT_Open(bool CapturePlaybackDevices, const char* CaptureDeviceSearchString
   if ( result != MA_SUCCESS )
   {
     ma_context_uninit( &context );
-    printf( "[FFT] Failed to initialize capture device: %d\n", result );
+    FFT_DebugLog(FFT_LOG_ERROR, "Failed to initialize capture device: %d\n", result );
     return false;
   }
 
@@ -198,11 +198,11 @@ bool FFT_Open(bool CapturePlaybackDevices, const char* CaptureDeviceSearchString
   {
     ma_device_uninit( &captureDevice );
     ma_context_uninit( &context );
-    printf( "[FFT] Failed to start capture device: %d\n", result );
+    FFT_DebugLog(FFT_LOG_ERROR, "Failed to start capture device: %d\n", result );
     return false;
   }
 
-  printf( "[FFT] Capturing %s\n", captureDevice.capture.name );
+  FFT_DebugLog(FFT_LOG_INFO, "Capturing %s\n", captureDevice.capture.name );
 
   return true;
 }
