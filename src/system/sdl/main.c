@@ -248,7 +248,9 @@ static void renderClear(Renderer renderer)
 #if defined(CRT_SHADER_SUPPORT)
     if(!studio_config(platform.studio)->soft)
     {
+        printf("calling GPU_Clear\n");
         GPU_Clear(renderer.gpu);
+        printf("GPU_Clear done\n");
     }
     else
 #endif
@@ -1706,9 +1708,13 @@ void tic_sys_default_mapping(tic_mapping* mapping)
 
 static void gpuTick()
 {
+    printf("gpuTick starting\n");
     const tic_mem* tic = studio_mem(platform.studio);
+    printf("tic is %p\n", tic);
 
+    printf("calling pollEvents\n");
     pollEvents();
+    printf("pollEvents done\n");
 
     if(studio_alive(platform.studio))
     {
@@ -1720,11 +1726,18 @@ static void gpuTick()
 
     LOCK_MUTEX(platform.audio.mutex)
     {
+        printf("calling studio_tick\n");
         studio_tick(platform.studio, platform.input);
+        printf("studio_tick done\n");
     }
 
+    printf("calling renderClear\n");
     renderClear(platform.screen.renderer);
+    printf("renderClear done\n");
+
+    printf("calling updateTextureBytes\n");
     updateTextureBytes(platform.screen.texture, tic->product.screen, TIC80_FULLWIDTH, TIC80_FULLHEIGHT);
+    printf("updateTextureBytes done\n");
 
     SDL_Rect rect;
     calcTextureRect(&rect);
@@ -1787,9 +1800,11 @@ static void gpuTick()
     else
         renderKeyboard();
 #endif
-
+    printf("calling renderPresent\n");
     renderPresent(platform.screen.renderer);
-
+    printf("renderPresent done\n");
+    
+    printf("end of gpuTick\n");
     platform.keyboard.text = '\0';
 }
 
