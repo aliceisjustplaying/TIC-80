@@ -281,6 +281,10 @@ bool FFT_GetFFT(float* _samples)
 
 double tic_api_fft(tic_mem* memory, s32 freq/*, bool bSmoothing, bool bNormalization*/)
 {
+  if (freq < 0 || freq >= FFT_SIZE) {
+    // Handle out-of-bounds frequency request, possibly log error or return a default value
+    return 0.0; // Assuming 0.0 is a safe default value for out-of-bounds frequency
+  }
   // if (bSmoothing) return fftSmoothingData[freq];
   // return fftData[freq];
 //   return fftSmoothingData[freq];
