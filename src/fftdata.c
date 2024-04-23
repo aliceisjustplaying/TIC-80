@@ -12,13 +12,15 @@ void FFT_DebugLog(FFT_LogLevel level, const char* format, ...)
 #ifdef FFT_DEBUG
     if (level <= g_currentLogLevel) {
          // Get current time
-        time_t now = time(NULL);
-        struct tm *tm_now = localtime(&now);
-        char time_str[20]; // ISO 8601 format requires 19 characters + null terminator
-        strftime(time_str, sizeof(time_str), "%Y-%m-%dT%H:%M:%S", tm_now);
+        if (level == FFT_LOG_TRACE) {
+            time_t now = time(NULL);
+            struct tm *tm_now = localtime(&now);
+            char time_str[20]; // ISO 8601 format requires 19 characters + null terminator
+            strftime(time_str, sizeof(time_str), "%Y-%m-%dT%H:%M:%S", tm_now);
 
-        // Print time and log level
-        printf("%s ", time_str); // Print the time
+            // Print time and log level
+            printf("%s ", time_str); // Print the time
+        }
         va_list args;
         va_start(args, format);
         switch(level) {
