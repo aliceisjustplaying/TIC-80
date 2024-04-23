@@ -1231,16 +1231,19 @@ void gotoCode(Studio* studio)
 
 void setStudioMode(Studio* studio, EditorMode mode)
 {
+    printf("[Studio] Set Mode %d\n", mode);
     if(mode != studio->mode)
     {
         EditorMode prev = studio->mode;
 
-        if(prev == TIC_RUN_MODE)
+        if(prev == TIC_RUN_MODE) {
+            printf("setStudioMode calling tic_core_pause\n");
             tic_core_pause(studio->tic);
-
-        if(mode != TIC_RUN_MODE)
+        }
+        if(mode != TIC_RUN_MODE) {
+            printf("setStudioMode calling tic_api_reset\n");
             tic_api_reset(studio->tic);
-
+        }
         switch (prev)
         {
         case TIC_START_MODE:
@@ -1251,6 +1254,7 @@ void setStudioMode(Studio* studio, EditorMode mode)
         }
 
 #if defined(BUILD_EDITORS)
+        printf("[Studio] Switch Mode %d\n", mode);
         switch(mode)
         {
         case TIC_RUN_MODE: initRunMode(studio); break;
@@ -1427,6 +1431,7 @@ static void confirmYes(void* data, s32 pos)
 
 void confirmDialog(Studio* studio, const char** text, s32 rows, ConfirmCallback callback, void* data)
 {
+    printf("[Confirm] Dialog\n");
     if(studio->mode != TIC_MENU_MODE)
     {
         studio->menuMode = studio->mode;
@@ -2337,6 +2342,7 @@ void studio_delete(Studio* studio)
 {
     {
 #if defined(BUILD_EDITORS)
+        printf("studio_delete got called\n");
         for(s32 i = 0; i < TIC_EDITOR_BANKS; i++)
         {
             freeSprite  (studio->banks.sprite[i]);
@@ -2357,8 +2363,9 @@ void studio_delete(Studio* studio)
 
         freeStart   (studio->start);
         freeRun     (studio->run);
+        printf("before freeConfig\n");
         freeConfig  (studio->config);
-
+        printf("after freeConfig\n");
         studio_mainmenu_free(studio->mainmenu);
         studio_menu_free(studio->menu);
     }
@@ -2577,6 +2584,7 @@ Studio* studio_create(s32 argc, char **argv, s32 samplerate, tic80_pixel_color_f
     studio->config->data.options.vsync      |= args.vsync;
     studio->config->data.soft               |= args.soft;
     studio->config->data.cli                |= args.cli;
+    studio->config->data.options.devmode    |= args.devmode;
 
     studioConfigChanged(studio);
 

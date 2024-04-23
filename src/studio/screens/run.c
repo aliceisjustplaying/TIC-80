@@ -135,6 +135,7 @@ static u64 getCounter(void* data)
 
 void initRun(Run* run, Console* console, tic_fs* fs, Studio* studio)
 {
+    printf("[Run] Init\n");
     *run = (Run)
     {
         .studio = studio,

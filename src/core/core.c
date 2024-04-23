@@ -271,6 +271,7 @@ const tic_script_config* tic_core_script_config(tic_mem* memory)
 
 static void updateSaveid(tic_mem* memory)
 {
+    printf("updateSaveid\n");
     memset(memory->saveid, 0, sizeof memory->saveid);
     char* saveid = tic_tool_metatag(memory->cart.code.data, "saveid", tic_core_script_config(memory)->singleComment);
     if (saveid)
@@ -355,6 +356,7 @@ static void font2ram(tic_mem* memory)
 
 void tic_api_reset(tic_mem* memory)
 {
+    printf("tic_api_reset\n");
     tic_core* core = (tic_core*)memory;
 
     // keyboard state is critical and must be preserved across API resets.

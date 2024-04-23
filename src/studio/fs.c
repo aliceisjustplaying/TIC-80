@@ -750,6 +750,9 @@ bool tic_fs_save(tic_fs* fs, const char* name, const void* data, s32 size, bool 
 
 bool tic_fs_saveroot(tic_fs* fs, const char* name, const void* data, s32 size, bool overwrite)
 {
+    printf("!!!!!!!!!!!!!\n");
+    printf("tic_fs_saveroot got called!!\n");
+    printf("!!!!!!!!!!!!!\n");
     const char* path = tic_fs_pathroot(fs, name);
 
     if(!overwrite)

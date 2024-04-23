@@ -73,6 +73,7 @@
     macro(fullscreen,   bool,   BOOLEAN,    "",         "enable fullscreen mode")           \
     macro(vsync,        bool,   BOOLEAN,    "",         "enable VSYNC")                     \
     macro(soft,         bool,   BOOLEAN,    "",         "use software rendering")           \
+    macro(devmode,      bool,   BOOLEAN,    "",         "Enable Developer Mode by default") \
     macro(fs,           char*,  STRING,     "=<str>",   "path to the file system folder")   \
     macro(scale,        s32,    INTEGER,    "=<int>",   "main window scale")                \
     macro(cmd,          char*,  STRING,     "=<str>",   "run commands in the console")      \

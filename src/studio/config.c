@@ -182,6 +182,7 @@ static void update(Config* config, const u8* buffer, s32 size)
 
 static void setDefault(Config* config)
 {
+    printf("[Config] Set Default\n");
     config->data = (StudioConfig)
     {
         .cart = config->cart,
@@ -224,6 +225,7 @@ static void setDefault(Config* config)
 
 static void saveConfig(Config* config, bool overwrite)
 {
+    printf("saveConfig called\n");
     u8* buffer = malloc(sizeof(tic_cartridge));
 
     if(buffer)
@@ -255,6 +257,7 @@ static const char OptionsDatPath[] = TIC_LOCAL_VERSION "options.dat";
 
 static void loadConfigData(tic_fs* fs, const char* path, void* dst, s32 size)
 {
+    printf("loadConfigData called\n");
     s32 dataSize = 0;
     u8* data = (u8*)tic_fs_loadroot(fs, path, &dataSize);
 
@@ -303,6 +306,9 @@ void initConfig(Config* config, Studio* studio, tic_fs* fs)
 
 void freeConfig(Config* config)
 {
+    printf("---------\n");
+    printf("freeConfig called\n");
+    printf("---------\n");
     tic_fs_saveroot(config->fs, OptionsDatPath, &config->data.options, sizeof config->data.options, true);
 
     free(config->cart);

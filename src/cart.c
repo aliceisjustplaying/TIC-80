@@ -33,6 +33,8 @@
 #include "tic_assert.h"
 #include "tools.h"
 
+#include <stdio.h>
+
 typedef enum
 {
     CHUNK_DUMMY,        // 0
@@ -83,6 +85,7 @@ static s32 chunkSize(const Chunk* chunk)
 
 void tic_cart_load(tic_cartridge* cart, const u8* buffer, s32 size)
 {
+    printf("tic_cart_load called\n");
     memset(cart, 0, sizeof(tic_cartridge));
     const u8* end = buffer + size;
     u8 *chunk_cart = NULL;
