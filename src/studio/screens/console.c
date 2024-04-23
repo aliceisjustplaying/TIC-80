@@ -315,15 +315,89 @@ static const char* getCartName(const char* name)
 
 static void scrollBuffer(char* buffer)
 {
+    printf("scrollBuffer start\n");
+    // Check for NULL pointer
+    if (buffer == NULL)
+    {
+        printf("Error: buffer is NULL in scrollBuffer\n");
+        return;
+    }
+
+    // Check if memmove source and destination are within buffer bounds
+    if (buffer + CONSOLE_BUFFER_WIDTH > buffer + CONSOLE_BUFFER_SIZE)
+    {
+        printf("Error: memmove source out of bounds in scrollBuffer\n");
+        return;
+    }
+
+    printf("scrollBuffer memmove start\n");
     memmove(buffer, buffer + CONSOLE_BUFFER_WIDTH, CONSOLE_BUFFER_SIZE - CONSOLE_BUFFER_WIDTH);
+    printf("scrollBuffer memmove end\n");
+
+    // Check if memset destination is within buffer bounds
+    if (buffer + CONSOLE_BUFFER_SIZE - CONSOLE_BUFFER_WIDTH > buffer + CONSOLE_BUFFER_SIZE)
+    {
+        printf("Error: memset destination out of bounds in scrollBuffer\n");
+        return;
+    }
+
+    printf("scrollBuffer memset start\n");
     memset(buffer + CONSOLE_BUFFER_SIZE - CONSOLE_BUFFER_WIDTH, 0, CONSOLE_BUFFER_WIDTH);
+    printf("scrollBuffer memmove end\n");
 }
+
+// static void scrollBuffer(char* buffer)
+// {
+//     memmove(buffer, buffer + CONSOLE_BUFFER_WIDTH, CONSOLE_BUFFER_SIZE - CONSOLE_BUFFER_WIDTH);
+//     memset(buffer + CONSOLE_BUFFER_SIZE - CONSOLE_BUFFER_WIDTH, 0, CONSOLE_BUFFER_WIDTH);
+// }
+
+// static void scrollConsole(Console* console)
+// {
+//     while(console->cursor.pos.y >= CONSOLE_BUFFER_HEIGHT * CONSOLE_BUFFER_SCREENS)
+//     {
+//         scrollBuffer(console->text);
+//         scrollBuffer((char*)console->color);
+
+//         console->cursor.pos.y--;
+//     }
+
+//     size_t inputLines = (console->cursor.pos.x + console->input.pos) / CONSOLE_BUFFER_WIDTH;
+//     s32 minScroll = console->cursor.pos.y + inputLines - CONSOLE_BUFFER_HEIGHT + 1;
+//     if(console->scroll.pos < minScroll)
+//         console->scroll.pos = minScroll;
+// }
 
 static void scrollConsole(Console* console)
 {
+    printf("scrollConsole start\n");
+    printf("Checking if console pointer is NULL...\n");
+    // Check for NULL pointer
+    if (console == NULL)
+    {
+        printf("Error: console is NULL in scrollConsole\n");
+        return;
+    }
+    printf("Console pointer is not NULL, proceeding...\n");
+    printf("starting out with console->cursor.pos.y: %d\n", console->cursor.pos.y);
     while(console->cursor.pos.y >= CONSOLE_BUFFER_HEIGHT * CONSOLE_BUFFER_SCREENS)
     {
+        printf("in scrollConsole\'s while loop!!!\n");
+        // Check for valid pointers before calling scrollBuffer
+        if (console->text == NULL)
+        {
+            printf("Error: console->text is NULL in scrollConsole\n");
+            return;
+        }
+        if (console->color == NULL)
+        {
+            printf("Error: console->color is NULL in scrollConsole\n");
+            return;
+        }
+
+        printf("calling scrollBuffer with console->text: %p\n", console->text);
         scrollBuffer(console->text);
+        printf("calling scrollBuffer with console->color: %p\n", console->color);
         scrollBuffer((char*)console->color);
 
         console->cursor.pos.y--;
@@ -331,8 +405,18 @@ static void scrollConsole(Console* console)
 
     size_t inputLines = (console->cursor.pos.x + console->input.pos) / CONSOLE_BUFFER_WIDTH;
     s32 minScroll = console->cursor.pos.y + inputLines - CONSOLE_BUFFER_HEIGHT + 1;
-    if(console->scroll.pos < minScroll)
+
+    // Check for valid scroll position before updating
+    if (console->scroll.pos < 0)
+    {
+        printf("Error: console->scroll.pos is negative in scrollConsole\n");
+        console->scroll.pos = 0;
+    }
+    else if(console->scroll.pos < minScroll)
+    {
+        printf("setting console->scroll.pos to minScroll: %d\n", minScroll);
         console->scroll.pos = minScroll;
+    }
 }
 
 static void setSymbol(Console* console, char sym, u8 color, s32 offset)
@@ -384,6 +468,7 @@ static void consolePrintOffset(Console* console, const char* text, u8 color, s32
     {
         char symbol = *ptr;
 
+        printf("calling scrollConsole from consolePrintOffset\n");
         scrollConsole(console);
 
         if (symbol == '\n')
@@ -1179,13 +1264,31 @@ typedef struct
 
 static void addTabCompleteOption(TabCompleteData* data, const char* option)
 {
+    // Check for NULL pointers
+    if (!data || !data->options || !data->commonPrefix) {
+        printf("Error: NULL pointer encountered in addTabCompleteOption\n");
+        return; // Early return to avoid dereferencing NULL
+    }
+
     if (strstr(option, data->incompleteWord) == option)
     {
+        printf("Adding option: %s\n", option); // Debugging information
         // Possibly reduce the common prefix of all possible options.
         if (strlen(data->options) == 0)
         {
+            // Ensure the option length does not exceed the buffer size.
+            size_t optionLength = strlen(option);
+            if (optionLength >= CONSOLE_BUFFER_SCREEN) {
+                printf("Error: option length exceeds buffer size.\n");
+                return; // Early return to prevent buffer overflow
+            }
+
+            // Debugging information
+            printf("Initializing commonPrefix with: %s\n", option);
+
             // This is the first option to be added. Initialize the prefix.
-            strncpy(data->commonPrefix, option, CONSOLE_BUFFER_SCREEN);
+            strncpy(data->commonPrefix, option, CONSOLE_BUFFER_SCREEN - 1); // Leave space for null terminator
+            data->commonPrefix[CONSOLE_BUFFER_SCREEN - 1] = '\0'; // Explicitly null-terminate
         }
         else
         {
@@ -1223,8 +1326,20 @@ static void provideHint(Console* console, const char* hint)
 
 static void finishTabComplete(const TabCompleteData* data)
 {
+    printf("finishTabComplete starting\n");
+    if (data == NULL)
+    {
+        printf("Error: data is NULL in finishTabComplete!! THINGS ARE FUCKED!!\n");
+        return;
+    }
+    printf("Size of the data passed: %zu bytes\n", sizeof(*data));
+    printf("data->options: %s\n", data->options);
+    printf("data->commonPrefix: %s\n", data->commonPrefix);
+    printf("data->incompleteWord: %s\n", data->incompleteWord);
+    printf("data->console: %p\n", data->console);
     bool anyOptions = strlen(data->options) > 0;
     if (anyOptions) {
+        printf("in if(anyOptions)\n");
         // Adding one at the right because all options end with a space.
         bool justOneOptionLeft = strlen(data->options) == strlen(data->commonPrefix)+1;
 
@@ -1237,6 +1352,8 @@ static void finishTabComplete(const TabCompleteData* data)
 
         if (justOneOptionLeft)
         {
+            printf("in if(justOneOptionLeft)\n");
+            printf("adding one space to input\n");
             insertInputText(data->console, " ");
         }
     }
@@ -3322,6 +3439,17 @@ TabCompleteData newTabCompleteData(Console* console, char* incompleteWord) {
     TabCompleteData data = { console, .incompleteWord = incompleteWord };
     data.options = malloc(CONSOLE_BUFFER_SCREEN);
     data.commonPrefix = malloc(CONSOLE_BUFFER_SCREEN);
+
+    // Check for malloc failure
+    if (!data.options || !data.commonPrefix) {
+        printf("OOPSIE WHOOPSIE WE MADE A FUCKSIE WUCKSIE\n");
+        // Handle error, for example, by logging and exiting or by setting a default value
+        // For simplicity, we'll just free any successful allocation and return an empty struct
+        free(data.options); // Safe to call free on NULL
+        free(data.commonPrefix);
+        return (TabCompleteData){0}; // Return an empty struct or handle error appropriately
+    }
+
     data.options[0] = '\0';
     data.commonPrefix[0] = '\0';
 
@@ -3330,20 +3458,64 @@ TabCompleteData newTabCompleteData(Console* console, char* incompleteWord) {
 
 static void processConsoleTab(Console* console)
 {
+    printf("_____-----!!!-----_____\n");
+    printf("processConsoleTab\n");
+    printf("console: %p\n", (void*)console);
+    if (!console) {
+        printf("Error: console is NULL\n");
+        return;
+    }
     char* input = console->input.text;
+    printf("input: %s\n", input ? input : "NULL");
+    if (!input) {
+        printf("Error: input is NULL\n");
+        return;
+    }
     char* param = strchr(input, ' ');
-
+    if (param == NULL)
+    {
+        printf("FUCKSIE WUCKSIE POTENTIALLY!!\n");
+        printf("Error: param is NULL in processConsoleTab\n");
+        return;
+    }
+    printf("param: %s\n", param ? param : "NULL");
+    if (param) {
+        printf("param offset from input: %ld\n", param - input);
+    }
+    printf("input: %s\n", input);
+    printf("param: %s\n", param);
+    printf("internal C size of param: %zu\n", sizeof(param));
     if(param)
     {
         // Tab-complete command's parameters.
-        param++;
-        char* secondParam = strchr(param, ' ');
-        if (secondParam)
-            secondParam++;
+        printf("we have param\n");
+        if (param != NULL) {
+            printf("IN IF size of param: %zu\n", strlen(param));
+            printf("IN IF internal C size of param: %zu\n", sizeof(param));
+            param++;
+            if (param != NULL) {
+                printf("AFTER ++ param: %s\n", param);
+                printf("AFTER ++ size of param: %zu\n", strlen(param));
+                printf("AFTER ++ internal C size of param: %zu\n", sizeof(param));
+            } else {
+                printf("Error: param becomes NULL after increment\n");
+            }
+        } else {
+            printf("Error: param is NULL\n");
+        }
 
+        char* secondParam = strchr(param, ' ');
+        if (secondParam) {
+            printf("we have second param\n");
+            secondParam++;
+        }
+        printf("Commands count: %lu\n", (unsigned long)COUNT_OF(Commands));
         for(s32 i = 0; i < COUNT_OF(Commands); i++)
         {
+            printf("++++++ counter +++++\n");
+            printf("i: %d\n", i);
             s32 commandLen = param-input-1;
+            printf("commandLen: %d, Commands[i].name length: %zu, Commands[i].alt length: %zu\n", commandLen, strlen(Commands[i].name), Commands[i].alt ? strlen(Commands[i].alt) : 0);
             bool commandMatches = (strlen(Commands[i].name) == commandLen &&
                                        strncmp(Commands[i].name, input, commandLen) == 0) ||
                                   (Commands[i].alt &&
@@ -3352,14 +3524,23 @@ static void processConsoleTab(Console* console)
 
             if (commandMatches)
             {
+                printf("in branch if commandMatches\n");
                 if (secondParam) {
+                    printf("secondParam: %s\n", secondParam);
+                    printf("secondParam offset from param: %ld\n", secondParam - param);
                     if (Commands[i].tabComplete2) {
                         TabCompleteData data = newTabCompleteData(console, secondParam);
                         Commands[i].tabComplete2(&data);
                     }
                 } else {
+                    printf("in branch if !secondParam\n");
+                    // printf("commandLen: %d, Commands[i].name length: %zu, Commands[i].alt length: %zu\n", commandLen, strlen(Commands[i].name), Commands[i].alt ? strlen(Commands[i].alt) : 0);
+                    printf("Commands[i].tabComplete1: %p\n", (void*)Commands[i].tabComplete1);
                     if (Commands[i].tabComplete1) {
+                        printf("Commands[i].tabComplete1 is not NULL\n");
+                        printf("calling newTabCompleteData with console: %p, param: %s\n", (void*)console, param);
                         TabCompleteData data = newTabCompleteData(console, param);
+                        printf("TabCompleteData data is: %p\n", (void*)&data);
                         Commands[i].tabComplete1(&data);
                     }
                 }
@@ -3369,15 +3550,22 @@ static void processConsoleTab(Console* console)
     else
     {
         // Tab-complete commands.
+        printf("no param\n");
+        printf("get tab-complete commands\n");
         TabCompleteData data = newTabCompleteData(console, input);
+        printf("TabCompleteData created with input: %s\n", input);
+        printf("loop thru tab complete data\n");
         for(s32 i = 0; i < COUNT_OF(Commands); i++)
         {
             addTabCompleteOption(&data, Commands[i].name);
+            printf("Added tab complete option for: %s\n", Commands[i].name);
             if (Commands[i].alt)
                 addTabCompleteOption(&data, Commands[i].alt);
         }
         finishTabComplete(&data);
+        printf("Finished tab completion\n");
     }
+    printf("Scrolling console\n");
     scrollConsole(console);
 }
 
@@ -3482,6 +3670,7 @@ static void printTable(Console* console, const char* text)
     {
         char symbol = *textPointer++;
 
+        printf("calling scrollConsole from printTable\n");
         scrollConsole(console);
 
         if(symbol == '\n')
@@ -4156,6 +4345,7 @@ static void processKeyboard(Console* console)
     if(sym)
     {
         insertInputText(console, (char[]){sym, '\0'});
+        printf("calling scrollConsole from processKeyboard\n");
         scrollConsole(console);
 
         console->cursor.delay = CONSOLE_CURSOR_DELAY;
@@ -4350,6 +4540,9 @@ void initConsole(Console* console, Studio* studio, tic_fs* fs, tic_net* net, Con
 {
     if(!console->text)  console->text = malloc(CONSOLE_BUFFER_SIZE);
     if(!console->color) console->color = malloc(CONSOLE_BUFFER_SIZE);
+    printf("memsetting baby!\n");
+    memset(console->text, 0, CONSOLE_BUFFER_SIZE);
+    memset(console->color, TIC_COLOR_BG, CONSOLE_BUFFER_SIZE);
     if(!console->desc)  console->desc = malloc(sizeof(CommandDesc));
 
     *console = (Console)
