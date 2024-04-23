@@ -459,50 +459,71 @@ static bool iswrap(char sym)
 static void consolePrintOffset(Console* console, const char* text, u8 color, s32 wrapLineOffset)
 {
 #ifndef BAREMETALPI
-    printf("%s", text);
+    printf("Debug: Entering consolePrintOffset\n");
+    printf("Initial text: %s\n", text);
 #endif
 
     console->cursor.pos = cursorPos(console);
+    printf("Cursor position: x=%d, y=%d\n", console->cursor.pos.x, console->cursor.pos.y);
 
     for(const char* ptr = text, *next = ptr; *ptr; ptr++)
     {
         char symbol = *ptr;
 
-        printf("calling scrollConsole from consolePrintOffset\n");
+        printf("Processing symbol: %c\n", symbol);
+        printf("calling scrollConsole from consolePrintOffset... SOMETHING MAY BE HERE\n");
         scrollConsole(console);
+        printf("Scrolled console from consolePrintOffset!\n");
 
         if (symbol == '\n')
+        {
+            printf("calling nextLine(console) where symbol is BACKSLASH N\n");
             nextLine(console);
+            printf("Moved to next line from consolePrintOffset!\n");
+        }
         else
         {
             if(!iswrap(symbol))
             {
                 const char* cur = ptr;
                 s32 len = CONSOLE_BUFFER_WIDTH;
-
+                printf("sus while loop in consoleprintoffset\n");
                 while(*cur && !iswrap(*cur++)) len--;
-
+                
+                printf("if loop in consoleprintoffset that\'s also sus\n");
                 if(len > 0 && len <= console->cursor.pos.x)
                 {
+                    printf("calling nextLine(console) where symbol is not backslash n\n");
                     nextLine(console);
                     console->cursor.pos.x = wrapLineOffset;
+                    printf("Wrapped line, new cursor x=%d\n", console->cursor.pos.x);
                 }
             }
-
+            printf("calling setSymbol in that else branch\n");
             setSymbol(console, symbol, iswrap(symbol) ? tic_color_dark_grey : color, cursorOffset(console));
+            printf("Set symbol at position: %d\n", cursorOffset(console));
 
             console->cursor.pos.x++;
 
             if (console->cursor.pos.x >= CONSOLE_BUFFER_WIDTH)
             {
+                printf("calling nextLine from that last if loop\n");
                 nextLine(console);
+                printf("Cursor wrapped to next line, new x=%d\n", console->cursor.pos.x);
                 console->cursor.pos.x = wrapLineOffset;
+                printf("Cursor wrapped to next line, new x=%d\n", console->cursor.pos.x);
             }
         }
     }
 
     console->input.text = console->text + cursorOffset(console);
+    printf("console->input.text is now: %p\n", console->input.text);
     console->input.pos = 0;
+    printf("Updated input text position\n");
+
+#ifndef BAREMETALPI
+    printf("Debug: Exiting consolePrintOffset\n");
+#endif
 }
 
 static void consolePrint(Console* console, const char* text, u8 color)
@@ -1410,30 +1431,70 @@ static bool addDirToTabComplete(const char* name, const char* title, const char*
 }
 
 static void finishTabCompleteAndFreeData(void* data) {
-    finishTabComplete((const TabCompleteData *) data);
-    free(data);
+    if (data != NULL) {
+        printf("finishTabCompleteAndFreeData starting\n");
+        finishTabComplete((const TabCompleteData *) data);
+        printf("freeing data in finishTabCompleteAndFreeData!!!!\n");
+        free(data);
+    } else {
+        printf("Error: NULL data pointer provided to finishTabCompleteAndFreeData\n");
+    }
 }
 
 static void tabCompleteFiles(TabCompleteData* data)
 {
+    if (!data || !data->console || !data->console->fs) {
+        printf("Error: Invalid data in tabCompleteFiles\n");
+        return;
+    }
+
+    printf("Entering tabCompleteFiles\n");
     tic_fs_enum(data->console->fs, addFilenameToTabComplete, finishTabCompleteAndFreeData, MOVE(*data));
+    printf("Exiting tabCompleteFiles\n");
 }
 
 static void tabCompleteDirs(TabCompleteData* data)
 {
+    if (!data || !data->console || !data->console->fs) {
+        printf("Error: Invalid data in tabCompleteDirs\n");
+        return;
+    }
+
+    printf("Entering tabCompleteDirs\n");
     tic_fs_enum(data->console->fs, addDirToTabComplete, finishTabCompleteAndFreeData, MOVE(*data));
+    printf("Exiting tabCompleteDirs\n");
 }
 
 static void tabCompleteFilesAndDirs(TabCompleteData* data)
 {
+    if (!data || !data->console || !data->console->fs) {
+        printf("Error: Invalid data in tabCompleteFilesAndDirs\n");
+        return;
+    }
+
+    printf("Entering tabCompleteFilesAndDirs\n");
     tic_fs_enum(data->console->fs, addFileAndDirToTabComplete, finishTabCompleteAndFreeData, MOVE(*data));
+    printf("Exiting tabCompleteFilesAndDirs\n");
 }
 
 static void tabCompleteConfig(TabCompleteData* data)
 {
+    if (data == NULL) {
+        printf("Error: tabCompleteConfig received a NULL data pointer\n");
+        return;
+    }
+
+    printf("Starting tab completion configuration...\n");
+
     addTabCompleteOption(data, "reset");
+    printf("Added 'reset' to tab completion options.\n");
+
     addTabCompleteOption(data, "default");
+    printf("Added 'default' to tab completion options.\n");
+    
+    printf("calling finishTabComplete from tabCompleteConfig!!!!!\n");
     finishTabComplete(data);
+    printf("Finished configuring tab completion.\n");
 }
 
 typedef struct
@@ -3474,6 +3535,7 @@ static void processConsoleTab(Console* console)
     char* param = strchr(input, ' ');
     if (param == NULL)
     {
+        // THIS GOT TRIGGERED AT LEAST ONCE!!
         printf("FUCKSIE WUCKSIE POTENTIALLY!!\n");
         printf("Error: param is NULL in processConsoleTab\n");
         return;
