@@ -564,8 +564,10 @@ static void initGPU()
         SDL_GetWindowSize(platform.window, &w, &h);
 
         GPU_SetInitWindow(SDL_GetWindowID(platform.window));
+
         GPU_SetPreInitFlags(vsync ? GPU_INIT_ENABLE_VSYNC : GPU_INIT_DISABLE_VSYNC);
         platform.screen.renderer.gpu = GPU_Init(w, h, GPU_DEFAULT_INIT_FLAGS);
+
         GPU_SetWindowResolution(w, h);
         GPU_SetVirtualResolution(platform.screen.renderer.gpu, w, h);
 
@@ -1705,6 +1707,7 @@ void tic_sys_default_mapping(tic_mapping* mapping)
 static void gpuTick()
 {
     const tic_mem* tic = studio_mem(platform.studio);
+
     pollEvents();
 
     if(studio_alive(platform.studio))
@@ -1721,7 +1724,6 @@ static void gpuTick()
     }
 
     renderClear(platform.screen.renderer);
-
     updateTextureBytes(platform.screen.texture, tic->product.screen, TIC80_FULLWIDTH, TIC80_FULLHEIGHT);
 
     SDL_Rect rect;
@@ -1785,6 +1787,7 @@ static void gpuTick()
     else
         renderKeyboard();
 #endif
+
     renderPresent(platform.screen.renderer);
 
     platform.keyboard.text = '\0';
