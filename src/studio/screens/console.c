@@ -1302,14 +1302,34 @@ static void addTabCompleteOption(TabCompleteData* data, const char* option)
             *tmpCommonPrefix = 0;
         }
 
+        // Calculate remaining buffer space
+        size_t currentLength = strlen(data->options);
+        // ASAN GIVE IT TWICE THE CONSOLE_BUFFER_SCREEN FOR FUNSIES
+        size_t availableSpace = (CONSOLE_BUFFER_SCREEN * 2) - currentLength - 1; // -1 for null terminator
+
+        if (strlen(option) + 1 > availableSpace) { // +1 for the space character
+            printf("ASAN Error: Not enough buffer space to add option: %s\n", option);
+            return; // Early return to prevent buffer overflow
+        }
+
+        // Debugging information
+        printf("ASAN Buffer space before adding: %zu\n", availableSpace);
+
         // The option matches the incomplete word, add it to the list.
-        printf("Buffer size before adding option: %zu\n", strlen(data->options));
-        printf("Adding option: %s\n", option);
-        strncat(data->options, option, CONSOLE_BUFFER_SCREEN);
-        strncat(data->options, " ", CONSOLE_BUFFER_SCREEN);
-        printf("Buffer size after adding option: %zu\n", strlen(data->options));
+        strncat(data->options, option, availableSpace);
+        strncat(data->options, " ", availableSpace - strlen(option));
+
+        // Debugging information
+        printf("ASAN Option added successfully: %s\n", option);
+
+        // The option matches the incomplete word, add it to the list.
+        // alice was here
+        // ASAN TELLS ME THIS IS THE ISSUE
+        // strncat(data->options, option, CONSOLE_BUFFER_SCREEN);
+        // strncat(data->options, " ", CONSOLE_BUFFER_SCREEN);
     }
 }
+
 
 // Used to show tab-complete options, for example.
 static void provideHint(Console* console, const char* hint)
