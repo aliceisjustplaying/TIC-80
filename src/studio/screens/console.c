@@ -371,18 +371,15 @@ static void scrollBuffer(char* buffer)
 static void scrollConsole(Console* console)
 {
     printf("scrollConsole start\n");
-    printf("Checking if console pointer is NULL...\n");
     // Check for NULL pointer
     if (console == NULL)
     {
         printf("Error: console is NULL in scrollConsole\n");
         return;
     }
-    printf("Console pointer is not NULL, proceeding...\n");
     printf("starting out with console->cursor.pos.y: %d\n", console->cursor.pos.y);
     while(console->cursor.pos.y >= CONSOLE_BUFFER_HEIGHT * CONSOLE_BUFFER_SCREENS)
     {
-        printf("in scrollConsole\'s while loop!!!\n");
         // Check for valid pointers before calling scrollBuffer
         if (console->text == NULL)
         {
@@ -402,7 +399,6 @@ static void scrollConsole(Console* console)
 
         console->cursor.pos.y--;
     }
-    printf("scrollConsole while loop done!\n");
 
     size_t inputLines = (console->cursor.pos.x + console->input.pos) / CONSOLE_BUFFER_WIDTH;
     s32 minScroll = console->cursor.pos.y + inputLines - CONSOLE_BUFFER_HEIGHT + 1;
@@ -461,11 +457,6 @@ static bool iswrap(char sym)
 
 static void consolePrintOffset(Console* console, const char* text, u8 color, s32 wrapLineOffset)
 {
-#ifndef BAREMETALPI
-    printf("Debug: Entering consolePrintOffset\n");
-    printf("Initial text: %s\n", text);
-#endif
-
     console->cursor.pos = cursorPos(console);
     printf("Cursor position: x=%d, y=%d\n", console->cursor.pos.x, console->cursor.pos.y);
 
@@ -510,10 +501,6 @@ static void consolePrintOffset(Console* console, const char* text, u8 color, s32
     printf("console->input.text is now: %s\n", console->input.text);
     console->input.pos = 0;
     printf("Updated input text position\n");
-
-#ifndef BAREMETALPI
-    printf("Debug: Exiting consolePrintOffset\n");
-#endif
 }
 
 static void consolePrint(Console* console, const char* text, u8 color)
@@ -1316,8 +1303,11 @@ static void addTabCompleteOption(TabCompleteData* data, const char* option)
         }
 
         // The option matches the incomplete word, add it to the list.
+        printf("Buffer size before adding option: %zu\n", strlen(data->options));
+        printf("Adding option: %s\n", option);
         strncat(data->options, option, CONSOLE_BUFFER_SCREEN);
         strncat(data->options, " ", CONSOLE_BUFFER_SCREEN);
+        printf("Buffer size after adding option: %zu\n", strlen(data->options));
     }
 }
 
@@ -1356,21 +1346,12 @@ static void finishTabComplete(const TabCompleteData* data)
 
         if (strlen(data->commonPrefix) == strlen(data->incompleteWord) && !justOneOptionLeft)
         {
-            printf("in if(strlen(data->commonPrefix) == strlen(data->incompleteWord) && !justOneOptionLeft)\n");
-            printf("calling provideHint\n");
             provideHint(data->console, data->options);
-            printf("finished provideHint\n");
         }
-        printf("calling processConsoleEnd\n");
         processConsoleEnd(data->console);
-        printf("finished processConsoleEnd\n");
-        printf("inserting input text\n");
         insertInputText(data->console, data->commonPrefix+strlen(data->incompleteWord));
-        printf("finished inserting input text\n");
         if (justOneOptionLeft)
         {
-            printf("in if(justOneOptionLeft)\n");
-            printf("adding one space to input\n");
             insertInputText(data->console, " ");
         }
     }
@@ -1471,9 +1452,7 @@ static void tabCompleteFiles(TabCompleteData* data)
         return;
     }
 
-    printf("Entering tabCompleteFiles\n");
     tic_fs_enum(data->console->fs, addFilenameToTabComplete, finishTabCompleteAndFreeData, MOVE(*data));
-    printf("Exiting tabCompleteFiles\n");
 }
 
 static void tabCompleteDirs(TabCompleteData* data)
@@ -1483,9 +1462,7 @@ static void tabCompleteDirs(TabCompleteData* data)
         return;
     }
 
-    printf("Entering tabCompleteDirs\n");
     tic_fs_enum(data->console->fs, addDirToTabComplete, finishTabCompleteAndFreeData, MOVE(*data));
-    printf("Exiting tabCompleteDirs\n");
 }
 
 static void tabCompleteFilesAndDirs(TabCompleteData* data)
@@ -1495,9 +1472,7 @@ static void tabCompleteFilesAndDirs(TabCompleteData* data)
         return;
     }
 
-    printf("Entering tabCompleteFilesAndDirs\n");
     tic_fs_enum(data->console->fs, addFileAndDirToTabComplete, finishTabCompleteAndFreeData, MOVE(*data));
-    printf("Exiting tabCompleteFilesAndDirs\n");
 }
 
 static void tabCompleteConfig(TabCompleteData* data)
