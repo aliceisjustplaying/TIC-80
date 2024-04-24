@@ -1201,9 +1201,31 @@ static void addTabCompleteOption(TabCompleteData* data, const char* option)
             *tmpCommonPrefix = 0;
         }
 
+        // alice debug
+        size_t currentLength = strlen(data->options);
+        
+        // this is where things go wrong
+        // we don't have enough available space for all the files in CONSOLE_BUFFER_SCREEN
+        size_t availableSpace = (CONSOLE_BUFFER_SCREEN) - currentLength - 1; // -1 for null terminator
+
+        if (strlen(option) + 1 > availableSpace) {
+            printf("LOAD BUG ERROR: Not enough buffer space to add option: %s\n", option);
+            return; // Early return to prevent buffer overflow
+        }
+
+        // Debugging information
+        printf("LOAD BUG DEBUG: Buffer space before adding: %zu\n", availableSpace);
+
         // The option matches the incomplete word, add it to the list.
-        strncat(data->options, option, CONSOLE_BUFFER_SCREEN);
-        strncat(data->options, " ", CONSOLE_BUFFER_SCREEN);
+        strncat(data->options, option, availableSpace);
+        strncat(data->options, " ", availableSpace - strlen(option));
+
+        // Debugging information
+        printf("LOAD BUG DEBUG:Option added successfully: %s\n", option);
+
+        // The option matches the incomplete word, add it to the list.
+        // strncat(data->options, option, CONSOLE_BUFFER_SCREEN);
+        // strncat(data->options, " ", CONSOLE_BUFFER_SCREEN);
     }
 }
 
