@@ -136,16 +136,30 @@ void tic_core_tick_io(tic_mem* tic)
 {
     tic_core* core = (tic_core*)tic;
 
+    // Define a lookup table for mask values
+    static const u32 mask_table[] = {
+        0x00000001, 0x00000002, 0x00000004, 0x00000008,
+        0x00000010, 0x00000020, 0x00000040, 0x00000080,
+        0x00000100, 0x00000200, 0x00000400, 0x00000800,
+        0x00001000, 0x00002000, 0x00004000, 0x00008000,
+        0x00010000, 0x00020000, 0x00040000, 0x00080000,
+        0x00100000, 0x00200000, 0x00400000, 0x00800000,
+        0x01000000, 0x02000000, 0x04000000, 0x08000000,
+        0x10000000, 0x20000000, 0x40000000, 0x80000000
+    };
+
     // process gamepads mapping
     u8* keycodes = tic->ram->mapping.data;
-    for(s32 i = 0; i < sizeof(tic_mapping); ++i)
+    for(s32 i = 0; i < sizeof(tic_mapping) && i < 32; ++i)
+    {
         if(keycodes[i] && tic_api_key(tic, keycodes[i]))
-            tic->ram->input.gamepads.data |= 1 << i;
+            tic->ram->input.gamepads.data |= mask_table[i];
+    }
 
     // process gamepad
     for (s32 i = 0; i < COUNT_OF(core->state.gamepads.holds) && i < 32; i++)
     {
-        u32 mask = 1 << i;
+        u32 mask = mask_table[i];
         u32 prevDown = core->state.gamepads.previous.data & mask;
         u32 down = tic->ram->input.gamepads.data & mask;
 
