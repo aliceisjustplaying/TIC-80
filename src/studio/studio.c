@@ -2232,7 +2232,7 @@ static void blitCursor(Studio* studio)
         s32 sprite = CLAMP(tic->ram->vram.vars.cursor.sprite, 0, TIC_BANK_SPRITES - 1);
         const tic_bank* bank = &tic->cart.bank0;
 
-        tic_point hot = {0};
+        tic_point hot = {0};  // Default hot point
 
         if(tic->ram->vram.vars.cursor.system)
         {
@@ -2253,15 +2253,88 @@ static void blitCursor(Studio* studio)
         u32* dst = tic->product.screen + TIC80_FULLWIDTH * s.y + s.x;
 
         for(s32 y = s.y, endy = MIN(y + TIC_SPRITESIZE, TIC80_FULLHEIGHT), i = 0; y != endy; ++y, dst += TIC80_FULLWIDTH - TIC_SPRITESIZE)
+        {
             for(s32 x = s.x, endx = x + TIC_SPRITESIZE; x != endx; ++x, ++i, ++dst)
-                if(x < TIC80_FULLWIDTH)
+            {
+                if(x < TIC80_FULLWIDTH && x >= 0 && y >= 0)
                 {
                     u8 c = tic_tool_peek4(tile->data, i);
-                    if(c)
-                        *dst = tic_rgba(&pal->colors[c]);
+                    if(c < TIC_PALETTE_SIZE)
+                    {
+                        const tic_rgb* color = &pal->colors[c];
+                        if(color->r >= 0 && color->r <= 255 &&
+                           color->g >= 0 && color->g <= 255 &&
+                           color->b >= 0 && color->b <= 255)
+                        {
+                            *dst = tic_rgba(color);
+                        }
+                        else
+                        {
+                            // Log an error message with debug information
+                            fprintf(stderr, "Invalid color values detected at position (%d, %d):\n", x, y);
+                            fprintf(stderr, "  Color index: %d\n", (int)c);
+                            fprintf(stderr, "  RGB values: (%d, %d, %d)\n", (int)color->r, (int)color->g, (int)color->b);
+
+                            // Set a default color or skip drawing
+                            tic_rgb DefaultColor = {255, 0, 255}; // Example default color (magenta)
+                            *dst = tic_rgba(&DefaultColor);
+                        }
+                    }
                 }
+            }
+        }
     }
 }
+// static void blitCursor(Studio* studio)
+// {
+//     tic_mem* tic = studio->tic;
+//     tic80_mouse* m = &tic->ram->input.mouse;
+
+//     if(tic->input.mouse && !m->relative && m->x < TIC80_FULLWIDTH && m->y < TIC80_FULLHEIGHT)
+//     {
+//         s32 sprite = CLAMP(tic->ram->vram.vars.cursor.sprite, 0, TIC_BANK_SPRITES - 1);
+//         const tic_bank* bank = &tic->cart.bank0;
+
+//         tic_point hot = {0};  // Default hot point
+
+//         if(tic->ram->vram.vars.cursor.system)
+//         {
+//             bank = &getConfig(studio)->cart->bank0;
+//             hot = (tic_point[])
+//             {
+//                 {0, 0},
+//                 {3, 0},
+//                 {2, 3},
+//             }[CLAMP(sprite, 0, 2)];
+//         }
+//         else if(sprite == 0) return;
+
+//         const tic_palette* pal = &bank->palette.vbank0;
+//         const tic_tile* tile = &bank->sprites.data[sprite];
+
+//         tic_point s = {m->x - hot.x, m->y - hot.y};
+//         u32* dst = tic->product.screen + TIC80_FULLWIDTH * s.y + s.x;
+
+//         for(s32 y = s.y, endy = MIN(y + TIC_SPRITESIZE, TIC80_FULLHEIGHT), i = 0; y != endy; ++y, dst += TIC80_FULLWIDTH - TIC_SPRITESIZE)
+//             for(s32 x = s.x, endx = x + TIC_SPRITESIZE; x != endx; ++x, ++i, ++dst)
+//                 if(x < TIC80_FULLWIDTH)
+//                 {
+//                     u8 c = tic_tool_peek4(tile->data, i);
+//                     if(c < TIC_PALETTE_SIZE) // Ensure the color index is within the palette size
+//                     {
+//                         const tic_rgb* color = &pal->colors[c];
+//                         if(color) // Check if the pointer to the color is not null
+//                             *dst = tic_rgba(color);
+//                         else
+//                             printf("Null pointer for color index %d\n", c);
+//                     }
+//                     else
+//                     {
+//                         printf("Invalid color index %d\n", c);
+//                     }
+//                 }
+//     }
+// }
 
 tic_mem* getMemory(Studio* studio)
 {

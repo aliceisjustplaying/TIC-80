@@ -25,6 +25,7 @@
 #include "api.h"
 #include "tic.h"
 #include <stddef.h>
+#include <stdio.h>
 
 inline s32 tic_tool_sfx_pos(s32 speed, s32 ticks)
 {
@@ -74,10 +75,37 @@ inline u8 tic_tool_peek1(const void* addr, u32 index)
 #undef PEEK_N
 #undef POKE_N
 
+// inline u32 tic_rgba(const tic_rgb* c)
+// {
+//     if (c == NULL) {
+//         printf("tic_rgba: c is NULL\n");
+//         return 0; // Return a default value indicating error or invalid input.
+//     }
+
+//     // Ensure the color components are within the 0-255 range using bitwise AND with 0xFF
+//     u32 r = (c->r & 0xff);
+//     u32 g = (c->g & 0xff);
+//     u32 b = (c->b & 0xff);
+
+//     // Construct the RGBA value
+//     return (0xff << 24) | (b << 16) | (g << 8) | r;
+// }
+// #define CLAMP(x, low, high) (((x) > (high)) ? (high) : (((x) < (low)) ? (low) : (x)))
 inline u32 tic_rgba(const tic_rgb* c)
 {
-    return (0xff << 24) | (c->b << 16) | (c->g << 8) | (c->r << 0);
+    if (c == NULL) {
+        printf("tic_rgba: c is NULL\n");
+        return 0; // Return a default value indicating error or invalid input.
+    }
+    u8 r = (u8)CLAMP(c->r, 0, 255);
+    u8 g = (u8)CLAMP(c->g, 0, 255);
+    u8 b = (u8)CLAMP(c->b, 0, 255);
+    return (u32)((0xffu << 24) | ((u32)b << 16) | ((u32)g << 8) | (u32)r);
 }
+// inline u32 tic_rgba(const tic_rgb* c)
+// {
+//     return (0xff << 24) | (c->b << 16) | (c->g << 8) | (c->r << 0);
+// }
 
 inline s32 tic_modulo(s32 x, s32 m)
 {
