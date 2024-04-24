@@ -3342,6 +3342,11 @@ static void onExport_help(Console* console, const char* param, const char* name,
 
 TabCompleteData newTabCompleteData(Console* console, char* incompleteWord) {
     TabCompleteData data = { console, .incompleteWord = incompleteWord };
+    // alice debug
+    // 
+    // this is where the problem lies
+    // we need to allocate enough space for all the files
+    // except CONSOLE_BUFFER_SCREEN is not large enough
     data.options = malloc(CONSOLE_BUFFER_SCREEN);
     data.commonPrefix = malloc(CONSOLE_BUFFER_SCREEN);
     data.options[0] = '\0';
