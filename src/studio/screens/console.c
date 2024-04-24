@@ -3347,6 +3347,7 @@ TabCompleteData newTabCompleteData(Console* console, char* incompleteWord) {
     // this is where the problem lies
     // we need to allocate enough space for all the files
     // except CONSOLE_BUFFER_SCREEN is not large enough
+    printf("LOAD BUG DEBUG: CONSOLE_BUFFER_SCREEN value: %d\n\n\n", CONSOLE_BUFFER_SCREEN);
     data.options = malloc(CONSOLE_BUFFER_SCREEN);
     data.commonPrefix = malloc(CONSOLE_BUFFER_SCREEN);
     data.options[0] = '\0';
