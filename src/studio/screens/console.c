@@ -1179,6 +1179,7 @@ typedef struct
 
 static void addTabCompleteOption(TabCompleteData* data, const char* option)
 {
+    printf("LOAD BUG DEBUG: addTabCompleteOption called\n");
     if (strstr(option, data->incompleteWord) == option)
     {
         // Possibly reduce the common prefix of all possible options.
@@ -1300,6 +1301,7 @@ static bool addFileAndDirToTabComplete(const char* name, const char* title, cons
 
 static bool addFilenameToTabComplete(const char* name, const char* title, const char* hash, s32 id, void* data, bool dir)
 {
+    printf("LOAD BUG DEBUG: addFilenameToTabComplete called\n");
     if (!dir)
         addTabCompleteOption(data, name);
 
@@ -1321,6 +1323,7 @@ static void finishTabCompleteAndFreeData(void* data) {
 
 static void tabCompleteFiles(TabCompleteData* data)
 {
+    printf("LOAD BUG DEBUG: tabCompleteFiles called\n");
     tic_fs_enum(data->console->fs, addFilenameToTabComplete, finishTabCompleteAndFreeData, MOVE(*data));
 }
 
@@ -3340,7 +3343,9 @@ static void onExport_help(Console* console, const char* param, const char* name,
     }
 }
 
-TabCompleteData newTabCompleteData(Console* console, char* incompleteWord) {
+TabCompleteData newTabCompleteData(Console* console, char* incompleteWord)
+{
+    printf("LOAD BUG DEBUG: newTabCompleteData called\n");
     TabCompleteData data = { console, .incompleteWord = incompleteWord };
     // alice debug
     // 
@@ -3358,6 +3363,7 @@ TabCompleteData newTabCompleteData(Console* console, char* incompleteWord) {
 
 static void processConsoleTab(Console* console)
 {
+    printf("LOAD BUG DEBUG: processConsoleTab called\n");
     char* input = console->input.text;
     char* param = strchr(input, ' ');
 
