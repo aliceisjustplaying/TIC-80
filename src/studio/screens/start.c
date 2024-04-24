@@ -30,6 +30,14 @@
 #include <unistd.h>
 #endif
 
+// this is required for _NSGetExecutablePath
+// Apple's wacky clang doesn't error out on this
+// homebrew's upstream clang, on the other hand, very much errors out
+// if this is missing
+#if defined(__APPLE__)
+#include <mach-o/dyld.h>
+#endif
+
 static void reset(Start* start)
 {
     u8* tile = (u8*)start->tic->ram->tiles.data;
