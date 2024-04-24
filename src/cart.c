@@ -95,7 +95,11 @@ void tic_cart_load(tic_cartridge* cart, const u8* buffer, s32 size)
         // iterate on chunks until we find a cartridge
         while (ptr < end)
         {
-            siz = ((ptr[0] << 24) | (ptr[1] << 16) | (ptr[2] << 8) | ptr[3]);
+            // alice was here
+            // siz = ((ptr[0] << 24) | (ptr[1] << 16) | (ptr[2] << 8) | ptr[3]);
+            uint32_t size;
+            memcpy(&size, ptr, sizeof(uint32_t));
+            siz = ntohl(size);  // Ensure correct endianness
             if (!memcmp(ptr + 4, "caRt", 4) && siz > 0)
             {
                 chunk_cart = malloc(sizeof(tic_cartridge));
@@ -121,8 +125,11 @@ void tic_cart_load(tic_cartridge* cart, const u8* buffer, s32 size)
         const u8* ptr = buffer;
         while (ptr < end)
         {
-            const Chunk* chunk = (Chunk*)ptr;
-            ptr += sizeof(Chunk);
+            // const Chunk* chunk = (Chunk*)ptr;
+            // ptr += sizeof(Chunk);
+
+            const Chunk* chunk = (Chunk*)(ptr + (sizeof(Chunk) - ((uintptr_t)ptr % sizeof(Chunk))) % sizeof(Chunk));
+            ptr = (const u8*)chunk + sizeof(Chunk);
 
             switch (chunk->type)
             {
@@ -157,8 +164,8 @@ void tic_cart_load(tic_cartridge* cart, const u8* buffer, s32 size)
         const u8* ptr = buffer;
         while(ptr < end)
         {
-            const Chunk* chunk = (Chunk*)ptr;
-            ptr += sizeof(Chunk);
+            const Chunk* chunk = (Chunk*)(ptr + (sizeof(Chunk) - ((uintptr_t)ptr % sizeof(Chunk))) % sizeof(Chunk));
+            ptr = (const u8*)chunk + sizeof(Chunk);
 
             switch(chunk->type)
             {
