@@ -1335,8 +1335,7 @@ static void addTabCompleteOption(TabCompleteData* data, const char* option)
 
         // Calculate remaining buffer space
         size_t currentLength = strlen(data->options);
-        // ASAN GIVE IT TWICE THE CONSOLE_BUFFER_SCREEN FOR FUNSIES
-        size_t availableSpace = (CONSOLE_BUFFER_SCREEN * 2) - currentLength - 1; // -1 for null terminator
+        size_t availableSpace = CONSOLE_BUFFER_SCREEN - currentLength - 1; // -1 for null terminator
 
         if (strlen(option) + 1 > availableSpace) { // +1 for the space character
             printf("ASAN Error: Not enough buffer space to add option: %s\n", option);
@@ -3580,9 +3579,7 @@ static void onExport_help(Console* console, const char* param, const char* name,
 TabCompleteData newTabCompleteData(Console* console, char* incompleteWord) {
     TabCompleteData data = { console, .incompleteWord = incompleteWord };
     printf("BEFORE MALLOC1 IN newTabCompleteData\n");
-    // data.options = malloc(CONSOLE_BUFFER_SCREEN);
-    printf("ASAN FUCK IT WE MALLOC TWICE AS MUCH\n");
-    data.options = malloc(CONSOLE_BUFFER_SCREEN * 2);
+    data.options = malloc(CONSOLE_BUFFER_SCREEN);
     printf("BEFORE MALLOC2 IN newTabCompleteData\n");
     data.commonPrefix = malloc(CONSOLE_BUFFER_SCREEN);
 

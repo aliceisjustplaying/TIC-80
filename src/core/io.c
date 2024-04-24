@@ -143,7 +143,7 @@ void tic_core_tick_io(tic_mem* tic)
             tic->ram->input.gamepads.data |= 1 << i;
 
     // process gamepad
-    for (s32 i = 0; i < COUNT_OF(core->state.gamepads.holds) && i < 32; i++)
+    for (s32 i = 0; i < COUNT_OF(core->state.gamepads.holds); i++)
     {
         u32 mask = 1 << i;
         u32 prevDown = core->state.gamepads.previous.data & mask;
@@ -166,38 +166,3 @@ void tic_core_tick_io(tic_mem* tic)
         else *hold = 0;
     }
 }
-
-// void tic_core_tick_io(tic_mem* tic)
-// {
-//     tic_core* core = (tic_core*)tic;
-
-//     // process gamepads mapping
-//     u8* keycodes = tic->ram->mapping.data;
-//     for(s32 i = 0; i < sizeof(tic_mapping); ++i)
-//         if(keycodes[i] && tic_api_key(tic, keycodes[i]))
-//             tic->ram->input.gamepads.data |= 1 << i;
-
-//     // process gamepad
-//     for (s32 i = 0; i < COUNT_OF(core->state.gamepads.holds); i++)
-//     {
-//         u32 mask = 1 << i;
-//         u32 prevDown = core->state.gamepads.previous.data & mask;
-//         u32 down = tic->ram->input.gamepads.data & mask;
-
-//         u32* hold = &core->state.gamepads.holds[i];
-//         if (prevDown && prevDown == down) (*hold)++;
-//         else *hold = 0;
-//     }
-
-//     // process keyboard
-//     for (s32 i = 0; i < tic_keys_count; i++)
-//     {
-//         bool prevDown = isKeyPressed(&core->state.keyboard.previous, i);
-//         bool down = isKeyPressed(&tic->ram->input.keyboard, i);
-
-//         u32* hold = &core->state.keyboard.holds[i];
-
-//         if (prevDown && down) (*hold)++;
-//         else *hold = 0;
-//     }
-// }

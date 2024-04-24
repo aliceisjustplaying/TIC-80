@@ -951,67 +951,13 @@ static inline float animEffect(AnimEffect effect, float x)
     return x;
 }
 
-// static void animTick(Movie* movie)
-// {
-//     for(Anim* it = movie->items, *end = it + movie->count; it != end; ++it)
-//     {
-// 	float tick = (float)(movie->tick < it->time ? movie->tick : it->time);
-//         *it->value = lerp(it->start, it->end, animEffect(it->effect, tick / it->time));
-//     }
-// }
-
-// static void animTick(Movie* movie)
-// {
-//     printf("Starting animTick, movie: %p\n", (void*)movie);
-//     if (!movie) {
-//         printf("Error: movie is NULL\n");
-//         return;
-//     }
-
-//     printf("Movie count: %d\n", movie->count);
-//     for(Anim* it = movie->items, *end = it + movie->count; it != end; ++it)
-//     {
-//         printf("Processing animation item, it: %p\n", (void*)it);
-//         if(it->value && it->start && it->end && it->effect) {
-//             float tick = (float)(movie->tick < it->time ? movie->tick : it->time);
-//             printf("tick: %f, it->time: %" PRId32 "\n", tick, it->time);
-//             printf("it->start: %" PRId32 ", it->end: %" PRId32 ", it->effect: %p\n", it->start, it->end, (void*)it->effect);
-//             *it->value = lerp(it->start, it->end, animEffect(it->effect, tick / it->time));
-//             printf("Updated it->value: %d\n", *it->value);
-//         } else {
-//             printf("Null pointer detected (it->value: %p, it->start: %" PRId32 ", it->end: %" PRId32 ", it->effect: %p)\n", (void*)it->value, it->start, it->end, (void*)it->effect);
-//         }
-//     }
-//     printf("Finished animTick\n");
-// }
-
 static void animTick(Movie* movie)
 {
-    printf("Starting animTick, movie: %p\n", (void*)movie);
-    if (!movie) {
-        printf("Error: movie is NULL\n");
-        return;
+    for(Anim* it = movie->items, *end = it + movie->count; it != end; ++it)
+    {
+	float tick = (float)(movie->tick < it->time ? movie->tick : it->time);
+        *it->value = lerp(it->start, it->end, animEffect(it->effect, tick / it->time));
     }
-
-    printf("Movie count: %d\n", movie->count);
-    if (movie->items) {
-        for(Anim* it = movie->items, *end = movie->items + movie->count; it != end; ++it)
-        {
-            printf("Processing animation item, it: %p\n", (void*)it);
-            if(it->value && it->start && it->end && it->effect) {
-                float tick = (float)(movie->tick < it->time ? movie->tick : it->time);
-                printf("tick: %f, it->time: %" PRId32 "\n", tick, it->time);
-                printf("it->start: %" PRId32 ", it->end: %" PRId32 ", it->effect: %p\n", it->start, it->end, (void*)it->effect);
-                *it->value = lerp(it->start, it->end, animEffect(it->effect, tick / it->time));
-                printf("Updated it->value: %d\n", *it->value);
-            } else {
-                printf("Null pointer detected (it->value: %p, it->start: %" PRId32 ", it->end: %" PRId32 ", it->effect: %p)\n", (void*)it->value, it->start, it->end, (void*)it->effect);
-            }
-        }
-    } else {
-        printf("movie->items is NULL\n");
-    }
-    printf("Finished animTick\n");
 }
 
 void processAnim(Movie* movie, void* data)
