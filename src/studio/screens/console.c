@@ -287,10 +287,8 @@ static char* replaceHelpTokens(const char* text)
     char* replaced1 = str_replace(text, "$LANG_NAMES$", langnames);
     char* replaced2 = str_replace(replaced1, "$LANG_EXTENSIONS$", langextensions);
     char* replaced3 = str_replace(replaced2, "$LANG_NAMES_PIPE$", langnamespipe);
-
-    // alice was here
-    // free(replaced2);
-    // free(replaced1);
+    free(replaced2);
+    free(replaced1);
     return replaced3;
 }
 
@@ -585,10 +583,9 @@ static void commandDoneLine(Console* console, bool newLine)
 
     clearSelection(console);
 
-    // alice was here
-    // FREE(console->desc->src);
-    // FREE(console->desc->command);
-    // FREE(console->desc->params);
+    FREE(console->desc->src);
+    FREE(console->desc->command);
+    FREE(console->desc->params);
 
     memset(console->desc, 0, sizeof(CommandDesc));
 }
@@ -823,8 +820,7 @@ static void onLoadDemoCommandConfirmed(Console* console, tic_script_config* scri
     printFront(console, console->rom.name);
     printBack(console, " loaded!\n");
 
-    // alice was here
-    // free(data);
+    free(data);
 }
 
 static void onCartLoaded(Console* console, const char* name, const char* section)
@@ -899,10 +895,9 @@ static void loadByHashDone(const u8* buffer, s32 size, void* data)
     if (loadByHashData->callback)
         loadByHashData->callback(loadByHashData->calldata);
 
-    // alice was here
-    // FREE(loadByHashData->name);
-    // FREE(loadByHashData->section);
-    // FREE(loadByHashData);
+    FREE(loadByHashData->name);
+    FREE(loadByHashData->section);
+    FREE(loadByHashData);
 
     commandDone(console);
 }
@@ -1333,30 +1328,9 @@ static void addTabCompleteOption(TabCompleteData* data, const char* option)
             *tmpCommonPrefix = 0;
         }
 
-        // Calculate remaining buffer space
-        size_t currentLength = strlen(data->options);
-        size_t availableSpace = CONSOLE_BUFFER_SCREEN - currentLength - 1; // -1 for null terminator
-
-        if (strlen(option) + 1 > availableSpace) { // +1 for the space character
-            printf("ASAN Error: Not enough buffer space to add option: %s\n", option);
-            return; // Early return to prevent buffer overflow
-        }
-
-        // Debugging information
-        printf("ASAN Buffer space before adding: %zu\n", availableSpace);
-
         // The option matches the incomplete word, add it to the list.
-        strncat(data->options, option, availableSpace);
-        strncat(data->options, " ", availableSpace - strlen(option));
-
-        // Debugging information
-        printf("ASAN Option added successfully: %s\n", option);
-
-        // The option matches the incomplete word, add it to the list.
-        // alice was here
-        // ASAN TELLS ME THIS IS THE ISSUE
-        // strncat(data->options, option, CONSOLE_BUFFER_SCREEN);
-        // strncat(data->options, " ", CONSOLE_BUFFER_SCREEN);
+        strncat(data->options, option, CONSOLE_BUFFER_SCREEN);
+        strncat(data->options, " ", CONSOLE_BUFFER_SCREEN);
     }
 }
 
@@ -1483,11 +1457,10 @@ static void finishTabCompleteAndFreeData(void* data) {
         finishTabComplete(tabCompleteData);
         
         // Free the pointers here
-        // alice was here
-        // free(tabCompleteData->options);
-        // free(tabCompleteData->commonPrefix);
+        free(tabCompleteData->options);
+        free(tabCompleteData->commonPrefix);
         
-        // free(tabCompleteData);
+        free(tabCompleteData);
     }
 
     printf("DATA WAS NOT NULL IN FINISHTABCOMPLETEDATA\n");
@@ -1627,8 +1600,7 @@ static void onDirDone(void* ctx)
         }
         else printFront(console, item->name);
 
-        // alice was here
-        // free((void*)item->name);
+        free((void*)item->name);
     }
 
     if (data->count == 0)
@@ -1637,15 +1609,12 @@ static void onDirDone(void* ctx)
         printFront(console, "DEMO");
         printBack(console, " command to install demo carts");
     }
-
-    // alice was here
-    // else free(data->items);
+    else free(data->items);
 
     printLine(console);
     commandDone(console);
 
-    // alice was here
-    // free(ctx);
+    free(ctx);
 }
 
 typedef struct
@@ -1665,9 +1634,8 @@ static void onChangeDirectoryDone(bool dir, void* data)
     }
     else printBack(console, "\ndir doesn't exist");
 
-    // alice was here
-    // free(changeDirData->name);
-    // free(changeDirData);
+    free(changeDirData->name);
+    free(changeDirData);
 
     commandDone(console);
 }
@@ -2323,9 +2291,7 @@ static void onExportGet(const net_get_data* data)
     case net_get_error:
         printError(console, "file downloading error :(");
         commandDone(console);
-
-        // alice was here
-        // free(exportData);
+        free(exportData);
         break;
     default:
         break;
@@ -2345,8 +2311,7 @@ static void onNativeExportGet(const net_get_data* data)
 
             char filename[TICNAME_MAX];
             strcpy(filename, exportData->filename);
-            // alice was here
-            // free(exportData);
+            free(exportData);
 
             s32 size = data->done.size;
 
@@ -2357,10 +2322,9 @@ static void onNativeExportGet(const net_get_data* data)
 
             onFileExported(console, filename, (buf = embedCart(console, data->done.data, &size)) && fs_write(path, buf, size));
             chmod(path, DEFAULT_CHMOD);
-            
-            // alice was here
-            // if (buf)
-            //     free(buf);
+
+            if (buf)
+                free(buf);
         }
         break;
     default:
@@ -2404,8 +2368,7 @@ static void onHtmlExportGet(const net_get_data* data)
 
             char filename[TICNAME_MAX];
             strcpy(filename, exportData->filename);
-            // alice was here
-            // free(exportData);
+            free(exportData);
 
             const char* zipPath = tic_fs_path(console->fs, filename);
             bool errorOccurred = !fs_write(zipPath, data->done.data, data->done.size);
@@ -2682,8 +2645,7 @@ static CartSaveResult saveCartName(Console* console, const char* name)
             {
                 console->config->save(console->config);
                 studioRomSaved(console->studio);
-                // alice was here
-                // free(buffer);
+                free(buffer);
                 return CART_SAVE_OK;
             }
             else
@@ -2730,8 +2692,7 @@ static CartSaveResult saveCartName(Console* console, const char* name)
                             if(title)
                             {
                                 drawShadowText(tic, title, 0, 0, tic_color_white, Scale);
-                                // alice was here
-                                // free(title);
+                                free(title);
                             }
 
                             char* author = tic_tool_metatag(tic->cart.code.data, "author", comment);
@@ -2740,8 +2701,7 @@ static CartSaveResult saveCartName(Console* console, const char* name)
                                 char buf[TICNAME_MAX];
                                 snprintf(buf, sizeof buf, "by %s", author);
                                 drawShadowText(tic, buf, 0, Row, tic_color_grey, Scale);
-                                // alice was here
-                                // free(author);
+                                free(author);
                             }
 
                             u32* ptr = img.values + PaddingTop * CoverWidth + PaddingLeft;
@@ -2755,8 +2715,7 @@ static CartSaveResult saveCartName(Console* console, const char* name)
 
                         cover = png_write(img, (png_buffer){NULL, 0});
 
-                        // alice was here
-                        // free(img.data);
+                        free(img.data);
                     }
 
                     png_buffer zip = png_create(sizeof(tic_cartridge));
@@ -2765,14 +2724,12 @@ static CartSaveResult saveCartName(Console* console, const char* name)
                         png_buffer cart = png_create(sizeof(tic_cartridge));
                         cart.size = tic_cart_save(&tic->cart, cart.data);
                         zip.size = tic_tool_zip(zip.data, zip.size, cart.data, cart.size);
-                        // alice was here
-                        // free(cart.data);
+                        free(cart.data);
                     }
 
                     png_buffer result = png_encode(cover, zip);
-                    // alice was here
-                    // free(zip.data);
-                    // free(cover.data);
+                    free(zip.data);
+                    free(cover.data);
 
                     buffer = result.data;
                     size = result.size;
@@ -2797,8 +2754,7 @@ static CartSaveResult saveCartName(Console* console, const char* name)
                 }
             }
 
-            // alice was here
-            // free(buffer);
+            free(buffer);
         }
     }
     else if (strlen(console->rom.name))
@@ -3578,9 +3534,7 @@ static void onExport_help(Console* console, const char* param, const char* name,
 
 TabCompleteData newTabCompleteData(Console* console, char* incompleteWord) {
     TabCompleteData data = { console, .incompleteWord = incompleteWord };
-    printf("BEFORE MALLOC1 IN newTabCompleteData\n");
     data.options = malloc(CONSOLE_BUFFER_SCREEN);
-    printf("BEFORE MALLOC2 IN newTabCompleteData\n");
     data.commonPrefix = malloc(CONSOLE_BUFFER_SCREEN);
 
     // Check for malloc failure
@@ -3588,9 +3542,8 @@ TabCompleteData newTabCompleteData(Console* console, char* incompleteWord) {
         printf("OOPSIE WHOOPSIE WE MADE A FUCKSIE WUCKSIE\n");
         // Handle error, for example, by logging and exiting or by setting a default value
         // For simplicity, we'll just free any successful allocation and return an empty struct
-        // alice was here
-        // free(data.options); // Safe to call free on NULL
-        // free(data.commonPrefix);
+        free(data.options); // Safe to call free on NULL
+        free(data.commonPrefix);
         return (TabCompleteData){0}; // Return an empty struct or handle error appropriately
     }
 
@@ -3688,8 +3641,6 @@ static void processConsoleTab(Console* console)
                         TabCompleteData data = newTabCompleteData(console, param);
                         printf("TabCompleteData data is: %p\n", (void*)&data);
                         Commands[i].tabComplete1(&data);
-                        // alice added
-                        break;
                     }
                 }
             }
@@ -3713,8 +3664,8 @@ static void processConsoleTab(Console* console)
         finishTabComplete(&data);
         printf("Finished tab completion\n");
     }
-    // printf("Scrolling console FROM processConsoleTab\n");
-    // scrollConsole(console);
+    printf("Scrolling console\n");
+    scrollConsole(console);
 }
 
 static void toUpperStr(char* str)
@@ -3735,16 +3686,14 @@ static bool printUsage(Console* console, const char* command)
             consolePrint(console, "\n---=== COMMAND ===---\n", tic_color_green);
             char* helpReplaced = replaceHelpTokens(cmd->help);
             printBack(console, helpReplaced);
-            // alice was here
-            // free(helpReplaced);
+            free(helpReplaced);
 
             if(cmd->usage)
             {
                 printFront(console, "\n\nusage: ");
                 char* usageReplaced = replaceHelpTokens(cmd->usage);
                 printBack(console, usageReplaced);
-                // alice was here
-                // free(usageReplaced);
+                free(usageReplaced);
             }
 
             printLine(console);
@@ -3895,8 +3844,7 @@ static void onHelp_spec(Console* console)
         char* rowReplaced = replaceHelpTokens(row->info);
         sprintf(buf, "%-" DEF2STR(OFFSET) "s%s\n", row->section, rowReplaced);
         consolePrintOffset(console, buf, tic_color_grey, OFFSET);
-        // alice was here
-        // free(rowReplaced);
+        free(rowReplaced);
 #undef  OFFSET
     }
 }
@@ -4133,15 +4081,13 @@ static lua_State* netLuaInit(u8* buffer, s32 size)
         {
             if(luaL_loadstring(lua, (char*)script) == LUA_OK && lua_pcall(lua, 0, LUA_MULTRET, 0) == LUA_OK)
 	    {
-                // alice was here
-                // free(script);
+                free(script);
                 return lua;
 	    }
             else lua_close(lua);
         }
 
-        // alice was here
-        // free(script);
+        free(script);
     }
 
     return NULL;
@@ -4255,8 +4201,7 @@ static void copyToClipboard(Console* console)
     if (text)
     {
         tic_sys_clipboard_set(text);
-        // alice was here
-        // free(text);
+        free(text);
         clearSelection(console);
     }
 }
@@ -4277,9 +4222,7 @@ static void copyFromClipboard(Console* console)
                     *dst++ = *src;
 
             insertInputText(console, text);
-
-            // alice was here
-            // free(text);
+            free(text);
 
             tic_sys_clipboard_free(clipboard);
         }
@@ -4352,8 +4295,7 @@ static void processMouse(Console* console)
         {
             insertInputText(console, text);
             tic_sys_clipboard_set(text);
-            // alice was here
-            // free(text);
+            free(text);
         }
         else
             copyFromClipboard(console);
@@ -4636,8 +4578,7 @@ static bool cmdLoadCart(Console* console, const char* path)
             if(cart)
             {
                 memcpy(&tic->cart, cart, sizeof(tic_cartridge));
-                // alice was here
-                // free(cart);
+                free(cart);
                 done = true;
             }
         }
@@ -4785,20 +4726,18 @@ void initConsole(Console* console, Studio* studio, tic_fs* fs, tic_net* net, Con
 
 void freeConsole(Console* console)
 {
-    return;
-    // alice was here
-    // free(console->text);
-    // free(console->color);
+    free(console->text);
+    free(console->color);
 
-    // if(console->history.items)
-    // {
-    //     for(char **ptr = console->history.items, **end = ptr + console->history.size; ptr < end; ptr++)
-    //         free(*ptr);
+    if(console->history.items)
+    {
+        for(char **ptr = console->history.items, **end = ptr + console->history.size; ptr < end; ptr++)
+            free(*ptr);
 
-    //     free(console->history.items);
-    // }
+        free(console->history.items);
+    }
 
-    // FREE(console->commands.items);
-    // free(console->desc);
-    // free(console);
+    FREE(console->commands.items);
+    free(console->desc);
+    free(console);
 }
