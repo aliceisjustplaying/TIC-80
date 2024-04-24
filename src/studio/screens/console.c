@@ -474,15 +474,11 @@ static void consolePrintOffset(Console* console, const char* text, u8 color, s32
         char symbol = *ptr;
 
         printf("Processing symbol: %c\n", symbol);
-        printf("calling scrollConsole from consolePrintOffset... SOMETHING MAY BE HERE\n");
         scrollConsole(console);
-        printf("Scrolled console from consolePrintOffset!\n");
 
         if (symbol == '\n')
         {
-            printf("calling nextLine(console) where symbol is BACKSLASH N\n");
             nextLine(console);
-            printf("Moved to next line from consolePrintOffset!\n");
         }
         else
         {
@@ -490,31 +486,22 @@ static void consolePrintOffset(Console* console, const char* text, u8 color, s32
             {
                 const char* cur = ptr;
                 s32 len = CONSOLE_BUFFER_WIDTH;
-                printf("sus while loop in consoleprintoffset\n");
                 while(*cur && !iswrap(*cur++)) len--;
                 
-                printf("if loop in consoleprintoffset that\'s also sus\n");
                 if(len > 0 && len <= console->cursor.pos.x)
                 {
-                    printf("calling nextLine(console) where symbol is not backslash n\n");
                     nextLine(console);
                     console->cursor.pos.x = wrapLineOffset;
-                    printf("Wrapped line, new cursor x=%d\n", console->cursor.pos.x);
                 }
             }
-            printf("calling setSymbol in that else branch\n");
             setSymbol(console, symbol, iswrap(symbol) ? tic_color_dark_grey : color, cursorOffset(console));
-            printf("Set symbol at position: %d\n", cursorOffset(console));
 
             console->cursor.pos.x++;
 
             if (console->cursor.pos.x >= CONSOLE_BUFFER_WIDTH)
             {
-                printf("calling nextLine from that last if loop\n");
                 nextLine(console);
-                printf("Cursor wrapped to next line, new x=%d\n", console->cursor.pos.x);
                 console->cursor.pos.x = wrapLineOffset;
-                printf("Cursor wrapped to next line, new x=%d\n", console->cursor.pos.x);
             }
         }
     }
@@ -4639,7 +4626,6 @@ void initConsole(Console* console, Studio* studio, tic_fs* fs, tic_net* net, Con
 {
     if(!console->text)  console->text = malloc(CONSOLE_BUFFER_SIZE);
     if(!console->color) console->color = malloc(CONSOLE_BUFFER_SIZE);
-    printf("memsetting baby!\n");
     memset(console->text, 0, CONSOLE_BUFFER_SIZE);
     memset(console->color, TIC_COLOR_BG, CONSOLE_BUFFER_SIZE);
     if(!console->desc)  console->desc = malloc(sizeof(CommandDesc));

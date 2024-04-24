@@ -18,6 +18,12 @@ do
     esac
 done
 
+if [[ "$CLEAN_FLAG" == "--clean-first" ]]; then
+    rm ./build/**/*.o
+    rm ./build/**/*.a
+    rm ./build/bin/tic80
+fi
+
 cd ./build || exit
 
 export PATH="/opt/homebrew/opt/llvm/bin:$PATH"
