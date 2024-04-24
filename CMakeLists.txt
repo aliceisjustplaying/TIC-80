@@ -36,6 +36,30 @@ option(BUILD_PRO "Build PRO version" FALSE)
 option(BUILD_PLAYER "Build standalone players" ${BUILD_PLAYER_DEFAULT})
 option(BUILD_TOUCH_INPUT "Build with touch input support" ${BUILD_TOUCH_INPUT_DEFAULT})
 option(BUILD_STUB "Build stub without editors" OFF)
+option(BUILD_NO_OPTIMIZATION "Build without optimizations for debugging" OFF)
+option(BUILD_ASAN_DEBUG "Build with AddressSanitizer" OFF)
+option(BUILD_LSAN_DEBUG "Build with LeakSanitizer" OFF)
+option(BUILD_UNDEFINED_DEBUG "Build with UndefinedBehaviorSanitizer" OFF)
+
+if (BUILD_NO_OPTIMIZATION)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -O0")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O0")
+endif()
+
+if (BUILD_ASAN_DEBUG)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address -fno-omit-frame-pointer")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer")
+endif()
+
+if (BUILD_LSAN_DEBUG)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=leak -fno-omit-frame-pointer")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=leak -fno-omit-frame-pointer")
+endif()
+
+if (BUILD_UNDEFINED_DEBUG)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=undefined -fsanitize-recover=all -fno-omit-frame-pointer")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=undefined -fsanitize-recover=all -fno-omit-frame-pointer")
+endif()
 
 if(NOT BUILD_SDL)
     set(BUILD_SDLGPU OFF)
@@ -106,14 +130,6 @@ endif()
 if(RPI)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11")
 endif()
-
-#[===[
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -O0 -fsanitize=address -fsanitize=undefined -fsanitize=leak -fsanitize-recover=undefined -fno-omit-frame-pointer")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O0 -fsanitize=address -fsanitize=undefined -fsanitize=leak -fsanitize-recover=undefined -fno-omit-frame-pointer")
-]===]
-
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -O0 -fsanitize=address -fsanitize=leak -fno-omit-frame-pointer")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O0 -fsanitize=address -fsanitize=leak -fno-omit-frame-pointer")
 
 set(THIRDPARTY_DIR ${CMAKE_SOURCE_DIR}/vendor)
 set(DEMO_CARTS_IN ${CMAKE_SOURCE_DIR}/demos)
