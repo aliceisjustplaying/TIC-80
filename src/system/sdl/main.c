@@ -248,9 +248,9 @@ static void renderClear(Renderer renderer)
 #if defined(CRT_SHADER_SUPPORT)
     if(!studio_config(platform.studio)->soft)
     {
-        printf("calling GPU_Clear\n");
+        // printf("calling GPU_Clear\n");
         GPU_Clear(renderer.gpu);
-        printf("GPU_Clear done\n");
+        // printf("GPU_Clear done\n");
     }
     else
 #endif
@@ -563,23 +563,32 @@ static void initGPU()
     if(!soft)
     {
         s32 w, h;
+        printf("here1\n");
         SDL_GetWindowSize(platform.window, &w, &h);
+        printf("here2\n");
 
         GPU_SetInitWindow(SDL_GetWindowID(platform.window));
-
+        printf("here3\n");
         GPU_SetPreInitFlags(vsync ? GPU_INIT_ENABLE_VSYNC : GPU_INIT_DISABLE_VSYNC);
+        printf("here4\n");
         platform.screen.renderer.gpu = GPU_Init(w, h, GPU_DEFAULT_INIT_FLAGS);
-
+        printf("here5\n");
         GPU_SetWindowResolution(w, h);
+        printf("here6\n");
         GPU_SetVirtualResolution(platform.screen.renderer.gpu, w, h);
+        printf("here7\n");
 
         platform.screen.texture.gpu = GPU_CreateImage(TIC80_FULLWIDTH, TIC80_FULLHEIGHT, GPU_FORMAT_RGBA);
+        printf("here8\n");
         GPU_SetAnchor(platform.screen.texture.gpu, 0, 0);
+        printf("here9\n");
         GPU_SetImageFilter(platform.screen.texture.gpu, GPU_FILTER_NEAREST);
+        printf("here10\n");
     }
     else
 #endif
     {
+        printf("here11\n");
         platform.screen.renderer.sdl = SDL_CreateRenderer(platform.window, -1, 
 #if defined(CRT_SHADER_SUPPORT)
             SDL_RENDERER_SOFTWARE
@@ -588,7 +597,7 @@ static void initGPU()
 #endif
             | (!soft && vsync ? SDL_RENDERER_PRESENTVSYNC : 0)
         );
-
+        printf("here12\n");
         platform.screen.texture.sdl = SDL_CreateTexture(platform.screen.renderer.sdl, SDL_PIXELFORMAT_ABGR8888, 
             SDL_TEXTUREACCESS_STREAMING, TIC80_FULLWIDTH, TIC80_FULLHEIGHT);
     }
@@ -1708,13 +1717,13 @@ void tic_sys_default_mapping(tic_mapping* mapping)
 
 static void gpuTick()
 {
-    printf("gpuTick starting\n");
+    // printf("gpuTick starting\n");
     const tic_mem* tic = studio_mem(platform.studio);
-    printf("tic is %p\n", tic);
+    // printf("tic is %p\n", tic);
 
-    printf("calling pollEvents\n");
+    // printf("calling pollEvents\n");
     pollEvents();
-    printf("pollEvents done\n");
+    // printf("pollEvents done\n");
 
     if(studio_alive(platform.studio))
     {
@@ -1726,18 +1735,18 @@ static void gpuTick()
 
     LOCK_MUTEX(platform.audio.mutex)
     {
-        printf("calling studio_tick\n");
+        // printf("calling studio_tick\n");
         studio_tick(platform.studio, platform.input);
-        printf("studio_tick done\n");
+        // printf("studio_tick done\n");
     }
 
-    printf("calling renderClear\n");
+    // printf("calling renderClear\n");
     renderClear(platform.screen.renderer);
-    printf("renderClear done\n");
+    // printf("renderClear done\n");
 
-    printf("calling updateTextureBytes\n");
+    // printf("calling updateTextureBytes\n");
     updateTextureBytes(platform.screen.texture, tic->product.screen, TIC80_FULLWIDTH, TIC80_FULLHEIGHT);
-    printf("updateTextureBytes done\n");
+    // printf("updateTextureBytes done\n");
 
     SDL_Rect rect;
     calcTextureRect(&rect);
@@ -1800,11 +1809,11 @@ static void gpuTick()
     else
         renderKeyboard();
 #endif
-    printf("calling renderPresent\n");
+    // printf("calling renderPresent\n");
     renderPresent(platform.screen.renderer);
-    printf("renderPresent done\n");
-    
-    printf("end of gpuTick\n");
+    // printf("renderPresent done\n");
+
+    // printf("end of gpuTick\n");
     platform.keyboard.text = '\0';
 }
 

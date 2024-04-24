@@ -520,7 +520,7 @@ static void consolePrintOffset(Console* console, const char* text, u8 color, s32
     }
 
     console->input.text = console->text + cursorOffset(console);
-    printf("console->input.text is now: %p\n", console->input.text);
+    printf("console->input.text is now: %s\n", console->input.text);
     console->input.pos = 0;
     printf("Updated input text position\n");
 
@@ -1369,11 +1369,17 @@ static void finishTabComplete(const TabCompleteData* data)
 
         if (strlen(data->commonPrefix) == strlen(data->incompleteWord) && !justOneOptionLeft)
         {
+            printf("in if(strlen(data->commonPrefix) == strlen(data->incompleteWord) && !justOneOptionLeft)\n");
+            printf("calling provideHint\n");
             provideHint(data->console, data->options);
+            printf("finished provideHint\n");
         }
+        printf("calling processConsoleEnd\n");
         processConsoleEnd(data->console);
+        printf("finished processConsoleEnd\n");
+        printf("inserting input text\n");
         insertInputText(data->console, data->commonPrefix+strlen(data->incompleteWord));
-
+        printf("finished inserting input text\n");
         if (justOneOptionLeft)
         {
             printf("in if(justOneOptionLeft)\n");
