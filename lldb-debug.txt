@@ -1,0 +1,3 @@
+lldb ./build/bin/tic80
+breakpoint set --name malloc_error_break
+run "--fft" "--skip" "--fs" "~/repro"
