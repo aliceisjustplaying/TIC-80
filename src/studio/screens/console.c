@@ -1169,29 +1169,99 @@ static void insertInputText(Console* console, const char* text)
     clearSelection(console);
 }
 
+/**
+ * DynString is a dynamic string that can be resized.
+ * It is used to store the options for tab completion.
+*/
+
+typedef struct {
+    char* data;
+    size_t size;
+    size_t capacity;
+} DynString;
+
+DynString* dynstring_create(const char* initial_value) {
+    size_t size = (initial_value != NULL) ? strlen(initial_value) : 0;
+    size_t capacity = size + 1;
+    
+    DynString* str = calloc(1, sizeof(DynString) + capacity);
+    if (str == NULL) {
+        fprintf(stderr, "Error: Memory allocation failed in dynstring_create.\n");
+        return NULL;
+    }
+    
+    str->size = size;
+    str->capacity = capacity;
+    str->data = (char*)(str + 1);
+    
+    if (initial_value != NULL) {
+        memcpy(str->data, initial_value, size + 1);
+    } else {
+        str->data[0] = '\0';
+    }
+    
+    return str;
+}
+
+void dynstring_append(DynString** str, const char* value) {
+    if (str == NULL || *str == NULL) {
+        fprintf(stderr, "Error: Invalid DynString pointer provided to dynstring_append.\n");
+        return;
+    }
+
+    size_t value_len = strlen(value);
+    size_t required_capacity = (*str)->size + value_len + 1;
+    if (required_capacity > (*str)->capacity) {
+        size_t new_capacity = ((*str)->capacity * 2) > required_capacity ? (*str)->capacity * 2 : required_capacity;
+        DynString* new_str = realloc(*str, sizeof(DynString) + new_capacity);
+        if (new_str == NULL) {
+            fprintf(stderr, "Error: Memory reallocation failed in dynstring_append.\n");
+            return;
+        }
+        *str = new_str;
+        (*str)->capacity = new_capacity;
+        // Ensure the data pointer is correctly updated to point to the newly allocated block
+        (*str)->data = (char*)(*str + 1);
+    }
+    memcpy((*str)->data + (*str)->size, value, value_len);
+    (*str)->size += value_len;
+    (*str)->data[(*str)->size] = '\0';  // Null-terminate the string
+}
+void dynstring_free(DynString* str) {
+    if (str == NULL) {
+        fprintf(stderr, "Warning: Attempted to free a NULL DynString.\n");
+        return;
+    }
+    free(str);
+}
+
 typedef struct
 {
     Console* console;
-    char* incompleteWord; // Original word that's being completed.
-    char* options; // Options to show to the user.
-    char* commonPrefix; // Common prefix of all options.
+    DynString* incompleteWord; // Original word that's being completed.
+    DynString* options; // Options to show to the user.
+    DynString* commonPrefix; // Common prefix of all options.
 } TabCompleteData;
+
 
 static void addTabCompleteOption(TabCompleteData* data, const char* option)
 {
     printf("LOAD BUG DEBUG: addTabCompleteOption called\n");
-    if (strstr(option, data->incompleteWord) == option)
+    if (strstr(option, data->incompleteWord->data) == option)
     {
+        printf("LOAD BUG DEBUG: addTabCompleteOption in the if\n");
         // Possibly reduce the common prefix of all possible options.
-        if (strlen(data->options) == 0)
+        if (data->options->size == 0)
         {
             // This is the first option to be added. Initialize the prefix.
-            strncpy(data->commonPrefix, option, CONSOLE_BUFFER_SCREEN);
+            printf("LOAD BUG DEBUG: addTabCompleteOption initialize\n");
+            dynstring_append(&data->commonPrefix, option);
         }
         else
         {
+            printf("LOAD BUG DEBUG: addTabCompleteOption the big else block\n");
             // Only leave the longest common prefix.
-            char* tmpCommonPrefix = data->commonPrefix;
+            char* tmpCommonPrefix = data->commonPrefix->data;
             char* tmpOption = (char*) option;
 
             while (*tmpCommonPrefix && *tmpOption && *tmpCommonPrefix == *tmpOption) {
@@ -1199,73 +1269,71 @@ static void addTabCompleteOption(TabCompleteData* data, const char* option)
                 tmpOption++;
             }
 
+            // Set the new null terminator for the common prefix
             *tmpCommonPrefix = 0;
+
+            // Update the size of the DynString to reflect the new length of the common prefix
+            data->commonPrefix->size = tmpCommonPrefix - data->commonPrefix->data;
         }
 
-        // alice debug
-        size_t currentLength = strlen(data->options);
-        
-        // this is where things go wrong
-        // we don't have enough available space for all the files in CONSOLE_BUFFER_SCREEN
-        size_t availableSpace = (CONSOLE_BUFFER_SCREEN) - currentLength - 1; // -1 for null terminator
-
-        if (strlen(option) + 1 > availableSpace) {
-            printf("LOAD BUG ERROR: Not enough buffer space to add option: %s\n", option);
-            return; // Early return to prevent buffer overflow
-        }
-
-        // Debugging information
-        printf("LOAD BUG DEBUG: Buffer space before adding: %zu\n", availableSpace);
-
+        printf("LOAD BUG DEBUG: addTabCompleteOption appending: %s\n", option);
         // The option matches the incomplete word, add it to the list.
-        strncat(data->options, option, availableSpace);
-        strncat(data->options, " ", availableSpace - strlen(option));
-
-        // Debugging information
-        printf("LOAD BUG DEBUG:Option added successfully: %s\n", option);
-
-        // The option matches the incomplete word, add it to the list.
-        // strncat(data->options, option, CONSOLE_BUFFER_SCREEN);
-        // strncat(data->options, " ", CONSOLE_BUFFER_SCREEN);
+        dynstring_append(&data->options, option);
+        dynstring_append(&data->options, " ");
+        printf("LOAD BUG DEBUG: addTabCompleteOption appended: %s\n", data->options->data);
     }
 }
 
 // Used to show tab-complete options, for example.
 static void provideHint(Console* console, const char* hint)
 {
-    char* input = malloc(CONSOLE_BUFFER_SCREEN);
-    strncpy(input, console->input.text, CONSOLE_BUFFER_SCREEN);
+    printf("LOAD BUG DEBUG: provideHint called\n");
+    printf("LOAD BUG DEBUG: provideHint create input DynString\n");
+    DynString* input = dynstring_create(console->input.text);
 
+    printf("LOAD BUG DEBUG: provideHint printLine\n");
     printLine(console);
+    printf("LOAD BUG DEBUG: provideHint printBack: %s\n", hint);
     printBack(console, hint);
+    printf("LOAD BUG DEBUG: provideHint commandDone\n");
     commandDone(console);
-    insertInputText(console, input);
-
-    free(input);
+    printf("LOAD BUG DEBUG: provideHint insertInputText: %s\n", input->data);
+    insertInputText(console, input->data);
+    printf("LOAD BUG DEBUG: provideHint dynstring_free input\n");
+    dynstring_free(input);
 }
 
 static void finishTabComplete(const TabCompleteData* data)
 {
-    bool anyOptions = strlen(data->options) > 0;
+    printf("LOAD BUG DEBUG: finishTabComplete called\n");
+    bool anyOptions = data->options->size > 0;
     if (anyOptions) {
         // Adding one at the right because all options end with a space.
-        bool justOneOptionLeft = strlen(data->options) == strlen(data->commonPrefix)+1;
+        printf("LOAD BUG DEBUG: finishTabComplete anyOptions\n");
+        bool justOneOptionLeft = data->options->size == data->commonPrefix->size + 1;
 
-        if (strlen(data->commonPrefix) == strlen(data->incompleteWord) && !justOneOptionLeft)
+        if (data->commonPrefix->size == data->incompleteWord->size && !justOneOptionLeft)
         {
-            provideHint(data->console, data->options);
+            printf("LOAD BUG DEBUG: finishTabComplete provideHint\n");
+            provideHint(data->console, data->options->data);
         }
+        printf("LOAD BUG DEBUG: finishTabComplete processConsoleEnd\n");
         processConsoleEnd(data->console);
-        insertInputText(data->console, data->commonPrefix+strlen(data->incompleteWord));
+        printf("LOAD BUG DEBUG: finishTabComplete insertInputText\n");
+        insertInputText(data->console, data->commonPrefix->data + data->incompleteWord->size);
 
         if (justOneOptionLeft)
         {
+            printf("LOAD BUG DEBUG: finishTabComplete insertInputText space\n");
             insertInputText(data->console, " ");
         }
     }
 
-    free(data->options);
-    free(data->commonPrefix);
+    printf("LOAD BUG DEBUG: finishTabComplete dynstring_free options\n");
+    dynstring_free(data->options);
+    printf("LOAD BUG DEBUG: finishTabComplete dynstring_free commonPrefix\n");
+    dynstring_free(data->commonPrefix);
+    printf("LOAD BUG DEBUG: finishTabComplete end\n");
 }
 
 static void tabCompleteLanguages(TabCompleteData* data)
@@ -3346,17 +3414,9 @@ static void onExport_help(Console* console, const char* param, const char* name,
 TabCompleteData newTabCompleteData(Console* console, char* incompleteWord)
 {
     printf("LOAD BUG DEBUG: newTabCompleteData called\n");
-    TabCompleteData data = { console, .incompleteWord = incompleteWord };
-    // alice debug
-    // 
-    // this is where the problem lies
-    // we need to allocate enough space for all the files
-    // except CONSOLE_BUFFER_SCREEN is not large enough
-    printf("LOAD BUG DEBUG: CONSOLE_BUFFER_SCREEN value: %d\n\n\n", CONSOLE_BUFFER_SCREEN);
-    data.options = malloc(CONSOLE_BUFFER_SCREEN);
-    data.commonPrefix = malloc(CONSOLE_BUFFER_SCREEN);
-    data.options[0] = '\0';
-    data.commonPrefix[0] = '\0';
+    TabCompleteData data = { console, .incompleteWord = dynstring_create(incompleteWord) };
+    data.options = dynstring_create("");
+    data.commonPrefix = dynstring_create("");
 
     return data;
 }
