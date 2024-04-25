@@ -261,10 +261,11 @@ bool FFT_GetFFT(float* _samples)
   {
     for ( int i = 0; i < FFT_SIZE; i++ )
     {
-      float v = fftSmoothingData[i];
-      fftNormalizedMaxData[i] = MAX(fftNormalizedMaxData[i], v);
-      fftNormalizedData[i] = v / MAX(0.001, fftNormalizedMaxData[i]);
-      fftNormalizedMaxData[i] = fftNormalizedMaxData[i] * 0.9999;
+        float v = fftSmoothingData[i];
+        fftNormalizedMaxData[i] = MAX(fftNormalizedMaxData[i], v);
+        float min = 0.001;
+        fftNormalizedData[i] = v / MAX(min, fftNormalizedMaxData[i]);
+        fftNormalizedMaxData[i] = fftNormalizedMaxData[i] * 0.9999;
     }
   }
 
@@ -280,6 +281,6 @@ double tic_api_fft(tic_mem* memory, s32 freq/*, bool bSmoothing, bool bNormaliza
   }
   // if (bSmoothing) return fftSmoothingData[freq];
   // return fftData[freq];
-//   return fftSmoothingData[freq];
+  // return fftSmoothingData[freq];
   return fftNormalizedData[freq];
 }
