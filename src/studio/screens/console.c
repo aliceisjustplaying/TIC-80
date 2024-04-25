@@ -1243,23 +1243,19 @@ typedef struct
     DynString* commonPrefix; // Common prefix of all options.
 } TabCompleteData;
 
-
 static void addTabCompleteOption(TabCompleteData* data, const char* option)
 {
-    printf("LOAD BUG DEBUG: addTabCompleteOption called\n");
     if (strstr(option, data->incompleteWord->data) == option)
     {
-        printf("LOAD BUG DEBUG: addTabCompleteOption in the if\n");
+
         // Possibly reduce the common prefix of all possible options.
         if (data->options->size == 0)
         {
             // This is the first option to be added. Initialize the prefix.
-            printf("LOAD BUG DEBUG: addTabCompleteOption initialize\n");
             dynstring_append(&data->commonPrefix, option);
         }
         else
         {
-            printf("LOAD BUG DEBUG: addTabCompleteOption the big else block\n");
             // Only leave the longest common prefix.
             char* tmpCommonPrefix = data->commonPrefix->data;
             char* tmpOption = (char*) option;
@@ -1276,64 +1272,47 @@ static void addTabCompleteOption(TabCompleteData* data, const char* option)
             data->commonPrefix->size = tmpCommonPrefix - data->commonPrefix->data;
         }
 
-        printf("LOAD BUG DEBUG: addTabCompleteOption appending: %s\n", option);
         // The option matches the incomplete word, add it to the list.
         dynstring_append(&data->options, option);
         dynstring_append(&data->options, " ");
-        printf("LOAD BUG DEBUG: addTabCompleteOption appended: %s\n", data->options->data);
     }
 }
 
 // Used to show tab-complete options, for example.
 static void provideHint(Console* console, const char* hint)
 {
-    printf("LOAD BUG DEBUG: provideHint called\n");
-    printf("LOAD BUG DEBUG: provideHint create input DynString\n");
     DynString* input = dynstring_create(console->input.text);
 
-    printf("LOAD BUG DEBUG: provideHint printLine\n");
     printLine(console);
-    printf("LOAD BUG DEBUG: provideHint printBack: %s\n", hint);
     printBack(console, hint);
-    printf("LOAD BUG DEBUG: provideHint commandDone\n");
     commandDone(console);
-    printf("LOAD BUG DEBUG: provideHint insertInputText: %s\n", input->data);
     insertInputText(console, input->data);
-    printf("LOAD BUG DEBUG: provideHint dynstring_free input\n");
+
     dynstring_free(input);
 }
 
 static void finishTabComplete(const TabCompleteData* data)
 {
-    printf("LOAD BUG DEBUG: finishTabComplete called\n");
     bool anyOptions = data->options->size > 0;
     if (anyOptions) {
         // Adding one at the right because all options end with a space.
-        printf("LOAD BUG DEBUG: finishTabComplete anyOptions\n");
         bool justOneOptionLeft = data->options->size == data->commonPrefix->size + 1;
 
         if (data->commonPrefix->size == data->incompleteWord->size && !justOneOptionLeft)
         {
-            printf("LOAD BUG DEBUG: finishTabComplete provideHint\n");
             provideHint(data->console, data->options->data);
         }
-        printf("LOAD BUG DEBUG: finishTabComplete processConsoleEnd\n");
         processConsoleEnd(data->console);
-        printf("LOAD BUG DEBUG: finishTabComplete insertInputText\n");
         insertInputText(data->console, data->commonPrefix->data + data->incompleteWord->size);
 
         if (justOneOptionLeft)
         {
-            printf("LOAD BUG DEBUG: finishTabComplete insertInputText space\n");
             insertInputText(data->console, " ");
         }
     }
 
-    printf("LOAD BUG DEBUG: finishTabComplete dynstring_free options\n");
     dynstring_free(data->options);
-    printf("LOAD BUG DEBUG: finishTabComplete dynstring_free commonPrefix\n");
     dynstring_free(data->commonPrefix);
-    printf("LOAD BUG DEBUG: finishTabComplete end\n");
 }
 
 static void tabCompleteLanguages(TabCompleteData* data)
@@ -1369,7 +1348,6 @@ static bool addFileAndDirToTabComplete(const char* name, const char* title, cons
 
 static bool addFilenameToTabComplete(const char* name, const char* title, const char* hash, s32 id, void* data, bool dir)
 {
-    printf("LOAD BUG DEBUG: addFilenameToTabComplete called\n");
     if (!dir)
         addTabCompleteOption(data, name);
 
@@ -1391,7 +1369,6 @@ static void finishTabCompleteAndFreeData(void* data) {
 
 static void tabCompleteFiles(TabCompleteData* data)
 {
-    printf("LOAD BUG DEBUG: tabCompleteFiles called\n");
     tic_fs_enum(data->console->fs, addFilenameToTabComplete, finishTabCompleteAndFreeData, MOVE(*data));
 }
 
@@ -3413,7 +3390,6 @@ static void onExport_help(Console* console, const char* param, const char* name,
 
 TabCompleteData newTabCompleteData(Console* console, char* incompleteWord)
 {
-    printf("LOAD BUG DEBUG: newTabCompleteData called\n");
     TabCompleteData data = { console, .incompleteWord = dynstring_create(incompleteWord) };
     data.options = dynstring_create("");
     data.commonPrefix = dynstring_create("");
@@ -3423,7 +3399,6 @@ TabCompleteData newTabCompleteData(Console* console, char* incompleteWord)
 
 static void processConsoleTab(Console* console)
 {
-    printf("LOAD BUG DEBUG: processConsoleTab called\n");
     char* input = console->input.text;
     char* param = strchr(input, ' ');
 
