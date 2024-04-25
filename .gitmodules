@@ -18,10 +18,6 @@
 	path = vendor/lua
 	url = https://github.com/lua/lua.git
 	shallow = true
-[submodule "vendor/sdl-gpu"]
-	path = vendor/sdl-gpu
-	url = https://github.com/grimfang4/sdl-gpu.git
-	shallow = true
 [submodule "vendor/sokol"]
 	path = vendor/sokol
 	url = https://github.com/floooh/sokol.git
@@ -86,3 +82,7 @@
 	path = vendor/msf_gif
 	url = https://github.com/notnullnotvoid/msf_gif.git
 	shallow = true
+[submodule "vendor/sdl-gpu"]
+	path = vendor/sdl-gpu
+	url = https://github.com/aliceisjustplaying/sdl-gpu.git
+	branch = glew-update
