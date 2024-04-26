@@ -39,7 +39,6 @@ option(BUILD_STUB "Build stub without editors" OFF)
 option(BUILD_NO_OPTIMIZATION "Build without optimizations for debugging" OFF)
 option(BUILD_ASAN_DEBUG "Build with AddressSanitizer" OFF)
 option(BUILD_LSAN_DEBUG "Build with LeakSanitizer" OFF)
-option(BUILD_UNDEFINED_DEBUG "Build with UndefinedBehaviorSanitizer" OFF)
 
 if (BUILD_NO_OPTIMIZATION)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -O0")
@@ -54,11 +53,6 @@ endif()
 if (BUILD_LSAN_DEBUG)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=leak -fno-omit-frame-pointer")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=leak -fno-omit-frame-pointer")
-endif()
-
-if (BUILD_UNDEFINED_DEBUG)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=undefined -fsanitize-recover=all -fno-omit-frame-pointer")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=undefined -fsanitize-recover=all -fno-omit-frame-pointer")
 endif()
 
 
