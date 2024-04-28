@@ -150,6 +150,7 @@ typedef struct
 
     s32 uiScale;
 
+    const char *fftdevice;
 } StudioConfig;
 
 typedef struct Studio Studio;

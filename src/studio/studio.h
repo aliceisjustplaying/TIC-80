@@ -95,6 +95,15 @@ typedef struct
 #define CMD_PARAMS_DEF(name, ctype, type, post, help) ctype name;
     CMD_PARAMS_LIST(CMD_PARAMS_DEF)
 #undef  CMD_PARAMS_DEF
+
+    const char *codeexport;
+    const char *codeimport;
+    s32 delay;
+    s32 lowerlimit;
+    s32 upperlimit;
+    s32 battletime;
+    s32 fftlist;
+    const char *fftdevice;
 } StartArgs;
 
 typedef enum
