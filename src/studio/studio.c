@@ -1743,6 +1743,7 @@ static void processShortcuts(Studio* studio)
 
     bool alt = tic_api_key(tic, tic_key_alt);
     bool ctrl = tic_api_key(tic, tic_key_ctrl);
+    bool ispubdir = tic_fs_ispubdir(studio->fs);
 
 #if defined(CRT_SHADER_SUPPORT)
     if(keyWasPressedOnce(studio, tic_key_f6)) switchCrtMonitor(studio);
@@ -1825,8 +1826,8 @@ static void processShortcuts(Studio* studio)
                 setStudioMode(studio, TIC_CONSOLE_MODE);
             }
         }
-        else if(keyWasPressedOnce(studio, tic_key_f8)) takeScreenshot(studio);
-        else if(keyWasPressedOnce(studio, tic_key_f9)) startVideoRecord(studio);
+        else if(keyWasPressedOnce(studio, tic_key_f8) && !ispubdir) takeScreenshot(studio);
+        else if(keyWasPressedOnce(studio, tic_key_f9) && !ispubdir) startVideoRecord(studio);
         else if(studio->mode == TIC_RUN_MODE && keyWasPressedOnce(studio, tic_key_f7))
             setCoverImage(studio);
 
