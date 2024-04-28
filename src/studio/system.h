@@ -144,7 +144,7 @@ typedef struct
     const tic_cartridge* cart;
 
     s32 uiScale;
-
+    bool fftusecapturedevices;
     const char *fftdevice;
 } StudioConfig;
 
