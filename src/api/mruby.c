@@ -517,6 +517,16 @@ static mrb_value mrb_fset(mrb_state* mrb, mrb_value self)
     return mrb_nil_value();
 }
 
+static mrb_value mrb_fft(mrb_state* mrb, mrb_value self)
+{
+  mrb_int index;
+  mrb_get_args(mrb, "i", &index);
+
+  tic_core* core = getMRubyMachine(mrb); tic_mem* tic = (tic_mem*)core;
+
+  return mrb_float_value(mrb, core->api.fft(tic, index));
+}
+
 typedef struct
 {
     mrb_state* mrb;
