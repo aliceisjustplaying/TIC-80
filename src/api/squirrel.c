@@ -1511,7 +1511,7 @@ static SQInteger squirrel_fset(HSQUIRRELVM vm)
 
 static SQInteger squirrel_fft(HSQUIRRELVM vm)
 {
-  tic_mem* tic = (tic_mem*)getSquirrelCore(vm);
+  tic_core* core = getSquirrelCore(vm); tic_mem* tic = (tic_mem*)core;
 
   SQInteger top = sq_gettop(vm);
 
@@ -1519,7 +1519,7 @@ static SQInteger squirrel_fft(HSQUIRRELVM vm)
   {
     double freq = getSquirrelNumber(vm, 2);
 
-    sq_pushfloat(vm, (SQFloat)(tic_api_fft(tic, freq)));
+    sq_pushfloat(vm, (SQFloat)(core->api.fft(tic, freq)));
     return 1;
   }
 

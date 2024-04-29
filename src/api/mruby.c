@@ -522,9 +522,9 @@ static mrb_value mrb_fft(mrb_state* mrb, mrb_value self)
   mrb_int index;
   mrb_get_args(mrb, "i", &index);
 
-  tic_mem* tic = (tic_mem*)getMRubyMachine(mrb);
+  tic_core* core = getMRubyMachine(mrb); tic_mem* tic = (tic_mem*)core;
 
-  return mrb_float_value(mrb, tic_api_fft(tic, index));
+  return mrb_float_value(mrb, core->api.fft(tic, index));
 }
 
 typedef struct

@@ -1448,14 +1448,14 @@ static void wren_fset(WrenVM* vm)
 
 static void wren_fft(WrenVM* vm)
 {
-  tic_mem* tic = (tic_mem*)getWrenCore(vm);
+  tic_core* core = getWrenCore(vm); tic_mem* tic = (tic_mem*)core;
   s32 top = wrenGetSlotCount(vm);
 
   if (top > 1)
   {
     double freq = getWrenNumber(vm, 1);
 
-    wrenSetSlotDouble(vm, 0, tic_api_fft(tic, freq));
+    wrenSetSlotDouble(vm, 0, core->api.fft(tic, freq));
     return;
   }
 
