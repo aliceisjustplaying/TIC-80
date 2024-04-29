@@ -1044,8 +1044,8 @@ static Janet janet_fft(int32_t argc, Janet* argv)
 
     s32 bucket = janet_getinteger(argv, 0);
 
-    tic_mem* memory = (tic_mem*)getJanetMachine();
-    return janet_wrap_number(tic_api_fft(memory, bucket));
+    tic_core* core = getJanetMachine(); tic_mem* tic = (tic_mem*)core;
+    return janet_wrap_number(core->api.fft(tic, bucket));
 }
 
 /* ***************** */

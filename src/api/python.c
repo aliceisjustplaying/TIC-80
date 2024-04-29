@@ -1154,8 +1154,7 @@ static int py_vbank(pkpy_vm* vm) {
 
 static int py_fft(pkpy_vm* vm)
 {
-    tic_mem* tic;
-    get_core(vm, (tic_core**) &tic);
+    tic_core* core; get_core(vm, &core); tic_mem* tic = (tic_mem*)core;
     if(pkpy_check_error(vm))
         return 0;
 
@@ -1163,7 +1162,7 @@ static int py_fft(pkpy_vm* vm)
 
     if (!pkpy_is_none(vm, 0))
         pkpy_to_int(vm, 0, &bucket);
-    pkpy_push_float(vm, tic_api_fft(tic, bucket));
+    pkpy_push_float(vm, core->api.fft(tic, bucket));
     return 1;
 }
 
