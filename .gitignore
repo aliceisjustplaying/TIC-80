@@ -184,3 +184,5 @@ build/mruby_vendor-prefix/
 **/zig-out
 .cache
 *~
+# byte battle test file
+123.lua
