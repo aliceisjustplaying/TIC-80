@@ -1527,6 +1527,8 @@ static s32 lua_fset(lua_State* lua)
 static s32 lua_fft(lua_State* lua)
 {
 
+  tic_core* core = getLuaCore(lua);
+
   tic_mem* tic = (tic_mem*)getLuaCore(lua);
   s32 top = lua_gettop(lua);
 
@@ -1534,7 +1536,7 @@ static s32 lua_fft(lua_State* lua)
   {
     s32 freq = getLuaNumber(lua, 1);
 
-    lua_pushnumber(lua, tic_api_fft(tic, freq));
+    lua_pushnumber(lua, core->api.fft(tic, freq));
     return 1;
   }
 

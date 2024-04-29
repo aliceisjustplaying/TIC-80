@@ -738,9 +738,9 @@ s7_pointer scheme_fset(s7_scheme* sc, s7_pointer args)
 s7_pointer scheme_fft(s7_scheme* sc, s7_pointer args)
 {
     // fft(int freq_bucket) -> float_value
-    tic_mem* tic = (tic_mem*)getSchemeCore(sc);
+    tic_core* core = getSchemeCore(sc); tic_mem* tic = (tic_mem*)core;
     const s32 freq = s7_integer(s7_car(args));
-    return s7_make_real(sc, tic_api_fft(tic, freq));
+    return s7_make_real(sc, core->api.fft(tic, freq));
 }
 
 static void initAPI(tic_core* core)
