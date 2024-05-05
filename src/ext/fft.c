@@ -56,8 +56,35 @@ void OnReceiveFrames(ma_device* pDevice, void* pOutput, const void* pInput, ma_u
     for (int i = 0; i < frameCount; i++)
     {
         *(p++) = (samples[i * 2] + samples[i * 2 + 1]) / 2.0f * fAmplification;
+
+        // hamming window test
+        // float window = 0.54 - 0.46 * cos(2.0 * M_PI * i / (FFT_SIZE * 2 - 1));
+        // *(p++) = (samples[i * 2] + samples[i * 2 + 1]) / 2.0f * fAmplification * window;
     }
 }
+
+// hamming window test
+// void OnReceiveFrames(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount)
+// {
+//     frameCount = frameCount < FFT_SIZE * 2 ? frameCount : FFT_SIZE * 2;
+
+//     const float* samples = (const float*)pInput;
+//     float* p = sampleBuf;
+//     int existingSamples = FFT_SIZE * 2 - frameCount;
+//     // Shift existing samples
+//     for (int i = 0; i < existingSamples; i++)
+//     {
+//         *(p++) = sampleBuf[i + frameCount];
+//     }
+//     // Add new samples with window
+//     for (int i = 0; i < frameCount; i++)
+//     {
+//         int fullIndex = existingSamples + i; // Full index in the buffer
+//         float window = 0.54 - 0.46 * cos(2.0 * M_PI * fullIndex / (FFT_SIZE * 2 - 1));
+//         *(p++) = (samples[i * 2] + samples[i * 2 + 1]) / 2.0f * window * fAmplification;
+//     }
+// }
+
 
 void FFT_EnumerateDevices()
 {
@@ -181,7 +208,8 @@ bool FFT_Open(bool CapturePlaybackDevices, const char* CaptureDeviceSearchString
   config.capture.pDeviceID = TargetDevice;
   config.capture.format = ma_format_f32;
   config.capture.channels = 2;
-  config.sampleRate = 44100;
+  config.sampleRate = 11025;
+  // config.sampleRate = 44100;
   config.dataCallback = OnReceiveFrames;
   config.pUserData = NULL;
 
@@ -246,7 +274,7 @@ bool FFT_GetFFT(float* _samples)
     }
   }
 
-  float fFFTSmoothingFactor = 0.9;
+  float fFFTSmoothingFactor = 0.6f;
   bool bSmoothing = true;
   if (bSmoothing)
   {
@@ -281,6 +309,6 @@ double tic_api_fft(tic_mem* memory, s32 freq/*, bool bSmoothing, bool bNormaliza
   }
   // if (bSmoothing) return fftSmoothingData[freq];
   // return fftData[freq];
-  // return fftSmoothingData[freq];
-  return fftNormalizedData[freq];
+  return fftSmoothingData[freq];
+  // return fftNormalizedData[freq];
 }

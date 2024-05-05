@@ -9,10 +9,16 @@ do
             FRESH_FLAG="--fresh"
             ;;
         -d)
-            DEBUG_FLAGS="-DBUILD_NO_OPTIMIZATION=On -DBUILD_ASAN_DEBUG=On -DBUILD_LSAN_DEBUG=On"
+            DEBUG_FLAGS="-DBUILD_NO_OPTIMIZATION=On -DBUILD_ASAN_DEBUG=On"
             ;;
     esac
 done
+
+if [ "$FRESH_FLAG" == "--fresh" ]; then
+    rm -rf .cache
+    rm -rf CMakeCache.txt CMakeFiles/ cmake_install.cmake
+    rm -rf build && git restore 'build/*'
+fi
 
 cd ./build || exit
 
