@@ -2544,6 +2544,7 @@ static StartArgs parseArgs(s32 argc, char **argv)
         OPT_INTEGER('u',   "upperlimit",    &args.upperlimit,   "upper limit for code size (512 by default)"),
         OPT_INTEGER('b',   "battletime",    &args.battletime,   "battletime in minutes"),
         OPT_GROUP("FFT:\n"),
+        OPT_BOOLEAN('\0', "fft", &args.fft, "enable FFT support"),
         OPT_BOOLEAN('\0', "fftusecapturedevices", &args.fftusecapturedevices, "Use capture devices"),
         OPT_BOOLEAN('\0', "fftlist", &args.fftlist, "list FFT devices"),
         OPT_STRING('\0', "fftdevice", &args.fftdevice, "name of the device to use with FFT"),
@@ -2753,14 +2754,17 @@ Studio* studio_create(s32 argc, char **argv, s32 samplerate, tic80_pixel_color_f
         = studio->lovebyte.battle.time 
         = args.battletime * 60 * 1000;
 
+// ALICE TODO: do we want this ifdef elsewhere too? or here?
+#if defined(BUILD_EDITORS)
     if (args.fftlist)
     {
         FFT_EnumerateDevices();
         exit(0);
     }
-
+    studio->config->data.fft = args.fft;
     studio->config->data.fftusecapturedevices = args.fftusecapturedevices;
     studio->config->data.fftdevice = args.fftdevice;
+#endif
 
     studioConfigChanged(studio);
 
