@@ -124,6 +124,7 @@ build/uwp/tic/packages/
 build/windows/studio/x64/
 build/windows/sdl-gpu/x64/
 build/macosx/*.plist
+build/Win32/
 demos/*.rtc
 demos/*.srm
 demos/.local
