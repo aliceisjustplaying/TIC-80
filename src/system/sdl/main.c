@@ -185,12 +185,6 @@ static struct
         SDL_AudioDeviceID   device;
         s32                 bufferRemaining;
     } audio;
-
-    struct
-    {
-      SDL_AudioSpec       spec;
-      SDL_AudioDeviceID   device;
-    } audioIn;
 } platform
 #if defined(TOUCH_INPUT_SUPPORT)
 = 
