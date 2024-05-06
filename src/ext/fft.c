@@ -1,68 +1,15 @@
+// #define MA_DEBUG_OUTPUT
 #define MINIAUDIO_IMPLEMENTATION
+#include "../fftdata.h"
 #include "fft.h"
 #include "miniaudio.h"
-#include "tic80_types.h"
-#include "api.h"
 
 #include "kiss_fft.h"
 #include "kiss_fftr.h"
 #include <stdio.h>
-#include <stdbool.h>
 #include <memory.h>
-#include <stdarg.h> // For va_list
-#include <time.h>
-
-//////////////////////////////////////////////////////////////////////////
-
-#define FFT_DEBUG
-
-FFT_LogLevel g_currentLogLevel = FFT_LOG_DEBUG;
-
-void FFT_DebugLog(FFT_LogLevel level, const char* format, ...)
-{
-#ifdef FFT_DEBUG
-    if (level <= g_currentLogLevel) {
-         // Get current time
-        if (level == FFT_LOG_TRACE) {
-            time_t now = time(NULL);
-            struct tm *tm_now = localtime(&now);
-            char time_str[20]; // ISO 8601 format requires 19 characters + null terminator
-            strftime(time_str, sizeof(time_str), "%Y-%m-%dT%H:%M:%S", tm_now);
-
-            // Print time and log level
-            printf("%s ", time_str); // Print the time
-        }
-        va_list args;
-        va_start(args, format);
-        switch(level) {
-            case FFT_LOG_TRACE:
-                printf("[FFT TRACE]: ");
-                break;
-            case FFT_LOG_DEBUG:
-                printf("[FFT DEBUG]: ");
-                break;
-            case FFT_LOG_INFO:
-                printf("[FFT INFO]: ");
-                break;
-            case FFT_LOG_WARNING:
-                printf("[FFT WARNING]: ");
-                break;
-            case FFT_LOG_ERROR:
-                printf("[FFT ERROR]: ");
-                break;
-            case FFT_LOG_FATAL:
-                printf("[FFT FATAL]: ");
-                break;
-            case FFT_LOG_OFF:
-                // Optionally handle the OFF level by returning early or similar
-                return;
-        }
-        vprintf(format, args);
-        va_end(args);
-        }
-#endif
-}
-
+#include "api.h"
+#include "fftdata.h"
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -70,8 +17,6 @@ kiss_fftr_cfg fftcfg;
 ma_context context;
 ma_device captureDevice;
 float sampleBuf[FFT_SIZE * 2];
-float fAmplification = 1.0f;
-kiss_fft_cpx fftBuf[FFT_SIZE + 1];
 
 void miniaudioLogCallback(void *userData, ma_uint32 level, const char *message)
 {
@@ -111,13 +56,10 @@ void OnReceiveFrames(ma_device* pDevice, void* pOutput, const void* pInput, ma_u
     {
         *(p++) = (samples[i * 2] + samples[i * 2 + 1]) / 2.0f * fAmplification;
     }
-
-    kiss_fftr(fftcfg, sampleBuf, fftBuf);
 }
 
 void FFT_EnumerateDevices()
 {
-
   ma_context_config context_config = ma_context_config_init();
   ma_log log;
   ma_log_init(NULL, &log);
@@ -237,7 +179,7 @@ bool FFT_Open(bool CapturePlaybackDevices, const char* CaptureDeviceSearchString
   config.capture.pDeviceID = TargetDevice;
   config.capture.format = ma_format_f32;
   config.capture.channels = 2;
-  config.sampleRate = 44100;
+  config.sampleRate = 11025;
   config.dataCallback = OnReceiveFrames;
   config.pUserData = NULL;
 
@@ -259,7 +201,8 @@ bool FFT_Open(bool CapturePlaybackDevices, const char* CaptureDeviceSearchString
   }
 
   FFT_DebugLog(FFT_LOG_INFO, "Capturing %s\n", captureDevice.capture.name );
-
+  
+  fftEnabled = true;
   return true;
 }
 
@@ -269,22 +212,75 @@ void FFT_Close()
   ma_device_uninit(&captureDevice);
   ma_context_uninit(&context);
   kiss_fft_free(fftcfg);
+  fftEnabled = false;
 }
 
 //////////////////////////////////////////////////////////////////////////
 
-double tic_api_fft(tic_mem* memory, s32 freq)
+bool FFT_GetFFT(float* _samples)
 {
-  u32 interval = FFT_SIZE / 256 / 2; // the 2 is to discard super high frequencies, they suck
-  freq = freq * interval;
-  freq = fmin(freq, FFT_SIZE);
-  freq = fmax(freq, 0);
+  kiss_fft_cpx out[FFT_SIZE + 1];
+  kiss_fftr(fftcfg, sampleBuf, out);
 
-  static const float scaling = 1.0f / (float)FFT_SIZE;
-  float res = 0;
-  for (int i = freq; i < freq + interval; ++i) {
-    res += 2.0 * sqrtf(fftBuf[i].r * fftBuf[i].r + fftBuf[i].i * fftBuf[i].i) * scaling;
+  bool bPeakNormalization = true;
+  if (bPeakNormalization) {
+    float peakValue = fPeakMinValue;
+    for (int i = 0; i < FFT_SIZE; i++)
+    {
+      float val = 2.0f * sqrtf(out[i].r * out[i].r + out[i].i * out[i].i);
+      if (val > peakValue) peakValue = val;
+      _samples[i] = val * fAmplification;
+    }
+    if (peakValue > fPeakSmoothValue) {
+      fPeakSmoothValue = peakValue;
+    }
+    if (peakValue < fPeakSmoothValue) {
+      fPeakSmoothValue = fPeakSmoothValue * fPeakSmoothing + peakValue * (1 - fPeakSmoothing);
+    }
+    fAmplification = 1.0f / fPeakSmoothValue;
+  } else {
+    for (int i = 0; i < FFT_SIZE; i++)
+    {
+      static const float scaling = 1.0f / (float)FFT_SIZE;
+      _samples[i] = 2.0f * sqrtf(out[i].r * out[i].r + out[i].i * out[i].i) * scaling * fAmplification;
+    }
   }
 
-  return res;
+  float fFFTSmoothingFactor = 0.6f;
+  bool bSmoothing = true;
+  if (bSmoothing)
+  {
+    for ( int i = 0; i < FFT_SIZE; i++ )
+    {
+      fftSmoothingData[i] = fftSmoothingData[i] * fFFTSmoothingFactor + (1 - fFFTSmoothingFactor) * _samples[i];
+    }
+  }
+
+  bool bNormalization = true;
+  if (bNormalization)
+  {
+    for ( int i = 0; i < FFT_SIZE; i++ )
+    {
+        float v = fftSmoothingData[i];
+        fftNormalizedMaxData[i] = MAX(fftNormalizedMaxData[i], v);
+        float min = 0.001;
+        fftNormalizedData[i] = v / MAX(min, fftNormalizedMaxData[i]);
+        fftNormalizedMaxData[i] = fftNormalizedMaxData[i] * 0.9999;
+    }
+  }
+
+  return true;
+}
+
+double tic_api_fft(tic_mem* memory, s32 freq/*, bool bSmoothing, bool bNormalization*/)
+{
+  if (freq < 0 || freq >= FFT_SIZE) {
+    // Handle out-of-bounds frequency request, possibly log error or return a default value
+    FFT_DebugLog(FFT_LOG_TRACE, "tic_api_fft: freq out of bounds at %d\n", freq);
+    return 0.0;
+  }
+  // if (bSmoothing) return fftSmoothingData[freq];
+  // return fftData[freq];
+  return fftSmoothingData[freq];
+  // return fftNormalizedData[freq];
 }
