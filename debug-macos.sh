@@ -22,9 +22,8 @@ fi
 
 cd ./build || exit
 
-export PATH="/opt/homebrew/opt/llvm/bin:$PATH"
-export LDFLAGS="-L/opt/homebrew/opt/llvm/lib/c++ -Wl,-rpath,/opt/homebrew/opt/llvm/lib/c++ -L/opt/homebrew/opt/llvm/lib"
-export CPPFLAGS="-I/opt/homebrew/opt/llvm/include"
+export CPPFLAGS='-isystem/opt/local/include'
+export LDFLAGS='-L/opt/local/lib'
 export BUILD_TYPE=Debug
 
 cmake -DCMAKE_BUILD_TYPE="$BUILD_TYPE" \
