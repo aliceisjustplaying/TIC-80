@@ -1527,22 +1527,41 @@ static s32 lua_fset(lua_State* lua)
 static s32 lua_fft(lua_State* lua)
 {
 
-  tic_core* core = getLuaCore(lua);
+    tic_core* core = getLuaCore(lua);
+    tic_mem* tic = (tic_mem*)core;
+    s32 top = lua_gettop(lua);
 
-  tic_mem* tic = (tic_mem*)getLuaCore(lua);
-  s32 top = lua_gettop(lua);
+    if (top >= 1)
+    {
+        s32 freq = getLuaNumber(lua, 1);
 
-  if (top >= 1)
-  {
-    s32 freq = getLuaNumber(lua, 1);
-
-    lua_pushnumber(lua, core->api.fft(tic, freq));
-    return 1;
-  }
+        lua_pushnumber(lua, core->api.fft(tic, freq));
+        return 1;
+    }
 
 
-  luaL_error(lua, "invalid params, fft(freq)\n");
-  return 0;
+    luaL_error(lua, "invalid params, fft(freq)\n");
+    return 0;
+}
+
+static s32 lua_ffts(lua_State* lua)
+{
+
+    tic_core* core = getLuaCore(lua);
+    tic_mem* tic = (tic_mem*)core;
+    s32 top = lua_gettop(lua);
+
+    if (top >= 1)
+    {
+        s32 freq = getLuaNumber(lua, 1);
+
+        lua_pushnumber(lua, core->api.ffts(tic, freq));
+        return 1;
+    }
+
+
+    luaL_error(lua, "invalid params, ffts(freq)\n");
+    return 0;
 }
 
 static s32 lua_dofile(lua_State *lua)

@@ -1166,6 +1166,19 @@ static int py_fft(pkpy_vm* vm)
     return 1;
 }
 
+static int py_ffts(pkpy_vm* vm)
+{
+    tic_core* core; get_core(vm, &core); tic_mem* tic = (tic_mem*)core;
+    if(pkpy_check_error(vm))
+        return 0;
+
+    s32 bucket = -1;
+
+    if (!pkpy_is_none(vm, 0))
+        pkpy_to_int(vm, 0, &bucket);
+    pkpy_push_float(vm, core->api.ffts(tic, bucket));
+    return 1;
+}
 
 static bool setup_c_bindings(pkpy_vm* vm) {
     pkpy_push_function(vm, "btn(id: int) -> bool", py_btn);
@@ -1293,6 +1306,9 @@ static bool setup_c_bindings(pkpy_vm* vm) {
 
     pkpy_push_function(vm, "fft(bucket: int) -> float", py_fft);
     pkpy_setglobal_2(vm, "fft");
+
+    pkpy_push_function(vm, "ffts(bucket: int) -> float", py_ffts);
+    pkpy_setglobal_2(vm, "ffts");
 
     if(pkpy_check_error(vm))
         return false;

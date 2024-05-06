@@ -788,14 +788,29 @@ enum
     macro(fft,                                                                                                          \
         "fft(freq)",                                                                                                    \
                                                                                                                         \
-        "The fft creates 256 buckets that map to a region of audible frequencies.\n"                                    \
-        "Each returns a value 0-255 based on the intensity of sound at that frequency at that time\n."                  \
-        "See aldroid after class.",                                                                                     \
+        "Creates 1024 buckets that map to a region of audible frequencies.\n"                                           \
+        "Each returns a value of roughly 0..1 based on the intensity of sound at that frequency at that time.\n"        \
+        "Same data you'd get from NuSan's Bonzomatic fork except possibly better.",                                     \
+        1,                                                                                                              \
+        1,                                                                                                              \
+        0,                                                                                                              \
+        double,                                                                                                         \
+        tic_mem*, s32 freq)                                                                                             \
+                                                                                                                        \
+                                                                                                                        \
+    macro(ffts,                                                                                                         \
+        "ffts(freq)",                                                                                                   \
+                                                                                                                        \
+        "Creates 1024 buckets that map to a region of audible frequencies and applies smoothing to it.\n"               \
+        "Each returns a value of roughly 0..1 based on the intensity of sound at that frequency at that time.\n"        \
+        "Same data you'd get from NuSan's Bonzomatic fork except possibly better.",                                     \
         1,                                                                                                              \
         1,                                                                                                              \
         0,                                                                                                              \
         double,                                                                                                         \
         tic_mem*, s32 freq)
+
+
 
 #define TIC_API_DEF(name, _, __, ___, ____, _____, ret, ...) ret tic_api_##name(__VA_ARGS__);
 TIC_API_LIST(TIC_API_DEF)
