@@ -1,15 +1,14 @@
 // #define MA_DEBUG_OUTPUT
 #define MINIAUDIO_IMPLEMENTATION
-#include "../fftdata.h"
-#include "fft.h"
-#include "miniaudio.h"
-
-#include "kiss_fft.h"
-#include "kiss_fftr.h"
 #include <stdio.h>
 #include <memory.h>
+#include "miniaudio.h"
+#include "kiss_fft.h"
+#include "kiss_fftr.h"
 #include "api.h"
-#include "fftdata.h"
+
+#include "../fftdata.h"
+#include "fft.h"
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -222,65 +221,62 @@ bool FFT_GetFFT(float* _samples)
   kiss_fft_cpx out[FFT_SIZE + 1];
   kiss_fftr(fftcfg, sampleBuf, out);
 
-  bool bPeakNormalization = true;
-  if (bPeakNormalization) {
-    float peakValue = fPeakMinValue;
-    for (int i = 0; i < FFT_SIZE; i++)
-    {
-      float val = 2.0f * sqrtf(out[i].r * out[i].r + out[i].i * out[i].i);
-      if (val > peakValue) peakValue = val;
-      _samples[i] = val * fAmplification;
-    }
-    if (peakValue > fPeakSmoothValue) {
-      fPeakSmoothValue = peakValue;
-    }
-    if (peakValue < fPeakSmoothValue) {
-      fPeakSmoothValue = fPeakSmoothValue * fPeakSmoothing + peakValue * (1 - fPeakSmoothing);
-    }
-    fAmplification = 1.0f / fPeakSmoothValue;
-  } else {
-    for (int i = 0; i < FFT_SIZE; i++)
-    {
-      static const float scaling = 1.0f / (float)FFT_SIZE;
-      _samples[i] = 2.0f * sqrtf(out[i].r * out[i].r + out[i].i * out[i].i) * scaling * fAmplification;
-    }
+  float peakValue = fPeakMinValue;
+  for (int i = 0; i < FFT_SIZE; i++)
+  {
+    float val = 2.0f * sqrtf(out[i].r * out[i].r + out[i].i * out[i].i);
+    if (val > peakValue) peakValue = val;
+    _samples[i] = val * fAmplification;
   }
+  if (peakValue > fPeakSmoothValue) {
+    fPeakSmoothValue = peakValue;
+  }
+  if (peakValue < fPeakSmoothValue) {
+    fPeakSmoothValue = fPeakSmoothValue * fPeakSmoothing + peakValue * (1 - fPeakSmoothing);
+  }
+  fAmplification = 1.0f / fPeakSmoothValue;
 
   float fFFTSmoothingFactor = 0.6f;
-  bool bSmoothing = true;
-  if (bSmoothing)
+  for ( int i = 0; i < FFT_SIZE; i++ )
   {
-    for ( int i = 0; i < FFT_SIZE; i++ )
-    {
-      fftSmoothingData[i] = fftSmoothingData[i] * fFFTSmoothingFactor + (1 - fFFTSmoothingFactor) * _samples[i];
-    }
-  }
-
-  bool bNormalization = true;
-  if (bNormalization)
-  {
-    for ( int i = 0; i < FFT_SIZE; i++ )
-    {
-        float v = fftSmoothingData[i];
-        fftNormalizedMaxData[i] = MAX(fftNormalizedMaxData[i], v);
-        float min = 0.001;
-        fftNormalizedData[i] = v / MAX(min, fftNormalizedMaxData[i]);
-        fftNormalizedMaxData[i] = fftNormalizedMaxData[i] * 0.9999;
-    }
+    fftSmoothingData[i] = fftSmoothingData[i] * fFFTSmoothingFactor + (1 - fFFTSmoothingFactor) * _samples[i];
   }
 
   return true;
 }
 
-double tic_api_fft(tic_mem* memory, s32 freq/*, bool bSmoothing, bool bNormalization*/)
+//////////////////////////////////////////////////////////////////////////
+
+double tic_api_fft(tic_mem* memory, s32 freq)
 {
-  if (freq < 0 || freq >= FFT_SIZE) {
-    // Handle out-of-bounds frequency request, possibly log error or return a default value
+  if (!fftEnabled)
+  {
+    FFT_DebugLog(FFT_LOG_TRACE, "tic_api_fft: fft not enabled\n");
+    return 0.0;
+  }
+
+  if (freq < 0 || freq >= FFT_SIZE)
+  {
     FFT_DebugLog(FFT_LOG_TRACE, "tic_api_fft: freq out of bounds at %d\n", freq);
     return 0.0;
   }
-  // if (bSmoothing) return fftSmoothingData[freq];
-  // return fftData[freq];
+  
+  return fftData[freq];
+}
+
+double tic_api_ffts(tic_mem* memory, s32 freq)
+{
+  if (!fftEnabled)
+  {
+    FFT_DebugLog(FFT_LOG_TRACE, "tic_api_ffts: fft not enabled\n");
+    return 0.0;
+  }
+
+  if (freq < 0 || freq >= FFT_SIZE)
+  {
+    FFT_DebugLog(FFT_LOG_TRACE, "tic_api_ffts: freq out of bounds at %d\n", freq);
+    return 0.0;
+  }
+  
   return fftSmoothingData[freq];
-  // return fftNormalizedData[freq];
 }
