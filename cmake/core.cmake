@@ -15,6 +15,7 @@ set(BUILD_DEPRECATED TRUE)
 
 set(TIC80CORE_DIR ${CMAKE_SOURCE_DIR}/src)
 set(TIC80CORE_SRC
+    ${TIC80CORE_DIR}/fftdata.c
     ${TIC80CORE_DIR}/core/core.c
     ${TIC80CORE_DIR}/core/draw.c
     ${TIC80CORE_DIR}/core/io.c
