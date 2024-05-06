@@ -32,5 +32,6 @@ cmake -DCMAKE_BUILD_TYPE="$BUILD_TYPE" \
       "$DEBUG_FLAGS" \
       -DCMAKE_C_COMPILER="$(which clang)" \
       -DCMAKE_CXX_COMPILER="$(which clang++)" \
+      -DCMAKE_EXPORT_COMPILE_COMMANDS=On \
        .. $FRESH_FLAG && \
        cmake --build . --config "$BUILD_TYPE" --parallel
