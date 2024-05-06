@@ -1,5 +1,9 @@
 #include "fftdata.h"
 #include <stdbool.h>
+#include <stdarg.h> // For va_list
+#include <stdio.h> // for vprintf
+#include <time.h>
+
 float fPeakMinValue = 0.01f;
 float fPeakSmoothing = 0.995f;
 float fPeakSmoothValue = 0.0f;
@@ -10,15 +14,6 @@ float fftNormalizedData[FFT_SIZE] = {0};
 float fftNormalizedMaxData[FFT_SIZE] = {0};
 
 bool fftEnabled = false;
-
-
-
-
-#include <stdarg.h> // For va_list
-#include <stdio.h> // for vprintf
-#include <time.h>
-
-
 
 #define FFT_DEBUG
 

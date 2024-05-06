@@ -21,8 +21,6 @@
 // SOFTWARE.
 
 #include "studio.h"
-#include "../fftdata.h"
-
 #if defined(BUILD_EDITORS)
 
 #include "editors/code.h"
@@ -40,6 +38,7 @@
 #define MSF_GIF_IMPL
 #include "msf_gif.h"
 
+#include "../fftdata.h"
 #include "ext/fft.h"
 
 #endif
@@ -226,7 +225,6 @@ struct Studio
     tic_font systemFont;
 
     Lovebyte lovebyte;
-
 };
 
 #if defined(BUILD_EDITORS)
@@ -2288,7 +2286,6 @@ static void doCodeImport(Studio* studio)
     }
 }
 #endif
-
 
 static void blitCursor(Studio* studio)
 {
