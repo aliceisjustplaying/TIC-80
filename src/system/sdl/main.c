@@ -320,7 +320,10 @@ static void initSound()
         .samples = 1024,
     };
 
-    FFT_Open(studio_config(platform.studio)->fftusecapturedevices, studio_config(platform.studio)->fftdevice);
+    if (studio_config(platform.studio)->fft)
+    {
+        FFT_Open(studio_config(platform.studio)->fftusecapturedevices, studio_config(platform.studio)->fftdevice);
+    }
 
     platform.audio.device = SDL_OpenAudioDevice(NULL, 0, &want, &platform.audio.spec, 0);
 }
@@ -1974,7 +1977,10 @@ static s32 start(s32 argc, char **argv, const char* folder)
                 SDL_DestroyWindow(platform.window);
                 SDL_CloseAudioDevice(platform.audio.device);
 
-                FFT_Close();
+                if (studio_config(platform.studio)->fft)
+                {
+                    FFT_Close();
+                }
             }
 
             SDL_DestroyMutex(platform.audio.mutex);
