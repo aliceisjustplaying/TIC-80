@@ -221,51 +221,25 @@ bool FFT_GetFFT(float* _samples)
   kiss_fft_cpx out[FFT_SIZE + 1];
   kiss_fftr(fftcfg, sampleBuf, out);
 
-  bool bPeakNormalization = true;
-  if (bPeakNormalization) {
-    float peakValue = fPeakMinValue;
-    for (int i = 0; i < FFT_SIZE; i++)
-    {
-      float val = 2.0f * sqrtf(out[i].r * out[i].r + out[i].i * out[i].i);
-      if (val > peakValue) peakValue = val;
-      _samples[i] = val * fAmplification;
-    }
-    if (peakValue > fPeakSmoothValue) {
-      fPeakSmoothValue = peakValue;
-    }
-    if (peakValue < fPeakSmoothValue) {
-      fPeakSmoothValue = fPeakSmoothValue * fPeakSmoothing + peakValue * (1 - fPeakSmoothing);
-    }
-    fAmplification = 1.0f / fPeakSmoothValue;
-  } else {
-    for (int i = 0; i < FFT_SIZE; i++)
-    {
-      static const float scaling = 1.0f / (float)FFT_SIZE;
-      _samples[i] = 2.0f * sqrtf(out[i].r * out[i].r + out[i].i * out[i].i) * scaling * fAmplification;
-    }
+  float peakValue = fPeakMinValue;
+  for (int i = 0; i < FFT_SIZE; i++)
+  {
+    float val = 2.0f * sqrtf(out[i].r * out[i].r + out[i].i * out[i].i);
+    if (val > peakValue) peakValue = val;
+    _samples[i] = val * fAmplification;
   }
+  if (peakValue > fPeakSmoothValue) {
+    fPeakSmoothValue = peakValue;
+  }
+  if (peakValue < fPeakSmoothValue) {
+    fPeakSmoothValue = fPeakSmoothValue * fPeakSmoothing + peakValue * (1 - fPeakSmoothing);
+  }
+  fAmplification = 1.0f / fPeakSmoothValue;
 
   float fFFTSmoothingFactor = 0.6f;
-  bool bSmoothing = true;
-  if (bSmoothing)
+  for ( int i = 0; i < FFT_SIZE; i++ )
   {
-    for ( int i = 0; i < FFT_SIZE; i++ )
-    {
-      fftSmoothingData[i] = fftSmoothingData[i] * fFFTSmoothingFactor + (1 - fFFTSmoothingFactor) * _samples[i];
-    }
-  }
-
-  bool bNormalization = true;
-  if (bNormalization)
-  {
-    for ( int i = 0; i < FFT_SIZE; i++ )
-    {
-        float v = fftSmoothingData[i];
-        fftNormalizedMaxData[i] = MAX(fftNormalizedMaxData[i], v);
-        float min = 0.001;
-        fftNormalizedData[i] = v / MAX(min, fftNormalizedMaxData[i]);
-        fftNormalizedMaxData[i] = fftNormalizedMaxData[i] * 0.9999;
-    }
+    fftSmoothingData[i] = fftSmoothingData[i] * fFFTSmoothingFactor + (1 - fFFTSmoothingFactor) * _samples[i];
   }
 
   return true;
