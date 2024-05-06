@@ -1,10 +1,6 @@
 {
-  "build_systems": [
-    {
-      "name": "build",
-      "shell_cmd": "cd ${project_path}/build && cmake -G Ninja -DCMAKE_BUILD_TYPE=MinSizeRel .. && ninja",
-      "file_regex": "/([^/:]+):(\\d+):(\\d+): ",
-      "variants": [
+    "build_systems":
+    [
         {
             "name": "build",
             "shell_cmd": "cd ${project_path}/build && cmake -G Ninja -DCMAKE_BUILD_TYPE=MinSizeRel .. && ninja",
@@ -54,15 +50,7 @@
     "folders":
     [
         {
-          "name": "clean rebuild",
-          "shell_cmd": "cd ${project_path}/build && ninja -t clean && ninja"
+            "path": "."
         }
-      ]
-    }
-  ],
-  "folders": [
-    {
-      "path": "."
-    }
-  ]
+    ]
 }
