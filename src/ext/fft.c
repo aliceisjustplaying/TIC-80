@@ -152,22 +152,33 @@ bool FFT_Open(bool CapturePlaybackDevices, const char* CaptureDeviceSearchString
   printf("\n");
 
   bool useLoopback = (ma_is_loopback_supported(context.backend) && CapturePlaybackDevices);
+  if (useLoopback)
+  {
+    FFT_DebugLog(FFT_LOG_TRACE, "useLoopback true\n");
+  }
   FFT_DebugLog(FFT_LOG_INFO, "Loopback support: %s, Use loopback: %s\n", ma_is_loopback_supported(context.backend) ? "Yes" : "No", useLoopback ? "Yes" : "No");
   
   if(CaptureDeviceSearchString && strlen(CaptureDeviceSearchString) > 0) {
+    FFT_DebugLog(FFT_LOG_TRACE, "CaptureDeviceSearchString: %s\n", CaptureDeviceSearchString);
     if(useLoopback) {
+      FFT_DebugLog(FFT_LOG_TRACE, "Searching with useLoopback true\n");
       for (ma_uint32 iDevice = 0; iDevice < playbackDeviceCount; ++iDevice) {
         char* DeviceName = pPlaybackDeviceInfos[iDevice].name;
         if(strstr(DeviceName, CaptureDeviceSearchString) != NULL) {
+          FFT_DebugLog(FFT_LOG_TRACE, "Found device: %s in search string: %s\n", DeviceName, CaptureDeviceSearchString);
           TargetDevice = &pPlaybackDeviceInfos[iDevice].id;
+          FFT_DebugLog(FFT_LOG_TRACE, "TargetDevice: %s\n", TargetDevice);
           break;
         }
       }
     } else {
       for (ma_uint32 iDevice = 0; iDevice < captureDeviceCount; ++iDevice) {
+        FFT_DebugLog(FFT_LOG_TRACE, "Searching with useLoopback false\n");
         char* DeviceName = pCaptureDeviceInfos[iDevice].name;
         if(strstr(DeviceName, CaptureDeviceSearchString) != NULL) {
+          FFT_DebugLog(FFT_LOG_TRACE, "Found device: %s in search string: %s\n", DeviceName, CaptureDeviceSearchString);
           TargetDevice = &pCaptureDeviceInfos[iDevice].id;
+          FFT_DebugLog(FFT_LOG_TRACE, "TargetDevice: %s\n", TargetDevice);
           break;
         }
       }
@@ -182,6 +193,7 @@ bool FFT_Open(bool CapturePlaybackDevices, const char* CaptureDeviceSearchString
   config.dataCallback = OnReceiveFrames;
   config.pUserData = NULL;
 
+  FFT_DebugLog(FFT_LOG_TRACE, "Initializing capture device...\n");
   result = ma_device_init( &context, &config, &captureDevice );
   if ( result != MA_SUCCESS )
   {
