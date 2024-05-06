@@ -21,7 +21,6 @@
 // SOFTWARE.
 
 #include "studio.h"
-
 #if defined(BUILD_EDITORS)
 
 #include "editors/code.h"
@@ -39,6 +38,7 @@
 #define MSF_GIF_IMPL
 #include "msf_gif.h"
 
+#include "../fftdata.h"
 #include "ext/fft.h"
 
 #endif
@@ -1569,6 +1569,17 @@ bool studioCartChanged(Studio* studio)
 void runGame(Studio* studio)
 {
 #if defined(BUILD_EDITORS)
+
+    // initialize FFT data structures
+    fPeakMinValue = 0.01f;
+    fPeakSmoothing = 0.995f;
+    fPeakSmoothValue = 0.0f;
+    fAmplification = 1.0f;
+    memset(fftData, 0, sizeof(fftData[0]) * FFT_SIZE);
+    memset(fftSmoothingData, 0, sizeof(fftSmoothingData[0]) * FFT_SIZE);
+    memset(fftNormalizedData, 0, sizeof(fftNormalizedData[0]) * FFT_SIZE);
+    memset(fftNormalizedMaxData, 0, sizeof(fftNormalizedMaxData[0]) * FFT_SIZE);
+
     if(studio->console->args.keepcmd 
         && studio->console->commands.count
         && studio->console->commands.current >= studio->console->commands.count)
