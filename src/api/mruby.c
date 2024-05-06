@@ -538,7 +538,6 @@ static mrb_value mrb_ffts(mrb_state* mrb, mrb_value self)
   return mrb_float_value(mrb, core->api.ffts(tic, index));
 }
 
-
 typedef struct
 {
     mrb_state* mrb;

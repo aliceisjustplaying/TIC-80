@@ -1547,7 +1547,6 @@ static SQInteger squirrel_ffts(HSQUIRRELVM vm)
   return 0;
 }
 
-
 static SQInteger squirrel_dofile(HSQUIRRELVM vm)
 {
     return sq_throwerror(vm, "unknown method: \"dofile\"\n");
