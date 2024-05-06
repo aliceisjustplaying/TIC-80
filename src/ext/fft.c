@@ -164,6 +164,7 @@ bool FFT_Open(bool CapturePlaybackDevices, const char* CaptureDeviceSearchString
       FFT_DebugLog(FFT_LOG_TRACE, "Searching with useLoopback true\n");
       for (ma_uint32 iDevice = 0; iDevice < playbackDeviceCount; ++iDevice) {
         char* DeviceName = pPlaybackDeviceInfos[iDevice].name;
+        FFT_DebugLog(FFT_LOG_TRACE, "Evaluating DeviceName: %s\n", DeviceName);
         if(strstr(DeviceName, CaptureDeviceSearchString) != NULL) {
           FFT_DebugLog(FFT_LOG_TRACE, "Found device: %s in search string: %s\n", DeviceName, CaptureDeviceSearchString);
           TargetDevice = &pPlaybackDeviceInfos[iDevice].id;
@@ -175,6 +176,7 @@ bool FFT_Open(bool CapturePlaybackDevices, const char* CaptureDeviceSearchString
       for (ma_uint32 iDevice = 0; iDevice < captureDeviceCount; ++iDevice) {
         FFT_DebugLog(FFT_LOG_TRACE, "Searching with useLoopback false\n");
         char* DeviceName = pCaptureDeviceInfos[iDevice].name;
+        FFT_DebugLog(FFT_LOG_TRACE, "Evaluating DeviceName: %s\n", DeviceName);
         if(strstr(DeviceName, CaptureDeviceSearchString) != NULL) {
           FFT_DebugLog(FFT_LOG_TRACE, "Found device: %s in search string: %s\n", DeviceName, CaptureDeviceSearchString);
           TargetDevice = &pCaptureDeviceInfos[iDevice].id;
