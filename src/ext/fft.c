@@ -75,11 +75,11 @@ void FFT_EnumerateDevices()
 
   FFT_DebugLog(FFT_LOG_INFO, "MAL context initialized, backend is '%s'\n", ma_get_backend_name( context.backend ) );
 
-  ma_device_info* pPlaybackDeviceInfos;
-  ma_uint32 playbackDeviceCount;
-  ma_device_info* pCaptureDeviceInfos;
-  ma_uint32 captureDeviceCount;
-  result = ma_context_get_devices(&context, &pPlaybackDeviceInfos, &playbackDeviceCount, &pCaptureDeviceInfos, &captureDeviceCount);
+  ma_device_info* pPlaybackInfos;
+  ma_uint32 playbackCount;
+  ma_device_info* pCaptureInfos;
+  ma_uint32 captureCount;
+  result = ma_context_get_devices(&context, &pPlaybackInfos, &playbackCount, &pCaptureInfos, &captureCount);
   if (result != MA_SUCCESS) {
       FFT_DebugLog(FFT_LOG_ERROR, "Failed to retrieve device information.\n");
       FFT_DebugLog(FFT_LOG_ERROR, "Error: %s\n", ma_result_description(result));
@@ -87,15 +87,15 @@ void FFT_EnumerateDevices()
   }
 
   FFT_DebugLog(FFT_LOG_INFO, "Playback Devices\n");
-  for (ma_uint32 iDevice = 0; iDevice < playbackDeviceCount; ++iDevice) {
-      FFT_DebugLog(FFT_LOG_INFO, "    %u: %s\n", iDevice, pPlaybackDeviceInfos[iDevice].name);
+  for (ma_uint32 iDevice = 0; iDevice < playbackCount; ++iDevice) {
+      FFT_DebugLog(FFT_LOG_INFO, "    %u: %s\n", iDevice, pPlaybackInfos[iDevice].name);
   }
   
   printf("\n");
 
   FFT_DebugLog(FFT_LOG_INFO, "Capture Devices\n");
-  for (ma_uint32 iDevice = 0; iDevice < captureDeviceCount; ++iDevice) {
-      FFT_DebugLog(FFT_LOG_INFO, "    %u: %s\n", iDevice, pCaptureDeviceInfos[iDevice].name);
+  for (ma_uint32 iDevice = 0; iDevice < captureCount; ++iDevice) {
+      FFT_DebugLog(FFT_LOG_INFO, "    %u: %s\n", iDevice, pCaptureInfos[iDevice].name);
   }
 
   printf("\n");
@@ -103,7 +103,65 @@ void FFT_EnumerateDevices()
   return;
 }
 
-bool FFT_Open(bool CapturePlaybackDevices, const char* CaptureDeviceSearchString)
+void print_device_id(ma_device_id id, ma_backend backend) {
+    switch (backend) {
+        case ma_backend_wasapi:
+            wprintf(L"WASAPI ID: %ls\n", id.wasapi);
+            break;
+        case ma_backend_dsound:
+            printf("DirectSound GUID: ");
+            for (int i = 0; i < 16; i++) {
+                printf("%02X", id.dsound[i]);
+                if (i < 15) printf("-");
+            }
+            printf("\n");
+            break;
+        case ma_backend_winmm:
+            printf("WinMM Device ID: %u\n", id.winmm);
+            break;
+        case ma_backend_coreaudio:
+            printf("Core Audio Device Name: %s\n", id.coreaudio);
+            break;
+        case ma_backend_sndio:
+            printf("sndio Device Identifier: %s\n", id.sndio);
+            break;
+        case ma_backend_audio4:
+            printf("Audio4 Device Path: %s\n", id.audio4);
+            break;
+        case ma_backend_oss:
+            printf("OSS Device Path: %s\n", id.oss);
+            break;
+        case ma_backend_pulseaudio:
+            printf("PulseAudio Device Name: %s\n", id.pulse);
+            break;
+        case ma_backend_alsa:
+            printf("ALSA Device Name: %s\n", id.alsa);
+            break;
+        case ma_backend_jack:
+            printf("JACK Device ID: %d\n", id.jack);
+            break;
+        case ma_backend_aaudio:
+            printf("AAudio Device ID: %d\n", id.aaudio);
+            break;
+        case ma_backend_opensl:
+            printf("OpenSL ES Device ID: %u\n", id.opensl);
+            break;
+        case ma_backend_webaudio:
+            printf("Web Audio Device ID: %s\n", id.webaudio);
+            break;
+        case ma_backend_custom:
+            printf("Custom Backend: Integer ID: %d, String: %s, Pointer: %p\n", id.custom.i, id.custom.s, id.custom.p);
+            break;
+        case ma_backend_null:
+            printf("Null Backend Device ID: %d\n", id.nullbackend);
+            break;
+        default:
+            printf("Unknown backend\n");
+    }
+}
+
+
+bool FFT_Open(const char* CaptureDeviceSearchString)
 {
   memset( sampleBuf, 0, sizeof( float ) * FFT_SIZE * 2 );
 
@@ -125,56 +183,64 @@ bool FFT_Open(bool CapturePlaybackDevices, const char* CaptureDeviceSearchString
 
   FFT_DebugLog(FFT_LOG_INFO, "MAL context initialized, backend is '%s'\n", ma_get_backend_name( context.backend ) );
 
-  ma_device_id* TargetDevice = NULL;
-
-  ma_device_info* pPlaybackDeviceInfos;
-  ma_uint32 playbackDeviceCount;
-  ma_device_info* pCaptureDeviceInfos;
-  ma_uint32 captureDeviceCount;
-  result = ma_context_get_devices(&context, &pPlaybackDeviceInfos, &playbackDeviceCount, &pCaptureDeviceInfos, &captureDeviceCount);
+  ma_device_info* pPlaybackInfos;
+  ma_uint32 playbackCount;
+  ma_device_info* pCaptureInfos;
+  ma_uint32 captureCount;
+  result = ma_context_get_devices(&context, &pPlaybackInfos, &playbackCount, &pCaptureInfos, &captureCount);
   if (result != MA_SUCCESS) {
       FFT_DebugLog(FFT_LOG_ERROR, "Failed to retrieve device information.\n");
       return false;
   }
 
   FFT_DebugLog(FFT_LOG_INFO, "Playback Devices\n");
-  for (ma_uint32 iDevice = 0; iDevice < playbackDeviceCount; ++iDevice) {
-      FFT_DebugLog(FFT_LOG_INFO, "    %u: %s\n", iDevice, pPlaybackDeviceInfos[iDevice].name);
+  for (ma_uint32 iDevice = 0; iDevice < playbackCount; ++iDevice) {
+      FFT_DebugLog(FFT_LOG_INFO, "    %u: %s\n", iDevice, pPlaybackInfos[iDevice].name);
   }
   
-  printf("\n");
+  FFT_DebugLog(FFT_LOG_INFO, "\n");
 
   FFT_DebugLog(FFT_LOG_INFO, "Capture Devices\n");
-  for (ma_uint32 iDevice = 0; iDevice < captureDeviceCount; ++iDevice) {
-      FFT_DebugLog(FFT_LOG_INFO, "    %u: %s\n", iDevice, pCaptureDeviceInfos[iDevice].name);
+  for (ma_uint32 iDevice = 0; iDevice < captureCount; ++iDevice) {
+      FFT_DebugLog(FFT_LOG_INFO, "    %u: %s\n", iDevice, pCaptureInfos[iDevice].name);
   }
 
-  printf("\n");
+  FFT_DebugLog(FFT_LOG_INFO, "\n");
 
-  bool useLoopback = (ma_is_loopback_supported(context.backend) && CapturePlaybackDevices);
-  FFT_DebugLog(FFT_LOG_INFO, "Loopback support: %s, Use loopback: %s\n", ma_is_loopback_supported(context.backend) ? "Yes" : "No", useLoopback ? "Yes" : "No");
+  // only available on Windows, thus we default to that
+  bool useLoopback = (ma_is_loopback_supported(context.backend));
+  FFT_DebugLog(FFT_LOG_INFO, "Miniaudio loopback support: %s, Use loopback: %s\n", ma_is_loopback_supported(context.backend) ? "Yes" : "No", useLoopback ? "Yes" : "No");
   
+  ma_device_id* TargetDevice = NULL;
   if(CaptureDeviceSearchString && strlen(CaptureDeviceSearchString) > 0) {
     if(useLoopback) {
-      for (ma_uint32 iDevice = 0; iDevice < playbackDeviceCount; ++iDevice) {
-        char* DeviceName = pPlaybackDeviceInfos[iDevice].name;
+      for (ma_uint32 iDevice = 0; iDevice < playbackCount; ++iDevice) {
+        char* DeviceName = pPlaybackInfos[iDevice].name;
         if(strstr(DeviceName, CaptureDeviceSearchString) != NULL) {
-          TargetDevice = &pPlaybackDeviceInfos[iDevice].id;
+          FFT_DebugLog(FFT_LOG_INFO, "Using playback device %s for config\n", DeviceName);
+          TargetDevice = &pPlaybackInfos[iDevice].id;
+          print_device_id(*TargetDevice, context.backend); // Pass the backend enum from your context initialization
+          FFT_DebugLog(FFT_LOG_INFO, "Selected Device ID logged above.\n");
           break;
         }
       }
     } else {
-      for (ma_uint32 iDevice = 0; iDevice < captureDeviceCount; ++iDevice) {
-        char* DeviceName = pCaptureDeviceInfos[iDevice].name;
+      for (ma_uint32 iDevice = 0; iDevice < captureCount; ++iDevice) {
+        char* DeviceName = pCaptureInfos[iDevice].name;
         if(strstr(DeviceName, CaptureDeviceSearchString) != NULL) {
-          TargetDevice = &pCaptureDeviceInfos[iDevice].id;
+          FFT_DebugLog(FFT_LOG_INFO, "Using capture device %s for config\n", DeviceName);
+          TargetDevice = &pCaptureInfos[iDevice].id;
+          print_device_id(*TargetDevice, context.backend); // Pass the backend enum from your context initialization
+          FFT_DebugLog(FFT_LOG_INFO, "Selected Device ID logged above.\n");
           break;
         }
       }
     }
   }
 
-  ma_device_config config = ma_device_config_init( useLoopback ? ma_device_type_loopback : ma_device_type_capture );
+  ma_device_config config = {0};
+
+  config = ma_device_config_init( useLoopback ? ma_device_type_loopback : ma_device_type_capture );
   config.capture.pDeviceID = TargetDevice;
   config.capture.format = ma_format_f32;
   config.capture.channels = 2;
