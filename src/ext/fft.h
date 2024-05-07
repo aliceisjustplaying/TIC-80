@@ -3,7 +3,7 @@
 
 //////////////////////////////////////////////////////////////////////////
 
-bool FFT_Open(bool CapturePlaybackDevices, const char* CaptureDeviceSearchString);
+bool FFT_Open(const char* CaptureDeviceSearchString);
 void FFT_EnumerateDevices();
 bool FFT_GetFFT(float* _samples);
 void FFT_Close();
