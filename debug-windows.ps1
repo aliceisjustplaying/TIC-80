@@ -39,10 +39,10 @@ Write-Host
 Write-Host "+--------------------------------+-------+"
 Write-Host "|         Build Options          | Value |"
 Write-Host "+--------------------------------+-------+"
-Write-Host "| Fresh build (-f, --fresh)      | $(if ($f -or $Fresh) { "Yes" } else { "No " }) |"
-Write-Host "| Pro version (-p, --pro)        | $(if ($p -or $Pro) { "Yes" } else { "No " }) |"
-Write-Host "| Debug build (-d, --debug)      | $(if ($d -or $Debug) { "Yes" } else { "No " }) |"
-Write-Host "| Win32 (-x, --win32)            | $(if ($x -or $Win32) { "Yes" } else { "No " }) |"
+Write-Host "| Fresh build (-f, --fresh)      | $(if ($f -or $Fresh) { "Yes" } else { "No " })   |"
+Write-Host "| Pro version (-p, --pro)        | $(if ($p -or $Pro) { "Yes" } else { "No " })   |"
+Write-Host "| Debug build (-d, --debug)      | $(if ($d -or $Debug) { "Yes" } else { "No " })   |"
+Write-Host "| Win32 (-x, --win32)            | $(if ($x -or $Win32) { "Yes" } else { "No " })   |"
 Write-Host "+--------------------------------+-------+"
 Write-Host
 
