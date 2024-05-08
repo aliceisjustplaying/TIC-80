@@ -39,6 +39,8 @@
 #define MSF_GIF_IMPL
 #include "msf_gif.h"
 
+#include "ext/fft.h"
+
 #endif
 
 #include "ext/md5.h"
@@ -2543,6 +2545,7 @@ static StartArgs parseArgs(s32 argc, char **argv)
     args.volume = -1;
     args.lowerlimit = 256;
     args.upperlimit = 512;
+    args.fftlist = 0;
 
     struct argparse_option options[] = 
     {
@@ -2557,6 +2560,9 @@ static StartArgs parseArgs(s32 argc, char **argv)
         OPT_INTEGER('l',   "lowerlimit",    &args.lowerlimit,   "lower limit for code size (256 by default)"),
         OPT_INTEGER('u',   "upperlimit",    &args.upperlimit,   "upper limit for code size (512 by default)"),
         OPT_INTEGER('b',   "battletime",    &args.battletime,   "battletime in minutes"),
+        OPT_GROUP("FFT options:\n"),
+        OPT_BOOLEAN('o', "fftlist", &args.fftlist, "list FFT devices"),
+        OPT_STRING('p', "fftdevice", &args.fftdevice, "name of the device to use with FFT"),
         OPT_END(),
     };
 
@@ -2792,6 +2798,15 @@ Studio* studio_create(s32 argc, char **argv, s32 samplerate, tic80_pixel_color_f
     studio->lovebyte.battle.left 
         = studio->lovebyte.battle.time 
         = args.battletime * 60 * 1000;
+
+    if (args.fftlist)
+    {
+        FFT_Create();
+        FFT_EnumerateDevices(print_fft_devices, NULL);
+        exit(0);
+    }
+
+    studio->config->data.fftdevice = args.fftdevice;
 
     studioConfigChanged(studio);
 
