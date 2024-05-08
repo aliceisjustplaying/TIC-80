@@ -74,6 +74,10 @@ void syncfs()
 }
 #endif 
 
+#if defined (__TIC_MACOSX__)
+#include <mach-o/dyld.h>
+#endif
+
 const char* tic_fs_pathroot(tic_fs* fs, const char* name)
 {
     static char path[TICNAME_MAX];
