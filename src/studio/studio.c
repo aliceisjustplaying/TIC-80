@@ -2561,8 +2561,9 @@ static StartArgs parseArgs(s32 argc, char **argv)
         OPT_INTEGER('u',   "upperlimit",    &args.upperlimit,   "upper limit for code size (512 by default)"),
         OPT_INTEGER('b',   "battletime",    &args.battletime,   "battletime in minutes"),
         OPT_GROUP("FFT options:\n"),
-        OPT_BOOLEAN('o', "fftlist", &args.fftlist, "list FFT devices"),
-        OPT_STRING('p', "fftdevice", &args.fftdevice, "name of the device to use with FFT"),
+        OPT_BOOLEAN('\0', "fftusecapturedevices", &args.fftusecapturedevices, "Use capture devices"),
+        OPT_BOOLEAN('\0', "fftlist", &args.fftlist, "list FFT devices"),
+        OPT_STRING('\0', "fftdevice", &args.fftdevice, "name of the device to use with FFT"),
         OPT_END(),
     };
 
@@ -2801,11 +2802,11 @@ Studio* studio_create(s32 argc, char **argv, s32 samplerate, tic80_pixel_color_f
 
     if (args.fftlist)
     {
-        FFT_Create();
-        FFT_EnumerateDevices(print_fft_devices, NULL);
+        FFT_EnumerateDevices();
         exit(0);
     }
 
+    studio->config->data.fftusecapturedevices = args.fftusecapturedevices;
     studio->config->data.fftdevice = args.fftdevice;
 
     studioConfigChanged(studio);
