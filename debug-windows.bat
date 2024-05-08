@@ -46,10 +46,10 @@ echo.
 echo +--------------------------------+-------+
 echo ^|         Build Options          ^| Value ^|
 echo +--------------------------------+-------+
-echo ^| Fresh build (-f, --fresh)      ^| %FRESH_VALUE% ^|
-echo ^| Pro version (-p, --pro)        ^| %PRO_VALUE% ^|
-echo ^| Debug build (-d, --debug)      ^| %DEBUG_VALUE% ^|
-echo ^| Win32 (-x, --win32)            ^| %WIN32_VALUE% ^|
+echo ^| Fresh build (-f, --fresh)      ^| %FRESH_VALUE%    ^|
+echo ^| Pro version (-p, --pro)        ^| %PRO_VALUE%    ^|
+echo ^| Debug build (-d, --debug)      ^| %DEBUG_VALUE%    ^|
+echo ^| Win32 (-x, --win32)            ^| %WIN32_VALUE%    ^|
 echo +--------------------------------+-------+
 echo.
 
