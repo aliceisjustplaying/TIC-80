@@ -242,6 +242,11 @@ bool FFT_Open(const char* CaptureDeviceSearchString)
 
   config = ma_device_config_init( useLoopback ? ma_device_type_loopback : ma_device_type_capture );
   config.capture.pDeviceID = TargetDevice;
+  if (useLoopback)
+  {
+    // This is a workaround for a miniaudio bug; without it, selecting a different loopback device on Windows won't work
+    config.playback.pDeviceID = TargetDevice;
+  }
   config.capture.format = ma_format_f32;
   config.capture.channels = 2;
   config.sampleRate = 11025;
