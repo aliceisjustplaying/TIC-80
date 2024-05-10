@@ -104,6 +104,7 @@ typedef struct
     s32 battletime;
     int fft;
     int fftlist;
+    int fftcaptureplaybackdevices;
     const char *fftdevice;
 } StartArgs;
 
