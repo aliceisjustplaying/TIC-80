@@ -141,8 +141,8 @@ class TIC {\n\
     foreign static sync(mask, bank, tocart)\n\
     foreign static reset()\n\
     foreign static exit()\n\
-    foreign static fft(freq)\n\
-    foreign static ffts(freq)\n\
+    foreign static fft(start_freq, end_freq)\n\
+    foreign static ffts(start_freq, end_freq)\n\
     foreign static map_width__\n\
     foreign static map_height__\n\
     foreign static spritesize__\n\
@@ -1454,13 +1454,17 @@ static void wren_fft(WrenVM* vm)
 
   if (top > 1)
   {
-    double freq = getWrenNumber(vm, 1);
+    double start_freq = getWrenNumber(vm, 1);
+    double end_freq = -1;
 
-    wrenSetSlotDouble(vm, 0, core->api.fft(tic, freq));
+    if (top > 2)
+        end_freq = getWrenNumber(vm, 2);
+
+    wrenSetSlotDouble(vm, 0, core->api.fft(tic, start_freq, end_freq));
     return;
   }
 
-  wrenError(vm, "invalid params, fft(freq)\n");
+  wrenError(vm, "invalid params, fft(start_freq, end_freq)\n");
 }
 
 static void wren_ffts(WrenVM* vm)
@@ -1470,13 +1474,17 @@ static void wren_ffts(WrenVM* vm)
 
   if (top > 1)
   {
-    double freq = getWrenNumber(vm, 1);
+    double start_freq = getWrenNumber(vm, 1);
+    double end_freq = -1;
 
-    wrenSetSlotDouble(vm, 0, core->api.ffts(tic, freq));
+    if (top > 2)
+        end_freq = getWrenNumber(vm, 2);
+
+    wrenSetSlotDouble(vm, 0, core->api.ffts(tic, start_freq, end_freq));
     return;
   }
 
-  wrenError(vm, "invalid params, ffts(freq)\n");
+  wrenError(vm, "invalid params, ffts(start_freq, end_freq)\n");
 }
 
 static WrenForeignMethodFn foreignTicMethods(const char* signature)
