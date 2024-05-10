@@ -786,31 +786,42 @@ enum
                                                                                                                         \
                                                                                                                         \
     macro(fft,                                                                                                          \
-        "fft(freq)",                                                                                                    \
+        "fft(start_freq end_freq=-1)",                                                                          \
                                                                                                                         \
-        "Creates 1024 buckets that map to a region of audible frequencies.\n"                                           \
-        "Each returns a value of roughly 0..1 based on the intensity of sound at that frequency at that time.\n"        \
-        "Same data you'd get from NuSan's Bonzomatic fork except possibly better.",                                     \
-        1,                                                                                                              \
+        "Retrieves a value from 1024 buckets that map to a region of audible frequencies.\n"                           \
+        "Each has value of roughly 0..1 based on the intensity of sound at that frequency at that time.\n"             \
+        "If end_freq is not provided, a single value is returned for the start_freq.\n"                                \
+        "If end_freq is provided, a sum of all values in the range is returned.",                                       \
+        2,                                                                                                              \
         1,                                                                                                              \
         0,                                                                                                              \
         double,                                                                                                         \
-        tic_mem*, s32 freq)                                                                                             \
+        tic_mem*, s32 startFreq, s32 endFreq)                                                                           \
                                                                                                                         \
                                                                                                                         \
     macro(ffts,                                                                                                         \
-        "ffts(freq)",                                                                                                   \
+        "ffts(start_freq end_freq=-1)",                                                                         \
                                                                                                                         \
-        "Creates 1024 buckets that map to a region of audible frequencies and applies smoothing to it.\n"               \
-        "Each returns a value of roughly 0..1 based on the intensity of sound at that frequency at that time.\n"        \
-        "Same data you'd get from NuSan's Bonzomatic fork except possibly better.",                                     \
-        1,                                                                                                              \
+        "Creates 1024 buckets that map to a region of audible frequencies and applies smoothing to it.\n"              \
+        "Each returns a value of roughly 0..1 based on the intensity of sound at that frequency at that time.\n"       \
+        "If end_freq is not provided, a single value is returned for the start_freq.\n"                                \
+        "If end_freq is provided, a sum of all values in the range is returned.",                                       \
+        2,                                                                                                              \
         1,                                                                                                              \
         0,                                                                                                              \
         double,                                                                                                         \
-        tic_mem*, s32 freq)
+        tic_mem*, s32 startFreq, s32 endFreq)
 
-
+//  macro
+//  (
+//      definition
+//      help
+//      parameters count
+//      required parameters count
+//      callback?
+//      return type
+//      function parameters
+//  )
 
 #define TIC_API_DEF(name, _, __, ___, ____, _____, ret, ...) ret tic_api_##name(__VA_ARGS__);
 TIC_API_LIST(TIC_API_DEF)

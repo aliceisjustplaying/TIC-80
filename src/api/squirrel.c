@@ -1511,19 +1511,25 @@ static SQInteger squirrel_fset(HSQUIRRELVM vm)
 
 static SQInteger squirrel_fft(HSQUIRRELVM vm)
 {
-  tic_core* core = getSquirrelCore(vm); tic_mem* tic = (tic_mem*)core;
+    tic_core* core = getSquirrelCore(vm); tic_mem* tic = (tic_mem*)core;
 
-  SQInteger top = sq_gettop(vm);
+    SQInteger top = sq_gettop(vm);
 
-  if (top >= 2)
-  {
-    double freq = getSquirrelNumber(vm, 2);
+    if (top >= 2)
+    {
+        double start_freq = getSquirrelNumber(vm, 2);
+        double end_freq = -1;
 
-    sq_pushfloat(vm, (SQFloat)(core->api.fft(tic, freq)));
+        if (top >= 3)
+        {
+            end_freq = getSquirrelNumber(vm, 3);
+        }
+
+    sq_pushfloat(vm, (SQFloat)(core->api.fft(tic, start_freq, end_freq)));
     return 1;
   }
 
-  sq_throwerror(vm, "invalid params, fft(freq)\n");
+  sq_throwerror(vm, "invalid params, fft(start_freq, end_freq)\n");
 
   return 0;
 }
@@ -1534,15 +1540,21 @@ static SQInteger squirrel_ffts(HSQUIRRELVM vm)
 
   SQInteger top = sq_gettop(vm);
 
-  if (top >= 2)
-  {
-    double freq = getSquirrelNumber(vm, 2);
+    if (top >= 2)
+    {
+        double start_freq = getSquirrelNumber(vm, 2);
+        double end_freq = -1;
 
-    sq_pushfloat(vm, (SQFloat)(core->api.ffts(tic, freq)));
+        if (top >= 3)
+        {
+            end_freq = getSquirrelNumber(vm, 3);
+        }
+
+    sq_pushfloat(vm, (SQFloat)(core->api.ffts(tic, start_freq, end_freq)));
     return 1;
   }
 
-  sq_throwerror(vm, "invalid params, ffts(freq)\n");
+  sq_throwerror(vm, "invalid params, ffts(start_freq, end_freq)\n");
 
   return 0;
 }
