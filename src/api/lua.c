@@ -28,6 +28,8 @@
 #include <lualib.h>
 #include <ctype.h>
 
+#include "fftdata.h"
+
 extern bool parse_note(const char* noteStr, s32* note, s32* octave);
 
 static inline s32 getLuaNumber(lua_State* lua, s32 index)
@@ -1542,6 +1544,23 @@ static s32 lua_fft(lua_State* lua)
         end_freq = getLuaNumber(lua, 2);
     }
 
+    if (end_freq == -1)
+    {
+        if (start_freq < 0 || start_freq >= FFT_SIZE)
+        {
+            luaL_error(lua, "invalid params, start_freq out of bounds (max 1024)\n");
+            return 0;
+        }
+    }
+    else
+    {
+        if (start_freq < 0 || end_freq >= FFT_SIZE || start_freq > end_freq)
+        {
+            luaL_error(lua, "invalid params, range out of bounds from (min 0, max 1024)\n");
+            return 0;
+        }
+    }
+
     lua_pushnumber(lua, core->api.fft(tic, start_freq, end_freq));
     return 1;
   }
@@ -1566,6 +1585,23 @@ static s32 lua_ffts(lua_State* lua)
     if (top >= 2)
     {
         end_freq = getLuaNumber(lua, 2);
+    }
+
+    if (end_freq == -1)
+    {
+        if (start_freq < 0 || start_freq >= FFT_SIZE)
+        {
+            luaL_error(lua, "invalid params, start_freq out of bounds (max 1024)\n");
+            return 0;
+        }
+    }
+    else
+    {
+        if (start_freq < 0 || end_freq >= FFT_SIZE || start_freq > end_freq)
+        {
+            luaL_error(lua, "invalid params, range out of bounds from (min 0, max 1024)\n");
+            return 0;
+        }
     }
 
     lua_pushnumber(lua, core->api.ffts(tic, start_freq, end_freq));
