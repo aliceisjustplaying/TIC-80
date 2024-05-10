@@ -1524,9 +1524,9 @@ static s32 lua_fset(lua_State* lua)
     return 0;
 }
 
+// ALICE TODO: fix indentation
 static s32 lua_fft(lua_State* lua)
 {
-
   tic_core* core = getLuaCore(lua);
 
   tic_mem* tic = (tic_mem*)getLuaCore(lua);
@@ -1534,20 +1534,25 @@ static s32 lua_fft(lua_State* lua)
 
   if (top >= 1)
   {
-    s32 freq = getLuaNumber(lua, 1);
+    s32 start_freq = getLuaNumber(lua, 1);
+    s32 end_freq = -1;
 
-    lua_pushnumber(lua, core->api.fft(tic, freq));
+    if (top >= 2)
+    {
+        end_freq = getLuaNumber(lua, 2);
+    }
+
+    lua_pushnumber(lua, core->api.fft(tic, start_freq, end_freq));
     return 1;
   }
 
 
-  luaL_error(lua, "invalid params, fft(freq)\n");
+  luaL_error(lua, "invalid params, fft(start_freq, end_freq=-1)\n");
   return 0;
 }
 
 static s32 lua_ffts(lua_State* lua)
 {
-
   tic_core* core = getLuaCore(lua);
 
   tic_mem* tic = (tic_mem*)getLuaCore(lua);
@@ -1555,14 +1560,20 @@ static s32 lua_ffts(lua_State* lua)
 
   if (top >= 1)
   {
-    s32 freq = getLuaNumber(lua, 1);
+    s32 start_freq = getLuaNumber(lua, 1);
+    s32 end_freq = -1;
 
-    lua_pushnumber(lua, core->api.ffts(tic, freq));
+    if (top >= 2)
+    {
+        end_freq = getLuaNumber(lua, 2);
+    }
+
+    lua_pushnumber(lua, core->api.ffts(tic, start_freq, end_freq));
     return 1;
   }
 
 
-  luaL_error(lua, "invalid params, ffts(freq)\n");
+  luaL_error(lua, "invalid params, ffts(start_freq, end_freq=-1)\n");
   return 0;
 }
 

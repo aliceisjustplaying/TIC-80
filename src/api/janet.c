@@ -1042,22 +1042,30 @@ static Janet janet_fset(int32_t argc, Janet* argv)
 
 static Janet janet_fft(int32_t argc, Janet* argv)
 {
-    janet_fixarity(argc, 1);
+    janet_arity(argc, 1, 2);
 
-    s32 bucket = janet_getinteger(argv, 0);
+    s32 start_freq = -1;
+    s32 end_freq = -1;
+
+    if (argc >= 1) start_freq = janet_getinteger(argv, 0);
+    if (argc >= 2) end_freq = janet_getinteger(argv, 1);
 
     tic_core* core = getJanetMachine(); tic_mem* tic = (tic_mem*)core;
-    return janet_wrap_number(core->api.fft(tic, bucket));
+    return janet_wrap_number(core->api.fft(tic, start_freq, end_freq));
 }
 
 static Janet janet_ffts(int32_t argc, Janet* argv)
 {
-    janet_fixarity(argc, 1);
+    janet_arity(argc, 1, 2);
 
-    s32 bucket = janet_getinteger(argv, 0);
+    s32 start_freq = -1;
+    s32 end_freq = -1;
+
+    if (argc >= 1) start_freq = janet_getinteger(argv, 0);
+    if (argc >= 2) end_freq = janet_getinteger(argv, 1);
 
     tic_core* core = getJanetMachine(); tic_mem* tic = (tic_mem*)core;
-    return janet_wrap_number(core->api.ffts(tic, bucket));
+    return janet_wrap_number(core->api.fft(tic, start_freq, end_freq));
 }
 
 /* ***************** */

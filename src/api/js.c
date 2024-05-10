@@ -1003,17 +1003,19 @@ static JSValue js_fset(JSContext *ctx, JSValueConst this_val, s32 argc, JSValueC
 static JSValue js_fft(JSContext *ctx, JSValueConst this_val, s32 argc, JSValueConst *argv)
 {
     tic_core* core = getCore(ctx); tic_mem* tic = (tic_mem*)core;
-    s32 freq = getInteger(ctx, argv[0]);
+    s32 start_freq = getInteger(ctx, argv[0]);
+    s32 end_freq = getInteger2(ctx, argv[1], -1);
 
-    return JS_NewFloat64(ctx, core->api.fft(tic, freq));
+    return JS_NewFloat64(ctx, core->api.fft(tic, start_freq, end_freq));
 }
 
 static JSValue js_ffts(JSContext *ctx, JSValueConst this_val, s32 argc, JSValueConst *argv)
 {
     tic_core* core = getCore(ctx); tic_mem* tic = (tic_mem*)core;
-    s32 freq = getInteger(ctx, argv[0]);
+    s32 start_freq = getInteger(ctx, argv[0]);
+    s32 end_freq = getInteger2(ctx, argv[1], -1);
 
-    return JS_NewFloat64(ctx, core->api.ffts(tic, freq));
+    return JS_NewFloat64(ctx, core->api.ffts(tic, start_freq, end_freq));
 }
 
 static bool initJavascript(tic_mem* tic, const char* code)

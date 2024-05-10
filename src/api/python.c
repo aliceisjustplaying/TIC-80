@@ -1158,11 +1158,14 @@ static int py_fft(pkpy_vm* vm)
     if(pkpy_check_error(vm))
         return 0;
 
-    s32 bucket = -1;
+    s32 start_freq = -1;
+    s32 end_freq = -1;
 
     if (!pkpy_is_none(vm, 0))
-        pkpy_to_int(vm, 0, &bucket);
-    pkpy_push_float(vm, core->api.fft(tic, bucket));
+        pkpy_to_int(vm, 0, &start_freq);
+    if (!pkpy_is_none(vm, 1))
+        pkpy_to_int(vm, 1, &end_freq);
+    pkpy_push_float(vm, core->api.fft(tic, start_freq, end_freq));
     return 1;
 }
 
@@ -1172,11 +1175,14 @@ static int py_ffts(pkpy_vm* vm)
     if(pkpy_check_error(vm))
         return 0;
 
-    s32 bucket = -1;
+    s32 start_freq = -1;
+    s32 end_freq = -1;
 
     if (!pkpy_is_none(vm, 0))
-        pkpy_to_int(vm, 0, &bucket);
-    pkpy_push_float(vm, core->api.ffts(tic, bucket));
+        pkpy_to_int(vm, 0, &start_freq);
+    if (!pkpy_is_none(vm, 1))
+        pkpy_to_int(vm, 1, &end_freq);
+    pkpy_push_float(vm, core->api.ffts(tic, start_freq, end_freq));
     return 1;
 }
 
@@ -1304,10 +1310,10 @@ static bool setup_c_bindings(pkpy_vm* vm) {
     pkpy_push_function(vm, "vbank(bank: int=None) -> int", py_vbank);
     pkpy_setglobal_2(vm, "vbank");
 
-    pkpy_push_function(vm, "fft(bucket: int) -> float", py_fft);
+    pkpy_push_function(vm, "fft(start_freq: int, end_freq: int=-1) -> float", py_fft);
     pkpy_setglobal_2(vm, "fft");
 
-    pkpy_push_function(vm, "ffts(bucket: int) -> float", py_ffts);
+    pkpy_push_function(vm, "ffts(start_freq: int, end_freq: int=-1) -> float", py_ffts);
     pkpy_setglobal_2(vm, "ffts");
 
     if(pkpy_check_error(vm))

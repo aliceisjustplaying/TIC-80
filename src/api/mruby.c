@@ -519,23 +519,39 @@ static mrb_value mrb_fset(mrb_state* mrb, mrb_value self)
 
 static mrb_value mrb_fft(mrb_state* mrb, mrb_value self)
 {
-  mrb_int index;
-  mrb_get_args(mrb, "i", &index);
+    mrb_int start_freq, end_freq = -1; // Default end_freq to -1
+    mrb_int argc = mrb_get_args(mrb, "i|i", &start_freq, &end_freq);
 
-  tic_core* core = getMRubyMachine(mrb); tic_mem* tic = (tic_mem*)core;
+    tic_core* core = getMRubyMachine(mrb); tic_mem* tic = (tic_mem*)core;
 
-  return mrb_float_value(mrb, core->api.fft(tic, index));
+    if (argc == 0)
+    {
+        mrb_raise(mrb, E_ARGUMENT_ERROR, "invalid params, fft [ start_freq end_freq ]\n");
+        return mrb_nil_value();
+    }
+    else
+    {
+        return mrb_float_value(mrb, core->api.fft(tic, start_freq, end_freq));
+    }
 }
 
 // ALICE TODO: error handling?
 static mrb_value mrb_ffts(mrb_state* mrb, mrb_value self)
 {
-  mrb_int index;
-  mrb_get_args(mrb, "i", &index);
+    mrb_int start_freq, end_freq = -1; // Default end_freq to -1
+    mrb_int argc = mrb_get_args(mrb, "i|i", &start_freq, &end_freq);
 
-  tic_core* core = getMRubyMachine(mrb); tic_mem* tic = (tic_mem*)core;
+    tic_core* core = getMRubyMachine(mrb); tic_mem* tic = (tic_mem*)core;
 
-  return mrb_float_value(mrb, core->api.ffts(tic, index));
+    if (argc == 0)
+    {
+        mrb_raise(mrb, E_ARGUMENT_ERROR, "invalid params, ffts [ start_freq end_freq ]\n");
+        return mrb_nil_value();
+    }
+    else
+    {
+        return mrb_float_value(mrb, core->api.ffts(tic, start_freq, end_freq));
+    }
 }
 
 typedef struct
