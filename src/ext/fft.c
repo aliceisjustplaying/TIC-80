@@ -161,7 +161,7 @@ void print_device_id(ma_device_id id, ma_backend backend) {
 }
 
 
-bool FFT_Open(const char* CaptureDeviceSearchString)
+bool FFT_Open(bool CapturePlaybackDevices, const char* CaptureDeviceSearchString)
 {
   memset( sampleBuf, 0, sizeof( float ) * FFT_SIZE * 2 );
 
@@ -208,8 +208,8 @@ bool FFT_Open(const char* CaptureDeviceSearchString)
   FFT_DebugLog(FFT_LOG_INFO, "\n");
 
   // only available on Windows, thus we default to that
-  bool useLoopback = (ma_is_loopback_supported(context.backend));
-  FFT_DebugLog(FFT_LOG_INFO, "Miniaudio loopback support: %s, Use loopback: %s\n", ma_is_loopback_supported(context.backend) ? "Yes" : "No", useLoopback ? "Yes" : "No");
+  bool useLoopback = (ma_is_loopback_supported(context.backend) && CapturePlaybackDevices);
+  FFT_DebugLog(FFT_LOG_INFO, "Miniaudio loopback support (WASAPI only!): %s, Use loopback: %s\n", ma_is_loopback_supported(context.backend) ? "Yes" : "No", useLoopback ? "Yes" : "No");
   
   ma_device_id* TargetDevice = NULL;
   if(CaptureDeviceSearchString && strlen(CaptureDeviceSearchString) > 0) {
