@@ -1,0 +1,70 @@
+name: Build linux/arm64
+
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: '15 6 * * *'
+
+env:
+  BUILD_TYPE: MinSizeRel
+
+jobs:
+  # === Linux arm64 ===
+  linux-arm64:
+    runs-on: linux-arm64-alice
+    container: dtcooper/raspberrypi-os:bookworm
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.event.pull_request.base.repo.full_name
+
+    steps:
+      - name: Install Host toolchain
+        run: |
+          apt update
+          apt -y install cmake build-essential git doxygen libglu1-mesa-dev freeglut3-dev libpipewire-0.3-dev libwayland-dev libsdl2-dev ruby-dev libcurl4-openssl-dev
+
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Build
+        run: |
+          cd build
+          # this is a self-hosted runner issue
+          # fixes "fatal: detected dubious ownership in repository"
+          git config --global --add safe.directory '*'
+          cmake -DCMAKE_BUILD_TYPE=MinSizeRel -DBUILD_SDLGPU=On -DBUILD_WITH_ALL=ON ..
+          cmake --build . --config MinSizeRel --parallel 1
+
+      - name: Deploy
+        uses: actions/upload-artifact@v4
+        with:
+          name: "tic80-linux-arm64"
+          path: |
+            build/bin/tic80
+            build/bin/*.so
+
+  # === Linux PRO arm64 ===
+  linux-arm64-pro:
+    runs-on: linux-arm64-alice
+    container: dtcooper/raspberrypi-os:bookworm
+
+    steps:
+      - name: Install Host toolchain
+        run: |
+          apt update
+          apt -y install cmake build-essential git doxygen libglu1-mesa-dev freeglut3-dev libpipewire-0.3-dev libwayland-dev libsdl2-dev ruby-dev libcurl4-openssl-dev
+
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Build
+        run: |
+          cd build
+          # this is a self-hosted runner issue
+          # fixes "fatal: detected dubious ownership in repository"
+          git config --global --add safe.directory '*'
+          cmake -DCMAKE_BUILD_TYPE=MinSizeRel -DBUILD_PRO=On -DBUILD_SDLGPU=On -DBUILD_WITH_ALL=ON ..
+          cmake --build . --config MinSizeRel --parallel 1
