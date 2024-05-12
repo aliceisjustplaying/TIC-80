@@ -250,7 +250,7 @@ bool FFT_Open(bool CapturePlaybackDevices, const char* CaptureDeviceSearchString
   }
   config.capture.format = ma_format_f32;
   config.capture.channels = 2;
-  config.sampleRate = 11025;
+  config.sampleRate = 44100;
   config.dataCallback = OnReceiveFrames;
   config.pUserData = NULL;
 
