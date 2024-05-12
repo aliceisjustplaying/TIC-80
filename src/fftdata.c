@@ -17,7 +17,7 @@ bool fftEnabled = false;
 
 #define FFT_DEBUG
 
-FFT_LogLevel g_currentLogLevel = FFT_LOG_TRACE;
+FFT_LogLevel g_currentLogLevel = FFT_LOG_DEBUG;
 
 void FFT_DebugLog(FFT_LogLevel level, const char* format, ...)
 {
