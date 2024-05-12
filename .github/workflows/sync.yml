@@ -1,0 +1,33 @@
+name: Sync with upstream
+
+on:
+  schedule:
+    - cron: '0 * * * *' # Runs at the start of every hour
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main branch of fork
+        uses: actions/checkout@v4
+        with:
+          ref: 'main'
+          fetch-depth: 0  # Ensures all history is fetched
+
+      - name: Setup Git identity
+        run: |
+          git config user.name 'GitHub Actions'
+          git config user.email 'actions@github.com'
+
+      - name: Add remote upstream
+        run: git remote add upstream https://github.com/nesbox/TIC-80.git
+
+      - name: Fetch all history for all branches
+        run: |
+          git fetch --all
+
+      - name: Rebase changes
+        run: git rebase upstream/main
+
+      - name: Push changes
+        run: git push origin main --force-with-lease
