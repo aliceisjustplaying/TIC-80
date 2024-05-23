@@ -12,7 +12,8 @@ extern float fftNormalizedMaxData[FFT_SIZE];
 
 extern bool fftEnabled;
 
-typedef enum {
+typedef enum
+{
     FFT_LOG_OFF = 0,
     FFT_LOG_FATAL,
     FFT_LOG_ERROR,
@@ -24,4 +25,4 @@ typedef enum {
 
 extern FFT_LogLevel g_currentLogLevel;
 
-void FFT_DebugLog(FFT_LogLevel level, const char *format, ...);
+void FFT_DebugLog(FFT_LogLevel level, const char* format, ...);

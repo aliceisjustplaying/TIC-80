@@ -1,6 +1,6 @@
 #include "fftdata.h"
-#include <stdbool.h>
 #include <stdarg.h> // For va_list
+#include <stdbool.h>
 #include <stdio.h> // for vprintf
 #include <time.h>
 
@@ -22,11 +22,13 @@ FFT_LogLevel g_currentLogLevel = FFT_LOG_DEBUG;
 void FFT_DebugLog(FFT_LogLevel level, const char* format, ...)
 {
 #ifdef FFT_DEBUG
-    if (level <= g_currentLogLevel) {
-         // Get current time
-        if (level == FFT_LOG_TRACE) {
+    if (level <= g_currentLogLevel)
+    {
+        // Get current time
+        if (level == FFT_LOG_TRACE)
+        {
             time_t now = time(NULL);
-            struct tm *tm_now = localtime(&now);
+            struct tm* tm_now = localtime(&now);
             char time_str[20]; // ISO 8601 format requires 19 characters + null terminator
             strftime(time_str, sizeof(time_str), "%Y-%m-%dT%H:%M:%S", tm_now);
 
@@ -35,7 +37,8 @@ void FFT_DebugLog(FFT_LogLevel level, const char* format, ...)
         }
         va_list args;
         va_start(args, format);
-        switch(level) {
+        switch (level)
+        {
             case FFT_LOG_TRACE:
                 printf("[FFT TRACE]: ");
                 break;
@@ -60,6 +63,6 @@ void FFT_DebugLog(FFT_LogLevel level, const char* format, ...)
         }
         vprintf(format, args);
         va_end(args);
-        }
+    }
 #endif
 }
