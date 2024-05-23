@@ -63,3 +63,7 @@
 #       define TIC80_API
 #   endif
 #endif
+
+#if !defined(ANDROID) && !defined(__ANDROID__) && !defined(BAREMETALPI) && !defined(_3DS)
+#   define TIC80_FFT
+#endif
