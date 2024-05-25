@@ -4,7 +4,7 @@ FRESH=false
 ASAN=false
 PRO=false
 DEBUG=false
-CLANG18=false
+MACPORTS=false
 HOMEBREW=false
 BUILD_TYPE="MinSizeRel"
 COMPILER_FLAGS=""
@@ -29,8 +29,8 @@ while (( "$#" )); do
       DEBUG=true
       shift
       ;;
-    -c|--clang18)
-      CLANG18=true
+    -m|--macports)
+      MACPORTS=true
       shift
       ;;
     -h|--homebrew)
@@ -52,12 +52,13 @@ while (( "$#" )); do
   esac
 done
 
-if [ "$CLANG18" = true ] && [ "$HOMEBREW" = true ]; then
-  echo "Error: -c/--clang18 and -h/--homebrew options are mutually exclusive."
+if [ "$MACPORTS" = true ] && [ "$HOMEBREW" = true ]; then
+  echo "Error: -m/--macports and -h/--homebrew options are mutually exclusive."
   exit 1
 fi
 
-if [ "$CLANG18" = false ] || [ "$HOMEBREW" = true ]; then
+# remove MacPorts from PATH if we're not using it or we're using Homebrew
+if [ "$MACPORTS" = false ] || [ "$HOMEBREW" = true ]; then
   PATH=${PATH/\/opt\/local\/bin:/}
 fi
 
@@ -79,7 +80,7 @@ if [ "$DEBUG" = true ]; then
   BUILD_TYPE="Debug"
 fi
 
-if [ "$CLANG18" = true ]; then
+if [ "$MACPORTS" = true ]; then
   CLANG=$(which clang)
   CLANGPP=$(which clang++)
   if [ -z "$CLANG" ] || [ -z "$CLANGPP" ]; then
@@ -109,7 +110,7 @@ echo "| Fresh build (-f, --fresh)      | $(printf "%-5s" $([ "$FRESH" = true ] &
 echo "| Address Sanitizer (-a, --asan) | $(printf "%-5s" $([ "$ASAN" = true ] && echo "Yes" || echo "No")) |"
 echo "| Pro version (-p, --pro)        | $(printf "%-5s" $([ "$PRO" = true ] && echo "Yes" || echo "No")) |"
 echo "| Debug build (-d, --debug)      | $(printf "%-5s" $([ "$DEBUG" = true ] && echo "Yes" || echo "No")) |"
-echo "| Clang18 (-c, --clang18)        | $(printf "%-5s" $([ "$CLANG18" = true ] && echo "Yes" || echo "No")) |"
+echo "| MacPorts (-m, --macports)      | $(printf "%-5s" $([ "$MACPORTS" = true ] && echo "Yes" || echo "No")) |"
 echo "| Homebrew (-h, --homebrew)      | $(printf "%-5s" $([ "$HOMEBREW" = true ] && echo "Yes" || echo "No")) |"
 echo "+--------------------------------+-------+"
 echo
