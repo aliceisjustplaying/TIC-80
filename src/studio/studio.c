@@ -21,7 +21,6 @@
 // SOFTWARE.
 
 #include "studio.h"
-
 #if defined(BUILD_EDITORS)
 
 #include "editors/code.h"
@@ -38,6 +37,9 @@
 #include "ext/gif.h"
 #define MSF_GIF_IMPL
 #include "msf_gif.h"
+
+#include "../fftdata.h"
+#include "ext/fft.h"
 
 #endif
 
@@ -1569,6 +1571,17 @@ bool studioCartChanged(Studio* studio)
 void runGame(Studio* studio)
 {
 #if defined(BUILD_EDITORS)
+
+    // initialize FFT data structures
+    fPeakMinValue = 0.01f;
+    fPeakSmoothing = 0.995f;
+    fPeakSmoothValue = 0.0f;
+    fAmplification = 1.0f;
+    memset(fftData, 0, sizeof(fftData[0]) * FFT_SIZE);
+    memset(fftSmoothingData, 0, sizeof(fftSmoothingData[0]) * FFT_SIZE);
+    memset(fftNormalizedData, 0, sizeof(fftNormalizedData[0]) * FFT_SIZE);
+    memset(fftNormalizedMaxData, 0, sizeof(fftNormalizedMaxData[0]) * FFT_SIZE);
+
     if(studio->console->args.keepcmd 
         && studio->console->commands.count
         && studio->console->commands.current >= studio->console->commands.count)
@@ -2553,6 +2566,7 @@ static StartArgs parseArgs(s32 argc, char **argv)
 #if defined(BUILD_EDITORS)
     args.lowerlimit = 256;
     args.upperlimit = 512;
+    args.fftlist = 0;
 #endif
 
     struct argparse_option options[] = 
@@ -2569,8 +2583,13 @@ static StartArgs parseArgs(s32 argc, char **argv)
         OPT_INTEGER('\0',   "lowerlimit",    &args.lowerlimit,   "lower limit for code size (256 by default)"),
         OPT_INTEGER('\0',   "upperlimit",    &args.upperlimit,   "upper limit for code size (512 by default)"),
         OPT_INTEGER('\0',   "battletime",    &args.battletime,   "battletime in minutes"),
-#endif
+        OPT_GROUP("FFT options:\n"),
+        OPT_BOOLEAN('\0', "fft", &args.fft, "enable FFT support"),
+        OPT_BOOLEAN('\0', "fftlist", &args.fftlist, "list FFT devices"),
+        OPT_BOOLEAN('\0', "fftcaptureplaybackdevices", &args.fftcaptureplaybackdevices, "Capture playback devices for loopback (Windows only)"),
+        OPT_STRING('\0', "fftdevice", &args.fftdevice, "name of the device to use with FFT"),
         OPT_END(),
+#endif
     };
 
     struct argparse argparse;
@@ -2802,6 +2821,15 @@ Studio* studio_create(s32 argc, char **argv, s32 samplerate, tic80_pixel_color_f
     studio->bytebattle.battle.left 
         = studio->bytebattle.battle.time 
         = args.battletime * 60 * 1000;
+
+    if (args.fftlist)
+    {
+        FFT_EnumerateDevices();
+        exit(0);
+    }
+    studio->config->data.fft = args.fft;
+    studio->config->data.fftcaptureplaybackdevices = args.fftcaptureplaybackdevices;
+    studio->config->data.fftdevice = args.fftdevice;
 #endif
 
     studioConfigChanged(studio);
