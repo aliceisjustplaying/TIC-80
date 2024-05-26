@@ -21,7 +21,6 @@
 // SOFTWARE.
 
 #include "studio.h"
-
 #if defined(BUILD_EDITORS)
 
 #include "editors/code.h"
@@ -38,6 +37,9 @@
 #include "ext/gif.h"
 #define MSF_GIF_IMPL
 #include "msf_gif.h"
+
+#include "../fftdata.h"
+#include "ext/fft.h"
 
 #endif
 
@@ -1576,6 +1578,17 @@ bool studioCartChanged(Studio* studio)
 void runGame(Studio* studio)
 {
 #if defined(BUILD_EDITORS)
+
+    // initialize FFT data structures
+    fPeakMinValue = 0.01f;
+    fPeakSmoothing = 0.995f;
+    fPeakSmoothValue = 0.0f;
+    fAmplification = 1.0f;
+    memset(fftData, 0, sizeof(fftData[0]) * FFT_SIZE);
+    memset(fftSmoothingData, 0, sizeof(fftSmoothingData[0]) * FFT_SIZE);
+    memset(fftNormalizedData, 0, sizeof(fftNormalizedData[0]) * FFT_SIZE);
+    memset(fftNormalizedMaxData, 0, sizeof(fftNormalizedMaxData[0]) * FFT_SIZE);
+
     if(studio->console->args.keepcmd 
         && studio->console->commands.count
         && studio->console->commands.current >= studio->console->commands.count)
@@ -2398,7 +2411,9 @@ static StartArgs parseArgs(s32 argc, char **argv)
         NULL,
     };
 
-    StartArgs args = {.volume = -1};
+    StartArgs args = {0};
+    args.volume = -1;
+    args.fftlist = 0;
 
     struct argparse_option options[] = 
     {
@@ -2406,6 +2421,12 @@ static StartArgs parseArgs(s32 argc, char **argv)
 #define CMD_PARAMS_DEF(name, ctype, type, post, help) OPT_##type('\0', #name, &args.name, help),
         CMD_PARAMS_LIST(CMD_PARAMS_DEF)
 #undef  CMD_PARAMS_DEF
+        OPT_GROUP("Demoscene-related options:\n"),
+        OPT_GROUP("FFT:\n"),
+        OPT_BOOLEAN('\0', "fft", &args.fft, "enable FFT support"),
+        OPT_BOOLEAN('\0', "fftlist", &args.fftlist, "list FFT devices"),
+        OPT_BOOLEAN('\0', "fftcaptureplaybackdevices", &args.fftcaptureplaybackdevices, "Capture playback devices for loopback (Windows only)"),
+        OPT_STRING('\0', "fftdevice", &args.fftdevice, "name of the device to use with FFT"),
         OPT_END(),
     };
 
@@ -2623,6 +2644,17 @@ Studio* studio_create(s32 argc, char **argv, s32 samplerate, tic80_pixel_color_f
     studio->config->data.options.vsync      |= args.vsync;
     studio->config->data.soft               |= args.soft;
     studio->config->data.cli                |= args.cli;
+
+#if defined(BUILD_EDITORS)
+    if (args.fftlist)
+    {
+        FFT_EnumerateDevices();
+        exit(0);
+    }
+    studio->config->data.fft = args.fft;
+    studio->config->data.fftcaptureplaybackdevices = args.fftcaptureplaybackdevices;
+    studio->config->data.fftdevice = args.fftdevice;
+#endif
 
     studioConfigChanged(studio);
 

@@ -95,6 +95,11 @@ typedef struct
 #define CMD_PARAMS_DEF(name, ctype, type, post, help) ctype name;
     CMD_PARAMS_LIST(CMD_PARAMS_DEF)
 #undef  CMD_PARAMS_DEF
+
+    int fft;
+    int fftlist;
+    int fftcaptureplaybackdevices;
+    const char *fftdevice;
 } StartArgs;
 
 typedef enum
