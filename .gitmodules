@@ -75,10 +75,6 @@
 	path = vendor/pocketpy
 	url = https://github.com/nesbox/pocketpy.git
 	shallow = true
-[submodule "vendor/quickjs"]
-	path = vendor/quickjs
-	url = https://github.com/nesbox/quickjs.git
-	shallow = true
 [submodule "vendor/naett"]
 	path = vendor/naett
 	url = https://github.com/erkkah/naett.git
@@ -95,3 +91,6 @@
 	path = vendor/jsmn
 	url = https://github.com/zserge/jsmn.git
 	shallow = true
+[submodule "vendor/quickjs"]
+	path = vendor/quickjs
+	url = https://github.com/quickjs-ng/quickjs.git
