@@ -9,7 +9,13 @@ if(BUILD_WITH_JS)
 
     set(QUICKJS_DIR ${THIRDPARTY_DIR}/quickjs)
 
-    file(STRINGS ${QUICKJS_DIR}/VERSION CONFIG_VERSION)
+    find_package(Git REQUIRED)
+    execute_process(
+        COMMAND ${GIT_EXECUTABLE} rev-parse HEAD
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/vendor/quickjs
+        OUTPUT_VARIABLE CONFIG_VERSION
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
 
     set(QUICKJS_SRC
         ${QUICKJS_DIR}/quickjs.c 
