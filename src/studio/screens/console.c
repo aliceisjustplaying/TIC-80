@@ -3493,7 +3493,7 @@ static void processConsoleTab(Console* console)
     {
         // Tab-complete commands.
         TabCompleteData data = newTabCompleteData(console, input);
-        for(s32 i = 0; i < COUNT_OF(Commands); i++)
+        for(size_t i = 0; i < COUNT_OF(Commands); i++)
         {
             addTabCompleteOption(&data, Commands[i].name);
             if (Commands[i].alt)
