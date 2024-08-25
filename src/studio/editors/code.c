@@ -1183,8 +1183,8 @@ static bool structuredDeleteOverride(Code* code, char* pos)
     const bool isclose = iscloseparen_(code, *pos);
     if (isopen || isclose)
     {
-        if (isopen && iscloseparen_(code, *(pos+1))
-            || isclose && isopenparen_(code, *(pos+1)))
+        if ((isopen && iscloseparen_(code, *(pos+1)))
+            || (isclose && isopenparen_(code, *(pos+1))))
         {
             deleteCode(code, pos, pos+2);
             history(code);
