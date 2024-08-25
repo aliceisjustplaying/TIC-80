@@ -499,7 +499,7 @@ static void consolePrintOffset(Console* console, const char* text, u8 color, s32
 
     console->cursor.pos = cursorPos(console);
 
-    for(const char* ptr = text, *next = ptr; *ptr; ptr++)
+    for(const char* ptr = text; *ptr; ptr++)
     {
         char symbol = *ptr;
 
