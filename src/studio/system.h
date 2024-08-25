@@ -154,7 +154,6 @@ typedef struct
     const char *fftdevice;
 
     char* keyboardLayout;
-
 } StudioConfig;
 
 typedef struct Studio Studio;

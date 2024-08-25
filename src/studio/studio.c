@@ -2655,7 +2655,6 @@ static void setPopupHide(void* data)
 void studio_keymapchanged(Studio* studio, char* keyboardLayout)
 {
     studio->config->data.keyboardLayout = keyboardLayout;
-    printf("Keyboard layout change detected, keyboardLayout: %s\n", keyboardLayout);
 }
 
 bool studio_alive(Studio* studio)
