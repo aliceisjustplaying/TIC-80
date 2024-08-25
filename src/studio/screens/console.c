@@ -4511,7 +4511,7 @@ void initConsole(Console* console, Studio* studio, tic_fs* fs, tic_net* net, Con
         .save = saveCart,
         .done = commandDone,
         .cursor = {.pos.x = 1, .pos.y = 3, .delay = 0},
-        .input = {console->text},
+        .input = {console->text, 0},
         .tickCounter = 0,
         .active = false,
         .text = console->text,
