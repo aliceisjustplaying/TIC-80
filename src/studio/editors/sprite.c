@@ -2030,11 +2030,9 @@ static void drawSpriteToolbar(Sprite* sprite)
 
                 tic_rect rect = {TIC80_WIDTH - 1 - 7*(nbPages-page), 0, 7, TOOLBAR_SIZE};
 
-                bool over = false;
                 if(checkMousePos(sprite->studio, &rect))
                 {
                     setCursor(sprite->studio, tic_cursor_hand);
-                    over = true;
 
                     SHOW_TOOLTIP(sprite->studio, "PAGE %i", page + 1);
 
