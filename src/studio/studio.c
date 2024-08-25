@@ -1816,7 +1816,6 @@ static void processShortcuts(Studio* studio)
 
     bool alt = tic_api_key(tic, tic_key_alt);
     bool ctrl = tic_api_key(tic, tic_key_ctrl);
-    char* keyboardLayout = studio->config->data.keyboardLayout;
 
 #if defined(CRT_SHADER_SUPPORT)
     if(keyWasPressedOnce(studio, tic_key_f6)) switchCrtMonitor(studio);
@@ -1826,7 +1825,7 @@ static void processShortcuts(Studio* studio)
     {
         if (enterWasPressedOnce(studio)) gotoFullscreen(studio);
 #if defined(BUILD_EDITORS)
-        else if(studio->mode != TIC_RUN_MODE && strcmp(keyboardLayout, "azerty") != 0)
+        else if(studio->mode != TIC_RUN_MODE && strcmp(studio->config->data.keyboardLayout, "azerty") != 0)
         {
             if(keyWasPressedOnce(studio, tic_key_grave)) setStudioMode(studio, TIC_CONSOLE_MODE);
             else if(keyWasPressedOnce(studio, tic_key_1)) setStudioMode(studio, TIC_CODE_MODE);
