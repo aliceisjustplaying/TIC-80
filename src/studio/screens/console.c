@@ -1625,7 +1625,7 @@ static void onDirCommand(Console* console)
 {
     printLine(console);
 
-    PrintFileNameData data = {console};
+    PrintFileNameData data = {console, NULL, 0};
     tic_fs_enum(console->fs, printFilename, onDirDone, MOVE(data));
 }
 
