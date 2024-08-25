@@ -2343,7 +2343,7 @@ static void onExport_mapimg(Console* console, const char* param, const char* pat
 
     enum{Width = TIC_MAP_WIDTH * TIC_SPRITESIZE, Height = TIC_MAP_HEIGHT * TIC_SPRITESIZE};
 
-    png_img img = {Width, Height, malloc(Width * Height * sizeof(png_rgba))};
+    png_img img = {Width, Height, {malloc(Width * Height * sizeof(png_rgba))}};
 
     SCOPE(free(img.data))
     {
