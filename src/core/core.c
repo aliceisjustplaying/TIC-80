@@ -708,7 +708,7 @@ static inline void border(tic_mem* memory, s32 row, void* data)
 
 void tic_core_blit(tic_mem* tic)
 {
-    tic_core_blit_ex(tic, (tic_blit_callback){scanline, border, NULL});
+    tic_core_blit_ex(tic, (tic_blit_callback){scanline, border, NULL, NULL});
 }
 
 tic_mem* tic_core_create(s32 samplerate, tic80_pixel_color_format format)
