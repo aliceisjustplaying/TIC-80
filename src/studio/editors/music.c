@@ -467,13 +467,6 @@ static s32 getNote(Music* music)
     return pattern->rows[music->tracker.edit.y].note - NoteStart;
 }
 
-static s32 getOctave(Music* music)
-{
-    tic_track_pattern* pattern = getChannelPattern(music);
-
-    return pattern->rows[music->tracker.edit.y].octave;
-}
-
 static s32 getSfx(Music* music)
 {
     tic_track_pattern* pattern = getChannelPattern(music);
