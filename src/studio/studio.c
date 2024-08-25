@@ -2203,7 +2203,7 @@ void studioConfigChanged(Studio* studio)
 
 static void processMouseStates(Studio* studio)
 {
-    for(s32 i = 0; i < COUNT_OF(studio->mouse.state); i++)
+    for(size_t i = 0; i < COUNT_OF(studio->mouse.state); i++)
         studio->mouse.state[i].dbl.click = studio->mouse.state[i].click = false;
 
     tic_mem* tic = studio->tic;
