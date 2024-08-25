@@ -3464,7 +3464,7 @@ static void processConsoleTab(Console* console)
         if (secondParam)
             secondParam++;
 
-        for(s32 i = 0; i < COUNT_OF(Commands); i++)
+        for(size_t i = 0; i < COUNT_OF(Commands); i++)
         {
             s32 commandLen = param-input-1;
             bool commandMatches = (strlen(Commands[i].name) == commandLen &&
