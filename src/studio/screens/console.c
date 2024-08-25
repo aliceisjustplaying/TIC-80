@@ -2405,7 +2405,7 @@ static void onExport_screen(Console* console, const char* param, const char* nam
     tic_mem* tic = console->tic;
     const tic_cartridge* cart = &tic->cart;
 
-    png_img img = {TIC80_WIDTH, TIC80_HEIGHT, malloc(TIC80_WIDTH * TIC80_HEIGHT * sizeof(png_rgba))};
+    png_img img = {TIC80_WIDTH, TIC80_HEIGHT, {malloc(TIC80_WIDTH * TIC80_HEIGHT * sizeof(png_rgba))}};
 
     SCOPE(free(img.data))
     {
@@ -4511,7 +4511,7 @@ void initConsole(Console* console, Studio* studio, tic_fs* fs, tic_net* net, Con
         .save = saveCart,
         .done = commandDone,
         .cursor = {.pos.x = 1, .pos.y = 3, .delay = 0},
-        .input = {.text = console->text, .pos = 0},
+        .input = {console->text},
         .tickCounter = 0,
         .active = false,
         .text = console->text,
