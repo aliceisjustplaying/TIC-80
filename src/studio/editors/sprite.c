@@ -1246,17 +1246,11 @@ static void drawPaletteVBank1(Sprite* sprite, s32 x, s32 y)
     {
         tic_rect rect = {x - 22, y + 1, 19, 5};
 
-        bool down = false;
-        bool over = false;
         if(checkMousePos(sprite->studio, &rect))
         {
             setCursor(sprite->studio, tic_cursor_hand);
-            over = true;
 
             showTooltip(sprite->studio, "VBANK0 PALETTE");
-
-            if(checkMouseDown(sprite->studio, &rect, tic_mouse_left))
-                down = true;
 
             if(checkMouseClick(sprite->studio, &rect, tic_mouse_left))
                 sprite->palette.vbank1 = false;
@@ -1275,17 +1269,11 @@ static void drawPaletteVBank1(Sprite* sprite, s32 x, s32 y)
     {
         tic_rect rect = {x - 22, y + 9, 19, 5};
 
-        bool down = false;
-        bool over = false;
         if(checkMousePos(sprite->studio, &rect))
         {
             setCursor(sprite->studio, tic_cursor_hand);
-            over = true;
 
             showTooltip(sprite->studio, "VBANK1 PALETTE");
-
-            if(checkMouseDown(sprite->studio, &rect, tic_mouse_left))
-                down = true;
 
             if(checkMouseClick(sprite->studio, &rect, tic_mouse_left))
                 sprite->palette.vbank1 = true;
