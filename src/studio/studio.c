@@ -568,8 +568,6 @@ void toClipboard(const void* data, s32 size, bool flip)
 
         if(clipboard)
         {
-            char* ptr = clipboard;
-
             tic_tool_buf2str(data, size, clipboard, flip);
             tic_sys_clipboard_set(clipboard);
             free(clipboard);
