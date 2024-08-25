@@ -447,7 +447,7 @@ static void removeInvalidChars(char* code)
     for(s = d = code; (*d = *s); d += (*s++ != '\r'));
 }
 
-const char matchingDelim(const char current)
+char matchingDelim(const char current)
 {
     char match = 0;
     switch (current)
