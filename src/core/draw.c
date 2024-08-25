@@ -490,7 +490,7 @@ static struct
 
 static void initSidesBuffer()
 {
-    for (s32 i = 0; i < COUNT_OF(SidesBuffer.Left); i++)
+    for (size_t i = 0; i < COUNT_OF(SidesBuffer.Left); i++)
         SidesBuffer.Left[i] = TIC80_WIDTH, SidesBuffer.Right[i] = -1;
 }
 
