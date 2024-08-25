@@ -558,7 +558,7 @@ u8 getSpritePixel(tic_tile* tiles, s32 x, s32 y)
 }
 
 #if defined(BUILD_EDITORS)
-void toClipboard(const void* data, s32 size, bool flip)
+void toClipboard(const void* data, size_t size, bool flip)
 {
     if(data)
     {
@@ -587,7 +587,7 @@ static void removeWhiteSpaces(char* str)
     str[i] = '\0';
 }
 
-bool fromClipboard(void* data, s32 size, bool flip, bool remove_white_spaces, bool sameSize)
+bool fromClipboard(void* data, size_t size, bool flip, bool remove_white_spaces, bool sameSize)
 {
     if(tic_sys_clipboard_has())
     {

@@ -222,8 +222,8 @@ void setStudioViMode(Studio* studio, ViMode mode);
 ViMode getStudioViMode(Studio* studio);
 bool checkStudioViMode(Studio* studio, ViMode mode);
 
-void toClipboard(const void* data, s32 size, bool flip);
-bool fromClipboard(void* data, s32 size, bool flip, bool remove_white_spaces, bool sameSize);
+void toClipboard(const void* data, size_t size, bool flip);
+bool fromClipboard(void* data, size_t size, bool flip, bool remove_white_spaces, bool sameSize);
 
 typedef enum
 {
