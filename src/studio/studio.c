@@ -1011,7 +1011,7 @@ void drawToolbar(Studio* studio, tic_mem* tic, bool bg)
 
     s32 mode = -1;
 
-    for(s32 i = 0; i < COUNT_OF(Modes); i++)
+    for(s32 i = 0; i < (s32)COUNT_OF(Modes); i++)
     {
         tic_rect rect = {i * Size, 0, Size, Size};
 
