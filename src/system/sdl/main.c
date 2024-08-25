@@ -145,7 +145,7 @@ static struct
     {
         bool state[tic_keys_count];
         bool pressed[tic_keys_count];
-        bool isFrenchKeyboard;
+        char* keyboardLayout;
         char text;
 
 #if defined(TOUCH_INPUT_SUPPORT)
@@ -1063,19 +1063,19 @@ static void handleKeydown(SDL_Keycode keycode, bool down, bool* state, bool* pre
 #endif
 }
 
-bool is_french_keyboard() {
-	char q = SDL_GetKeyFromScancode(SDL_SCANCODE_Q);
-	char w = SDL_GetKeyFromScancode(SDL_SCANCODE_W);
-	char y = SDL_GetKeyFromScancode(SDL_SCANCODE_Y);
+char* detect_keyboard_layout() {
+    char q = SDL_GetKeyFromScancode(SDL_SCANCODE_Q);
+    char w = SDL_GetKeyFromScancode(SDL_SCANCODE_W);
+    char y = SDL_GetKeyFromScancode(SDL_SCANCODE_Y);
 
     char* layout = "unknown";
 
-	if (q == 'q' && w == 'w' && y == 'y') layout = "qwerty";
-	if (q == 'a' && w == 'z' && y == 'y') layout = "azerty";
-	if (q == 'q' && w == 'w' && y == 'z') layout = "qwertz";
-	if (q == 'q' && w == 'z' && y == 'y') layout = "qzerty";
-	
-    return layout == "azerty";
+    if (q == 'q' && w == 'w' && y == 'y') layout = "qwerty";
+    if (q == 'a' && w == 'z' && y == 'y') layout = "azerty";
+    if (q == 'q' && w == 'w' && y == 'z') layout = "qwertz";
+    if (q == 'q' && w == 'z' && y == 'y') layout = "qzerty";
+
+    return layout;
 }
 
 static void pollEvents()
@@ -1210,7 +1210,7 @@ static void pollEvents()
             handleKeydown(event.key.keysym.sym, false, platform.keyboard.state, platform.keyboard.pressed);
             break;
         case SDL_KEYMAPCHANGED:
-            studio_keymapchanged(platform.studio, is_french_keyboard());
+            studio_keymapchanged(platform.studio, detect_keyboard_layout());
             break;
         case SDL_TEXTINPUT:
             if(strlen(event.text.text) == 1)
@@ -1913,7 +1913,7 @@ static s32 start(s32 argc, char **argv, const char* folder)
         SDL_Log("Unable to initialize SDL Game Controller: %i, %s\n", result, SDL_GetError());
     }
 
-    platform.studio = studio_create(argc, argv, TIC80_SAMPLERATE, SCREEN_FORMAT, folder, determineMaximumScale(), is_french_keyboard());
+    platform.studio = studio_create(argc, argv, TIC80_SAMPLERATE, SCREEN_FORMAT, folder, determineMaximumScale(), detect_keyboard_layout());
 
     SCOPE(studio_delete(platform.studio))
     {
