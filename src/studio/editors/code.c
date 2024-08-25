@@ -1297,7 +1297,6 @@ static void deleteLine(Code* code)
 {
     char* linestart = code->cursor.position;
     char* lineend = linestart+1;
-    const char* end = code->src + strlen(code->src);
     
     if (shouldUseStructuredEdit(code))
     {
