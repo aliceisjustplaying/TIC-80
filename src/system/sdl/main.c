@@ -1070,10 +1070,16 @@ char* detect_keyboard_layout() {
 
     char* layout = "unknown";
 
-    if (q == 'q' && w == 'w' && y == 'y') layout = "qwerty";
-    if (q == 'a' && w == 'z' && y == 'y') layout = "azerty";
-    if (q == 'q' && w == 'w' && y == 'z') layout = "qwertz";
-    if (q == 'q' && w == 'z' && y == 'y') layout = "qzerty";
+    // printf("q: %c, w: %c, y: %c\n", q, w, y);
+
+    if (q == 'q' && w == 'w' && y == 'y') layout = "qwerty"; // US etc.
+    if (q == 'a' && w == 'z' && y == 'y') layout = "azerty"; // French
+    if (q == 'q' && w == 'w' && y == 'z') layout = "qwertz"; // German etc.
+    if (q == 'q' && w == 'z' && y == 'y') layout = "qzerty"; // Italian
+    // Don't ask me why it detects k instead of l
+    if (q == 'x' && w == 'v' && y == 'k') layout = "xvlcwk"; // German Neo 2
+    // Or why it detects p instead of u
+    if (q == 'j' && w == 'd' && y == 'p') layout = "jduaxp"; // German Bone
 
     return layout;
 }
