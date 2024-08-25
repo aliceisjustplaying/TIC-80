@@ -592,7 +592,6 @@ static void onLoadCommandConfirmed(Studio* studio, bool yes, void* data)
 static void onPlayCart(void* data)
 {
     Surf* surf = data;
-    SurfItem* item = getMenuItem(surf);
 
     studioCartChanged(surf->studio)
         ? confirmLoadCart(surf->studio, onLoadCommandConfirmed, surf)
