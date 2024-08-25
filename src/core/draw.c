@@ -654,7 +654,7 @@ static inline double edgeFn(const Vec2* a, const Vec2* b, const Vec2* c)
 
 static void drawTri(tic_mem* tic, const Vec2* v0, const Vec2* v1, const Vec2* v2, PixelShader shader, void* data)
 {
-    ShaderAttr a = {data, v0, v1, v2};
+    ShaderAttr a = {data, {v0, v1, v2}};
 
     tic_core* core = (tic_core*)tic;
     const struct ClipRect* clip = &core->state.clip;
