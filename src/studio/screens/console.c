@@ -2048,7 +2048,7 @@ static void exportSprites(Console* console, const char* filename, tic_tile* base
     tic_mem* tic = console->tic;
     const tic_cartridge* cart = &tic->cart;
 
-    png_img img = {TIC_SPRITESHEET_SIZE, TIC_SPRITESHEET_SIZE, malloc(TIC_SPRITESHEET_SIZE * TIC_SPRITESHEET_SIZE * sizeof(png_rgba))};
+    png_img img = {TIC_SPRITESHEET_SIZE, TIC_SPRITESHEET_SIZE, {malloc(TIC_SPRITESHEET_SIZE * TIC_SPRITESHEET_SIZE * sizeof(png_rgba))}};
 
     SCOPE(free(img.data))
     {
