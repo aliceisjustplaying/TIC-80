@@ -384,8 +384,8 @@ static void pageUp(Music* music)
 static void pageDown(Music* music)
 {
     if (music->tracker.edit.y < getRows(music) - 1)
+        music->tracker.edit.y += TRACKER_ROWS;
 
-    music->tracker.edit.y += TRACKER_ROWS;
     s32 rows = getRows(music);
 
     if(music->tracker.edit.y >= rows) 
