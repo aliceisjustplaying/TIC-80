@@ -145,7 +145,7 @@ void initWorld(World* world, Studio* studio, Map* map)
 
             s32 max = 0;
 
-            for(s32 c = 0; c < COUNT_OF(colors); c++)
+            for(size_t c = 0; c < COUNT_OF(colors); c++)
                 if(colors[c] > colors[max]) max = c;
 
             tic_tool_poke4(world->preview, i, max);
