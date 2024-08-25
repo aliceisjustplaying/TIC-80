@@ -2184,7 +2184,7 @@ static void exportGame(Console* console, const char* name, const char* system, n
 {
     tic_mem* tic = console->tic;
     printLine(console);
-    GameExportData data = {console};
+    GameExportData data = {console, NULL};
     strcpy(data.filename, name);
 
     char url[TICNAME_MAX] = "/export/" DEF2STR(TIC_VERSION_MAJOR) "." DEF2STR(TIC_VERSION_MINOR) TIC_VERSION_STATUS "/";
