@@ -32,10 +32,8 @@
 #include "editors/music.h"
 #include "screens/console.h"
 #include "screens/surf.h"
-#include "ext/history.h"
 #include "net.h"
 #include "wave_writer.h"
-#include "ext/gif.h"
 #define MSF_GIF_IMPL
 #include "msf_gif.h"
 
