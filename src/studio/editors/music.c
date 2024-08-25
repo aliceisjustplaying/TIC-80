@@ -891,16 +891,6 @@ static void updateSelection(Music* music)
         resetSelection(music);
 }
 
-static s32 getDigit(s32 pos, s32 val)
-{
-    enum {Base = 10};
-
-    s32 div = 1;
-    while(pos--) div *= Base;
-
-    return val / div % Base;
-}
-
 static s32 setDigit(s32 pos, s32 val, s32 digit)
 {
     enum {Base = 10};
