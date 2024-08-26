@@ -1068,6 +1068,33 @@ tic_layout detect_keyboard_layout()
     char w = SDL_GetKeyFromScancode(SDL_SCANCODE_W);
     char y = SDL_GetKeyFromScancode(SDL_SCANCODE_Y);
 
+    // SDL_Scancode altScancode = SDL_SCANCODE_LALT;  // Left Alt
+    // SDL_Scancode oneScancode = SDL_SCANCODE_1;     // '1' key
+
+    SDL_Keycode lalt = SDL_GetKeyFromScancode(SDL_SCANCODE_LALT);
+    SDL_Keycode one = SDL_GetKeyFromScancode(SDL_SCANCODE_1);
+
+    // Simulate the combination to get the result
+    SDL_Keymod modState = KMOD_ALT;
+
+    // Convert scancodes to keycodes
+    SDL_Keycode combinedKeycode = SDL_GetKeyFromScancode(one);
+
+    // Display the combination
+    printf("Alt keycode: %d\n", lalt);
+    printf("1 keycode: %d\n", one);
+    printf("Combined Alt+1: Keycode: %d, Modifier: %d\n", combinedKeycode, modState);
+
+    // char one = SDL_GetKeyFromScancode(SDL_SCANCODE_1);
+    // char two = SDL_GetKeyFromScancode(SDL_SCANCODE_2);
+    // char three = SDL_GetKeyFromScancode(SDL_SCANCODE_3);
+    // char four = SDL_GetKeyFromScancode(SDL_SCANCODE_4);
+    // char five = SDL_GetKeyFromScancode(SDL_SCANCODE_5);
+
+    // printf("----------------\n");
+    // printf("Detected keyboard layout:\n");
+    // printf("q: %c, w: %c, y: %c, one: %c, two: %c, three: %c, four: %c, five: %c\n", q, w, y, one, two, three, four, five);
+    // printf("++++++++++++++++\n");
     tic_layout layout = tic_layout_unknown;
 
     if (q == 'q' && w == 'w' && y == 'y') layout = tic_layout_qwerty; // US etc.
