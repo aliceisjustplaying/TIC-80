@@ -59,15 +59,12 @@
 
 #if defined(__TIC_MACOSX__)
 #include <Carbon/Carbon.h>
-#elif defined(__TIC_LINUX__)
-    #ifdef __WAYLAND__
-        #include <xkbcommon/xkbcommon.h>
-    #else
-        #include <X11/XKBlib.h>
-        #include <X11/Xlib.h>
-    #endif
-#else
-    #error "Unsupported platform"
+#endif
+
+#if defined(__TIC_LINUX__)
+#include <xkbcommon/xkbcommon.h>
+#include <xkbcommon/xkbcommon-x11.h>
+#include <SDL_syswm.h>
 #endif
 
 #if defined(__TIC_ANDROID__)
@@ -1086,7 +1083,6 @@ tic_layout detect_keyboard_layout()
         printf("NOT US\n");
         return tic_layout_unknown;
     }
-
 #elif defined(__TIC_MACOSX__)
     TISInputSourceRef currentKeyboard = TISCopyCurrentKeyboardLayoutInputSource();
     CFStringRef layoutID = (CFStringRef)TISGetInputSourceProperty(currentKeyboard, kTISPropertyInputSourceID);
@@ -1099,47 +1095,78 @@ tic_layout detect_keyboard_layout()
         printf("NOT US\n");
         return tic_layout_unknown;
     }
-
 #elif defined(__TIC_LINUX__)
-    #ifdef __WAYLAND__
-        // Wayland implementation using libxkbcommon
-        struct xkb_context *context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
-        struct xkb_keymap *keymap = xkb_keymap_new_from_names(context, NULL, XKB_KEYMAP_COMPILE_NO_FLAGS);
-        struct xkb_state *state = xkb_state_new(keymap);
-        const char *layout = xkb_keymap_layout_get_name(keymap, 0); // Assume default group 0
-        bool isUS = (strcmp(layout, "us") == 0);
-        xkb_state_unref(state);
-        xkb_keymap_unref(keymap);
+    struct xkb_context *context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
+    struct xkb_keymap *keymap = NULL;
+    struct xkb_state *state = NULL;
+    bool isUS = false;
+
+    if(getenv("WAYLAND_DISPLAY")) {
+        // Wayland implementation for KDE Plasma 6
+        // Try to get the keymap from the Wayland compositor
+        // This part might require integration with KDE's Wayland protocols
+        // For now, we'll use the default method
+        keymap = xkb_keymap_new_from_names(context, NULL, XKB_KEYMAP_COMPILE_NO_FLAGS);
+
+        if (keymap) {
+            state = xkb_state_new(keymap);
+            if (state) {
+                const char *layout = xkb_keymap_layout_get_name(keymap, 0); // Assume default group 0
+                isUS = (strcmp(layout, "us") == 0);
+                xkb_state_unref(state);
+            }
+            xkb_keymap_unref(keymap);
+        }
         xkb_context_unref(context);
+
+        // TODO: Consider checking KDE Plasma settings for layout information
+
         if (isUS) {
-            printf("US\n");
+            printf("WAYLAND: US\n");
             return tic_layout_qwerty;
         } else {
-            printf("NOT US\n");
+            printf("WAYLAND: NOT US\n");
             return tic_layout_unknown;
         }
-    #else
-        // X11/XWayland implementation
-        Display *display = XOpenDisplay(NULL);
-        if (!display) return false;
+    } else {
+        // X11/XWayland implementation using SDL
+        SDL_Window *window = SDL_GetWindowFromID(SDL_GetWindowID(SDL_GL_GetCurrentWindow()));
+        if (!window) {
+            printf("Error getting window: %s\n", SDL_GetError());
+            return tic_layout_unknown;
+        }
+
+        SDL_SysWMinfo wmInfo;
+        SDL_VERSION(&wmInfo.version);
+        if (SDL_GetWindowWMInfo(window, &wmInfo) != SDL_TRUE) {
+            printf("Error getting window information: %s\n", SDL_GetError());
+            return tic_layout_unknown;
+        }
+
+        Display *display = wmInfo.info.x11.display;
+        if (!display) {
+            printf("NO DISPLAY\n");
+            return tic_layout_unknown;
+        }
+
         XkbStateRec state;
         XkbGetState(display, XkbUseCoreKbd, &state);
         char *symbol = XGetAtomName(display, state.group);
         bool isUS = (strcmp(symbol, "us") == 0);
         XFree(symbol);
-        XCloseDisplay(display);
+        // Note: Don't close the display here, as it's managed by SDL
+
         if (isUS) {
-            printf("US\n");
+            printf("X11: US\n");
             return tic_layout_qwerty;
         } else {
-            printf("NOT US\n");
+            printf("X11: NOT US\n");
             return tic_layout_unknown;
         }
-    #endif
-
+    }
 #else
-    // Unsupported platform
-    return false;
+    printf("UNSUPPORTED\n");
+    return tic_layout_qwerty;
 #endif
 }
 
