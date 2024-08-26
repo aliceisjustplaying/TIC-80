@@ -57,6 +57,19 @@
 #include <windows.h>
 #endif
 
+#if defined(__TIC_MACOSX__)
+#include <Carbon/Carbon.h>
+#elif defined(__TIC_LINUX__)
+    #ifdef __WAYLAND__
+        #include <xkbcommon/xkbcommon.h>
+    #else
+        #include <X11/XKBlib.h>
+        #include <X11/Xlib.h>
+    #endif
+#else
+    #error "Unsupported platform"
+#endif
+
 #if defined(__TIC_ANDROID__)
 #include <sys/stat.h>
 #endif
@@ -1064,22 +1077,70 @@ static void handleKeydown(SDL_Keycode keycode, bool down, bool* state, bool* pre
 
 tic_layout detect_keyboard_layout()
 {
-    char q = SDL_GetKeyFromScancode(SDL_SCANCODE_Q);
-    char w = SDL_GetKeyFromScancode(SDL_SCANCODE_W);
-    char y = SDL_GetKeyFromScancode(SDL_SCANCODE_Y);
+#if defined(__TIC_WINDOWS__)
+    HKL layout = GetKeyboardLayout(0);
+    if (layout == (HKL)0x0409) {
+        printf("US\n");
+        return tic_layout_qwerty;
+    } else {
+        printf("NOT US\n");
+        return tic_layout_unknown;
+    }
 
-    tic_layout layout = tic_layout_unknown;
+#elif defined(__TIC_MACOSX__)
+    TISInputSourceRef currentKeyboard = TISCopyCurrentKeyboardLayoutInputSource();
+    CFStringRef layoutID = (CFStringRef)TISGetInputSourceProperty(currentKeyboard, kTISPropertyInputSourceID);
+    bool isUS = CFStringCompare(layoutID, CFSTR("com.apple.keylayout.US"), kCFCompareCaseInsensitive) == kCFCompareEqualTo;
+    CFRelease(currentKeyboard);
+    if (isUS) {
+        printf("US\n");
+        return tic_layout_qwerty;
+    } else {
+        printf("NOT US\n");
+        return tic_layout_unknown;
+    }
 
-    if (q == 'q' && w == 'w' && y == 'y') layout = tic_layout_qwerty; // US etc.
-    if (q == 'a' && w == 'z' && y == 'y') layout = tic_layout_azerty; // French
-    if (q == 'q' && w == 'w' && y == 'z') layout = tic_layout_qwertz; // German etc.
-    if (q == 'q' && w == 'z' && y == 'y') layout = tic_layout_qzerty; // Italian
-    // Don't ask me why it detects k instead of l
-    if (q == 'x' && w == 'v' && y == 'k') layout = tic_layout_de_neo; // xvlcwk - German Neo
-    // ...or why it detects p instead of u
-    if (q == 'j' && w == 'd' && y == 'p') layout = tic_layout_de_bone; // jduaxp - German Bone
+#elif defined(__TIC_LINUX__)
+    #ifdef __WAYLAND__
+        // Wayland implementation using libxkbcommon
+        struct xkb_context *context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
+        struct xkb_keymap *keymap = xkb_keymap_new_from_names(context, NULL, XKB_KEYMAP_COMPILE_NO_FLAGS);
+        struct xkb_state *state = xkb_state_new(keymap);
+        const char *layout = xkb_keymap_layout_get_name(keymap, 0); // Assume default group 0
+        bool isUS = (strcmp(layout, "us") == 0);
+        xkb_state_unref(state);
+        xkb_keymap_unref(keymap);
+        xkb_context_unref(context);
+        if (isUS) {
+            printf("US\n");
+            return tic_layout_qwerty;
+        } else {
+            printf("NOT US\n");
+            return tic_layout_unknown;
+        }
+    #else
+        // X11/XWayland implementation
+        Display *display = XOpenDisplay(NULL);
+        if (!display) return false;
+        XkbStateRec state;
+        XkbGetState(display, XkbUseCoreKbd, &state);
+        char *symbol = XGetAtomName(display, state.group);
+        bool isUS = (strcmp(symbol, "us") == 0);
+        XFree(symbol);
+        XCloseDisplay(display);
+        if (isUS) {
+            printf("US\n");
+            return tic_layout_qwerty;
+        } else {
+            printf("NOT US\n");
+            return tic_layout_unknown;
+        }
+    #endif
 
-    return layout;
+#else
+    // Unsupported platform
+    return false;
+#endif
 }
 
 static void pollEvents()
