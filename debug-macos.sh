@@ -13,6 +13,7 @@ COMPILER_FLAGS=""
 DEBUG_FLAGS=""
 PRO_VERSION_FLAG=""
 STATIC_FLAG=""
+HOMEBREW_FLAGS=""
 WARNING_FLAGS="-Wall -Wextra"
 
 while (( "$#" )); do
@@ -106,10 +107,13 @@ if [ "$MACPORTS" = true ]; then
   echo "Using clang at $CLANG and clang++ at $CLANGPP from MacPorts"
 fi
 
+
+
 if [ "$HOMEBREW" = true ]; then
   export PATH="/opt/homebrew/opt/llvm/bin:$PATH"
-  export LDFLAGS="-L/opt/homebrew/opt/llvm/lib/c++ -Wl,-rpath,/opt/homebrew/opt/llvm/lib/c++ -L/opt/homebrew/opt/llvm/lib"
+  export LDFLAGS="-L/opt/homebrew/opt/llvm/lib/c++ -L/opt/homebrew/opt/llvm/lib/unwind -lunwind -L/opt/homebrew/opt/llvm/lib"
   export CPPFLAGS="-I/opt/homebrew/opt/llvm/include"
+  export HOMEBREW_FLAGS="-DCMAKE_C_COMPILER=/opt/homebrew/opt/llvm/bin/clang -DCMAKE_CXX_COMPILER=/opt/homebrew/opt/llvm/bin/clang++"
   echo
   echo "Using clang at $(which clang) and clang++ at $(which clang++) from Homebrew"
 fi
@@ -144,6 +148,7 @@ cmake -DCMAKE_BUILD_TYPE="$BUILD_TYPE" \
       -DBUILD_SDLGPU=On \
       $DEBUG_FLAGS \
       $COMPILER_FLAGS \
+      $HOMEBREW_FLAGS \
       $STATIC_FLAG \
       -DBUILD_WITH_ALL=On \
       -DCMAKE_EXPORT_COMPILE_COMMANDS=On \
