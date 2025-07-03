@@ -245,11 +245,26 @@ typedef struct {
 5. **Hook into tic_core_tick** after FFT processing
 6. **Test with simple Lua visualization**
 
-#### Phase 2: Full API (Test in 3-4 hours)
-1. Add smoothing to CQT processing
-2. Implement remaining API functions: `cqts()`, `cqto()`, `cqtos()`
-3. Add normalization and auto-gain
-4. Create demo comparing FFT vs CQT
+#### Phase 1 Status: COMPLETE ✓
+- [x] cqtdata.h - Basic structure and constants
+- [x] cqtdata.c - Global data instance  
+- [x] cqt_kernel.h - Kernel generation header
+- [x] cqt_kernel.c - Adapt ESP32 kernel generation
+- [x] cqt.h - Main CQT header
+- [x] cqt.c - Basic CQT processing (with placeholder FFT mapping)
+- [x] luaapi.c - Add cqt() function
+- [x] tic80.c - Hook into core tick
+- [x] CMakeLists.txt - Add new files to build
+
+**Test Results**: Basic API working, visualization shows 10 octaves with test data mapping
+
+#### Phase 2: Real CQT Processing (Priority Tasks)
+1. **Access raw audio buffer** from FFT capture system
+2. **Implement 4096-point FFT** for CQT (separate from main FFT)
+3. **Apply CQT kernels** to FFT output (currently stubbed)
+4. **Fix kernel initialization** - kernels not being generated on startup
+5. **Add remaining API functions**: `cqts()`, `cqto()`, `cqtos()`
+6. **Create comparison demo** showing FFT vs CQT side-by-side
 
 #### Phase 3: Optimization (If needed)
 1. Profile and identify bottlenecks
@@ -266,6 +281,16 @@ function TIC()
     local val = cqt(i) * 100  -- scale up for visibility
     rect(i*2, 136-val, 2, val, 12)
   end
+  
+  -- Draw octave markers
+  for oct=0,9 do
+    local x = oct * 12 * 2
+    line(x, 0, x, 136, 8)
+    print(oct, x+2, 2, 12, false, 1, true)
+  end
+  
+  -- Show info
+  print("CQT TEST - 10 octaves x 12 notes", 2, 120, 12, false, 1, true)
 end
 ```
 

@@ -21,6 +21,7 @@
 // SOFTWARE.
 
 #include "core/core.h"
+#include "cqtdata.h"
 
 #include <stdlib.h>
 #include <lua.h>
@@ -1595,6 +1596,30 @@ static s32 lua_ffts(lua_State* lua)
     return 0;
 }
 
+static s32 lua_cqt(lua_State* lua)
+{
+    s32 top = lua_gettop(lua);
+
+    if (top >= 1)
+    {
+        s32 bin = getLuaNumber(lua, 1);
+        
+        // Validate bin range
+        if (bin < 0 || bin >= CQT_BINS)
+        {
+            luaL_error(lua, "cqt bin out of range (0-%d)\n", CQT_BINS - 1);
+            return 0;
+        }
+
+        // Return normalized CQT data
+        lua_pushnumber(lua, cqtNormalizedData[bin]);
+        return 1;
+    }
+
+    luaL_error(lua, "invalid params, cqt(bin)\n");
+    return 0;
+}
+
 static int lua_dofile(lua_State *lua)
 {
     luaL_error(lua, "unknown method: \"dofile\"\n");
@@ -1648,6 +1673,9 @@ void luaapi_init(tic_core* core)
 
     registerLuaFunction(core, lua_dofile, "dofile");
     registerLuaFunction(core, lua_loadfile, "loadfile");
+    
+    // Register CQT function
+    registerLuaFunction(core, lua_cqt, "cqt");
 }
 
 void luaapi_close(tic_mem* tic)

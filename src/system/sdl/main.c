@@ -24,6 +24,7 @@
 #include "tools.h"
 
 #include "ext/fft.h"
+#include "ext/cqt.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -323,6 +324,8 @@ static void initSound()
     if (studio_config(platform.studio)->fft)
     {
         FFT_Open(studio_config(platform.studio)->fftcaptureplaybackdevices, studio_config(platform.studio)->fftdevice);
+        // Initialize CQT when FFT is enabled
+        CQT_Open();
     }
 
     platform.audio.device = SDL_OpenAudioDevice(NULL, 0, &want, &platform.audio.spec, 0);
@@ -2003,6 +2006,7 @@ static s32 start(s32 argc, char **argv, const char* folder)
                 if (studio_config(platform.studio)->fft)
                 {
                     FFT_Close();
+                    CQT_Close();
                 }
             }
 
