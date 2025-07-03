@@ -6,7 +6,10 @@
 // Returns true on success, false on failure
 bool CQT_Open(void);
 
-// Process CQT from FFT data
+// Process CQT from audio buffer (uses shared audio capture buffer)
+void CQT_ProcessAudio(void);
+
+// Process CQT from FFT data (legacy)
 // fftData: Complex FFT output (size should be CQT_FFT_SIZE/2 + 1)
 void CQT_Process(const float* fftReal, const float* fftImag);
 

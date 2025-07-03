@@ -258,13 +258,110 @@ typedef struct {
 
 **Test Results**: Basic API working, visualization shows 10 octaves with test data mapping
 
-#### Phase 2: Real CQT Processing (Priority Tasks)
-1. **Access raw audio buffer** from FFT capture system
-2. **Implement 4096-point FFT** for CQT (separate from main FFT)
-3. **Apply CQT kernels** to FFT output (currently stubbed)
-4. **Fix kernel initialization** - kernels not being generated on startup
-5. **Add remaining API functions**: `cqts()`, `cqto()`, `cqtos()`
-6. **Create comparison demo** showing FFT vs CQT side-by-side
+#### Phase 2: Real CQT Processing (DEBUGGING)
+1. ✓ **Access raw audio buffer** from FFT capture system
+2. ✓ **Implement 4096-point FFT** for CQT (separate from main FFT)
+3. ✓ **Apply CQT kernels** to FFT output
+4. ✓ **Fix kernel initialization** - kernels are properly generated on startup
+5. **Add remaining API functions**: `cqts()`, `cqto()`, `cqtos()` (TODO)
+6. **Create comparison demo** showing FFT vs CQT side-by-side (TODO)
+
+**TEMPORARY CHANGE**: FFT_SIZE has been changed from 1024 to 2048 in fftdata.h to support CQT's 4096-point FFT requirement. This temporarily breaks FFT resolution (now 2048 bins instead of 1024) but allows CQT to function properly. This should be reverted once a separate audio buffer is implemented for CQT.
+
+**CURRENT ISSUE**: CQT frequency mapping is incorrect. Test shows:
+- Playing 110 Hz (A2) appears at bin 0-4 instead of expected bin 30
+- Error of ~26-30 bins (2-3 octaves too low)
+- CQT is detecting signals but at wrong frequency bins
+
+**Debugging Status**:
+1. Changed smoothing from 0.7 to 0.3 - improved peak sharpness ✓
+2. Fixed window length calculation to use Q factor ✓ 
+3. Fixed kernel generation to use equal temperament spacing ✓
+4. Added gain boost (4x) for better visibility ✓
+5. Created test scripts: test_cqt_tone.lua, test_cqt_debug.lua ✓
+6. **FIXED kernel phase calculation** - Critical fix! ✓
+   - Problem: Was using `(i - windowLength/2) / sampleRate` for phase
+   - Solution: Use `(idx - fftSize/2) * (centerFreq / sampleRate)` like ESP32
+   - The modulation must be based on position in full FFT buffer, not window
+
+**Key Fix Applied**:
+```c
+// OLD (incorrect):
+float t = (i - windowLength/2.0f) / sampleRate;
+float phase = 2.0f * M_PI * centerFreq * t;
+
+// NEW (correct - matches ESP32):
+float phase = 2.0f * M_PI * (centerFreq / sampleRate) * (idx - fftSize/2);
+```
+
+This should fix the frequency mapping issue. Ready for testing!
+
+**Update after testing**: 
+- The phase fix helped but frequencies are still mapping to wrong bins
+- 110 Hz appears at bin 3 instead of 30 (27-bin error)
+- Created test_cqt_stable.lua for controlled testing
+- Created test_cqt_a4.lua for constant 440Hz tone
+- Added debug output to show kernel FFT bin ranges
+- Issue appears to be in kernel generation or application
+
+**Current hypothesis**:
+The kernels might be centered at the wrong FFT bins. Need to verify:
+1. The FFT bin calculation for each center frequency
+2. The kernel's actual FFT bin coverage
+3. Whether the complex multiplication is being done correctly
+
+**Issues found**:
+1. Audio generation in test cart was wrong - fixed in test_cqt_a4.lua
+2. Added debug output to show:
+   - FFT bin magnitudes around 440 Hz (should peak at bin 41)
+   - Which CQT bins have high values
+   - This will help identify if the issue is in kernel generation or application
+
+**To test**: 
+Build and run with test_cqt_a4.lua. The console should show:
+- Every second: FFT bins around 440 Hz and active CQT bins
+- This will reveal if 440 Hz is detected at FFT bin 41 but mapped to wrong CQT bin
+
+**Debug results**:
+- FFT correctly shows 440 Hz peak at bin 41 (magnitude 730) ✓
+- CQT bin 54 has high value (27595) which is correct for 440 Hz ✓
+- BUT: Almost ALL CQT bins (0-105) have significant energy
+- This means kernels are not frequency-selective enough
+
+**Fix applied**:
+- Changed normalization to match ESP32: divide by windowLength before FFT
+- Added scaling factor after FFT: multiply by centerFreq/minFreq
+- This should make kernels more frequency-selective
+
+**Test results after fix**:
+- 440 Hz correctly peaks at CQT bin 54 ✓
+- BUT: ALL bins (0-119) have significant values
+- High frequency bins (90-119) have values in thousands!
+- This means kernels are not properly bandpass filtered
+
+**New hypothesis**:
+The issue is that our kernels are "seeing" all frequencies. Possible causes:
+1. The modulation in time domain might be creating aliases
+2. The window might be too wide or too narrow
+3. The FFT of the kernel might need different normalization
+
+**Next debugging steps**:
+- Removed scaling factor (made it worse)
+- Added debug to show kernel 54's FFT bin range
+- Need to verify kernels are properly bandpass filtered around their center frequencies
+
+**SOLUTION FOUND**: 
+- Removed the scaling factor - this was the key fix!
+- Kernel 54 now correctly uses only 9 FFT bins (38-46) centered on bin 41
+- 440 Hz correctly peaks at CQT bin 54 with magnitude 681
+- Only ~50 bins have values > 0.1 (vs all 120 before)
+- CQT is now properly frequency-selective!
+
+**Working implementation**:
+- Kernels use Q-factor based window length
+- Normalize by windowLength before FFT
+- NO scaling factor after FFT
+- Proper phase calculation: `2π * (f/fs) * (idx - N/2)`
 
 #### Phase 3: Optimization (If needed)
 1. Profile and identify bottlenecks
