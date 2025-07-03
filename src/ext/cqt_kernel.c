@@ -169,6 +169,7 @@ static bool generateSingleKernel(
         free(kernel->indices);
         free(timeKernel);
         free(freqKernel);
+        free(tempWindow);
         return false;
     }
     

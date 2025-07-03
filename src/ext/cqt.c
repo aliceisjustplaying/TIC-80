@@ -110,7 +110,7 @@ void CQT_ApplyKernels(const float* fftReal, const float* fftImag)
         {
             int idx = kernel->indices[k];
             // Ensure index is within bounds
-            if (idx < 0 || idx > CQT_FFT_SIZE/2)
+            if (idx < 0 || idx >= CQT_FFT_SIZE/2 + 1)
                 continue;
                 
             // Complex multiplication: (a + bi) * (c + di) = (ac - bd) + (ad + bc)i
