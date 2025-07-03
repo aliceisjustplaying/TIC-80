@@ -83,27 +83,18 @@ static bool generateSingleKernel(
     float Q = CQT_CalculateQ(CQT_BINS_PER_OCTAVE);
     int windowLength;
     
-    if (centerFreq < 100.0f) {
-        // With 6K FFT, we can use higher Q for better resolution
-        // 20Hz: Q=2.8 gives ~6144 samples (full FFT)
-        // 50Hz: Q=7 gives ~6174 samples (slightly truncated)
-        // 100Hz: Q=14 gives ~6174 samples (slightly truncated)
-        float targetQ = Q;  // Start with ideal Q
-        windowLength = (int)(targetQ * sampleRate / centerFreq);
-        
-        // If window doesn't fit, reduce Q to fit exactly
-        if (windowLength > fftSize) {
-            targetQ = (float)fftSize * centerFreq / sampleRate;
-            windowLength = fftSize;
-        }
-    } else {
-        // Constant-Q for higher frequencies
-        windowLength = (int)(Q * sampleRate / centerFreq);
-        
-        // Ensure it fits in FFT size with some margin
-        if (windowLength > fftSize * 0.9) {
-            windowLength = (int)(fftSize * 0.9);
-        }
+    // With 16K FFT, we can use full constant-Q across the entire spectrum!
+    windowLength = (int)(Q * sampleRate / centerFreq);
+    
+    // At 20Hz: windowLength = 17 * 44100 / 20 = 37,485 samples
+    // 16K FFT can handle up to frequencies down to ~45 Hz without truncation
+    // For lower frequencies, we'll still get better Q than before
+    
+    // Ensure it fits in FFT size
+    if (windowLength > fftSize) {
+        windowLength = fftSize;
+        // Even at 20Hz with truncation to 16384 samples:
+        // Effective Q = 16384 * 20 / 44100 = 7.4 (much better than 1.86!)
     }
     
     // Ensure window length is reasonable

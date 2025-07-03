@@ -487,12 +487,49 @@ The normalization may need adjustment based on actual window length used.
 2. Configurable transition frequency
 3. Optional multi-resolution mode for maximum accuracy
 
+## FFT Performance Measurements (CRITICAL UPDATE)
+
+### M1 Pro Benchmark Results:
+Actual measurements completely contradict initial estimates:
+```
+CQT FFT Benchmark on this CPU:
+================================
+ 4096-point FFT: 0.014 ms
+ 6144-point FFT: 0.021 ms (current implementation)
+ 8192-point FFT: 0.025 ms
+12288-point FFT: 0.047 ms
+16384-point FFT: 0.066 ms (!!)
+================================
+```
+
+### Key Findings:
+- **75-150x faster than conservative estimates**
+- 16K FFT uses only 0.066ms (0.4% of 16.67ms frame budget at 60fps)
+- Even 32K FFT would likely be ~0.15ms (still under 1% frame budget)
+- Apple Silicon (or auto-vectorization) provides exceptional FFT performance
+
+### Performance Comparison Results:
+- **M1 Pro**: 16K FFT = 0.066ms
+- **Intel i5-1130G7 (ThinkPad X1 Nano)**:
+  - Performance mode: 16K FFT = 0.112ms (0.67% of frame budget)
+  - Power save mode: 16K FFT = 0.335ms (2% of frame budget)
+- Even in power save mode, 16K FFT is completely viable!
+
+### Implications:
+**16K FFT is now implemented** and provides:
+- 20Hz: Q≈7.4 (truncated from ideal 17, but much better than previous 1.86)
+- 30Hz: Q≈11.2 (near ideal)
+- 45Hz+: Full Q≈17 (ideal resolution - no truncation!)
+- Dramatically improved low-frequency resolution for electronic music
+
+The profiling code has been added to measure actual performance on each platform.
+
 ## Phase 3: Next Steps
-1. Implement hybrid windowing approach (immediate priority)
+1. ~~Implement 16K FFT based on benchmark results~~ (COMPLETE)
 2. Add remaining API functions: `cqts()`, `cqto()`, `cqtos()`
 3. Create separate audio buffer for CQT (restore FFT_SIZE to 1024)
 4. Create FFT vs CQT comparison demo
-5. Performance optimization if needed
+5. Test and verify improved frequency resolution at 20Hz, 50Hz, 100Hz
 
 ### Test Script Example
 ```lua

@@ -23,8 +23,8 @@ static void CQT_BenchmarkFFT(void)
     printf("\nCQT FFT Benchmark on this CPU:\n");
     printf("================================\n");
     
-    int sizes[] = {4096, 6144, 8192, 12288, 16384};
-    int numSizes = 5;
+    int sizes[] = {4096, 6144, 8192, 12288, 16384, 24576, 32768};
+    int numSizes = 7;
     
     for (int s = 0; s < numSizes; s++)
     {
@@ -242,7 +242,7 @@ void CQT_ProcessAudio(void)
     static double totalKernelTime = 0.0;
     static int profileCount = 0;
     
-    // Perform 6144-point FFT with timing
+    // Perform 16384-point FFT with timing
     clock_t fftStart = clock();
     kiss_fftr(cqtFftCfg, cqtAudioBuffer, cqtFftOutput);
     clock_t fftEnd = clock();
@@ -273,7 +273,7 @@ void CQT_ProcessAudio(void)
     // Print profiling info every 60 frames (~1 second)
     if (profileCount % 60 == 0)
     {
-        printf("CQT Performance (6K FFT):\n");
+        printf("CQT Performance (16K FFT):\n");
         printf("  FFT avg: %.3fms\n", totalFftTime / profileCount);
         printf("  Kernels avg: %.3fms\n", totalKernelTime / profileCount);
         printf("  Total avg: %.3fms\n", (totalFftTime + totalKernelTime) / profileCount);
