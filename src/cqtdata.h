@@ -4,7 +4,7 @@
 #define CQT_BINS 120
 #define CQT_OCTAVES 10
 #define CQT_BINS_PER_OCTAVE 12
-#define CQT_FFT_SIZE 16384  // 16K FFT - excellent low-frequency resolution with minimal performance impact
+#define CQT_FFT_SIZE 8192   // 8K FFT - balanced time/frequency resolution, ~5.4 fps update rate
 
 // CQT frequency range
 #define CQT_MIN_FREQ 20.0f    // Sub-bass for electronic music

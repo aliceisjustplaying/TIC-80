@@ -19,7 +19,13 @@
 kiss_fftr_cfg fftcfg;
 ma_context context;
 ma_device captureDevice;
-float sampleBuf[FFT_SIZE * 2];
+// Include CQT header to get CQT_FFT_SIZE
+#include "../cqtdata.h"
+
+// Shared audio buffer - must be large enough for both FFT and CQT
+// FFT needs FFT_SIZE * 2 (2048) samples, CQT needs CQT_FFT_SIZE samples
+#define AUDIO_BUFFER_SIZE (CQT_FFT_SIZE > (FFT_SIZE * 2) ? CQT_FFT_SIZE : (FFT_SIZE * 2))
+float sampleBuf[AUDIO_BUFFER_SIZE];
 
 void miniaudioLogCallback(void* userData, ma_uint32 level, const char* message)
 {
@@ -47,12 +53,12 @@ void miniaudioLogCallback(void* userData, ma_uint32 level, const char* message)
 
 void OnReceiveFrames(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount)
 {
-    frameCount = frameCount < FFT_SIZE * 2 ? frameCount : FFT_SIZE * 2;
+    frameCount = frameCount < AUDIO_BUFFER_SIZE ? frameCount : AUDIO_BUFFER_SIZE;
 
     // Just rotate the buffer; copy existing, append new
     const float* samples = (const float*)pInput;
     float* p = sampleBuf;
-    for (int i = 0; i < FFT_SIZE * 2 - frameCount; i++)
+    for (int i = 0; i < AUDIO_BUFFER_SIZE - frameCount; i++)
     {
         *(p++) = sampleBuf[i + frameCount];
     }
@@ -184,10 +190,9 @@ bool FFT_Open(bool CapturePlaybackDevices, const char* CaptureDeviceSearchString
     return true;
 #else
 
-    memset(sampleBuf, 0, sizeof(float) * FFT_SIZE * 2);
+    memset(sampleBuf, 0, sizeof(float) * AUDIO_BUFFER_SIZE);
 
-    // TEMPORARY: Using 4096-point FFT to support CQT
-    // TODO: Restore to 2048 and implement separate buffer for CQT
+    // FFT uses 2048-point FFT as originally intended
     fftcfg = kiss_fftr_alloc(FFT_SIZE * 2, false, NULL, NULL);
 
     ma_context_config context_config = ma_context_config_init();
