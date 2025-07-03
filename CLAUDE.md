@@ -258,13 +258,14 @@ typedef struct {
 
 **Test Results**: Basic API working, visualization shows 10 octaves with test data mapping
 
-#### Phase 2: Real CQT Processing (DEBUGGING)
+#### Phase 2: Real CQT Processing (COMPLETE)
 1. ✓ **Access raw audio buffer** from FFT capture system
 2. ✓ **Implement 4096-point FFT** for CQT (separate from main FFT)
 3. ✓ **Apply CQT kernels** to FFT output
 4. ✓ **Fix kernel initialization** - kernels are properly generated on startup
-5. **Add remaining API functions**: `cqts()`, `cqto()`, `cqtos()` (TODO)
-6. **Create comparison demo** showing FFT vs CQT side-by-side (TODO)
+5. ✓ **Debug and fix frequency mapping** - CQT now correctly detects frequencies
+6. **Add remaining API functions**: `cqts()`, `cqto()`, `cqtos()` (TODO)
+7. **Create comparison demo** showing FFT vs CQT side-by-side (TODO)
 
 **TEMPORARY CHANGE**: FFT_SIZE has been changed from 1024 to 2048 in fftdata.h to support CQT's 4096-point FFT requirement. This temporarily breaks FFT resolution (now 2048 bins instead of 1024) but allows CQT to function properly. This should be reverted once a separate audio buffer is implemented for CQT.
 
@@ -363,10 +364,18 @@ The issue is that our kernels are "seeing" all frequencies. Possible causes:
 - NO scaling factor after FFT
 - Proper phase calculation: `2π * (f/fs) * (idx - N/2)`
 
-#### Phase 3: Optimization (If needed)
-1. Profile and identify bottlenecks
-2. Implement sparse kernel optimizations
-3. Consider frame-skipping for lower-end hardware
+**Final Status**:
+- CQT correctly detects frequencies (440 Hz → bin 54)
+- Good frequency selectivity (minimal spreading)
+- Kernels properly bandpass filtered
+- 20 Hz start preserved for electronic music sub-bass
+- Created test_cqt_spectrum_v2.lua with correct note display
+
+#### Phase 3: Next Steps
+1. Add remaining API functions: `cqts()`, `cqto()`, `cqtos()`
+2. Create separate audio buffer for CQT (restore FFT_SIZE to 1024)
+3. Create FFT vs CQT comparison demo
+4. Performance optimization if needed
 
 ### Test Script Example
 ```lua
