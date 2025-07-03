@@ -218,7 +218,8 @@ void CQT_ProcessAudio(void)
     }
     
     // Copy audio data from the shared buffer
-    // TEMPORARY: sampleBuf now has FFT_SIZE * 2 = 2048 * 2 = 4096 samples
+    // sampleBuf is defined in fft.c as extern
+    extern float sampleBuf[];
     memcpy(cqtAudioBuffer, sampleBuf, CQT_FFT_SIZE * sizeof(float));
     
     // Check if we have any audio data
