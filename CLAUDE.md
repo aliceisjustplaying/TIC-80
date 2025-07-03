@@ -8,6 +8,8 @@ TIC-80 is a free and open source fantasy computer for making, playing and sharin
 
 ## Build Commands
 
+**IMPORTANT: Never run `./debug-macos.sh` or any build commands unless explicitly instructed by the user. The user will handle building and testing.**
+
 ### macOS
 ```bash
 # Recommended: Use the debug script
@@ -371,11 +373,126 @@ The issue is that our kernels are "seeing" all frequencies. Possible causes:
 - 20 Hz start preserved for electronic music sub-bass
 - Created test_cqt_spectrum_v2.lua with correct note display
 
-#### Phase 3: Next Steps
-1. Add remaining API functions: `cqts()`, `cqto()`, `cqtos()`
-2. Create separate audio buffer for CQT (restore FFT_SIZE to 1024)
-3. Create FFT vs CQT comparison demo
-4. Performance optimization if needed
+**NEW ISSUE - Excessive Frequency Spreading**:
+Testing with pure sine waves shows excessive frequency spreading:
+- 20 Hz sine wave: Energy spreads across ~6-7 bins
+- 50 Hz sine wave: Energy spreads across ~8-9 bins
+- 100 Hz sine wave: Energy spreads across ~4-5 bins
+
+## Root Cause Analysis:
+The issue is **window truncation** in our current implementation:
+- At 20 Hz: Window should be 37,485 samples but is clamped to 4,096 (line 90 in cqt_kernel.c)
+- At 50 Hz: Window should be 14,994 samples but is clamped to 4,096
+- At 100 Hz: Window should be 7,497 samples but is clamped to 4,096
+
+This truncation reduces the effective Q factor:
+- At 20 Hz: Effective Q ≈ 1.86 instead of 17
+- At 50 Hz: Effective Q ≈ 4.64 instead of 17
+- At 100 Hz: Effective Q ≈ 9.29 instead of 17
+
+## Comparison: Our Approach vs ESP32 Approach
+
+### Our Current Approach (Constant Q):
+```c
+windowLength = Q * sampleRate / centerFreq;  // Q ≈ 17
+if (windowLength > fftSize) windowLength = fftSize;  // TRUNCATION!
+```
+- **Pros**: Excellent frequency resolution at high frequencies
+- **Cons**: Severe truncation at low frequencies causing spreading
+
+### ESP32 Approach (Variable Window):
+```c
+windowLength = fftSize / (centerFreq / minFreq);  // scales with 1/f
+```
+- **Pros**: All windows fit within FFT size, no truncation
+- **Cons**: Very low Q (≈1.86) giving ~9.56 semitone bandwidth
+
+### Analysis of ESP32 Approach:
+- Constant effective Q ≈ 1.86 for all frequencies
+- Bandwidth: ~956 cents (9.56 semitones) - can't distinguish adjacent notes
+- At 20 Hz: 4096 samples (92.9ms)
+- At 20 kHz: 4 samples (0.1ms) - too short for analysis
+
+## Alternative Approaches Considered:
+
+### 1. Larger FFT Size (16K or 32K):
+- **16K FFT**: Handles windows down to ~45 Hz properly
+- **Computational cost**: ~5-10ms (still acceptable for 60 FPS)
+- **Memory**: ~2.4MB for 16K, ~4.9MB for 32K
+- **Pros**: Full constant-Q accuracy
+- **Cons**: Higher resource usage
+
+### 2. Multi-Resolution CQT:
+- Use 16K FFT for lowest 2 octaves (20-80 Hz)
+- Use 4K FFT for everything else
+- **Pros**: Best accuracy at all frequencies
+- **Cons**: Complex implementation, multiple FFTs per frame
+
+### 3. Adaptive Q Factor:
+- Reduce Q for low frequencies to fit within FFT size
+- **Pros**: Single FFT, reasonable accuracy
+- **Cons**: Variable frequency resolution
+
+## SELECTED SOLUTION: Hybrid Approach
+
+Combine the best of both methods:
+- **Below 100 Hz**: Use ESP32-style window scaling
+- **Above 100 Hz**: Use constant-Q approach
+- **Transition**: Smooth crossfade between methods
+
+### Implementation Plan:
+
+#### Step 1: Modify Window Length Calculation
+In `cqt_kernel.c`, function `generateSingleKernel()` around line 86:
+```c
+// Current code to replace:
+float Q = CQT_CalculateQ(CQT_BINS_PER_OCTAVE);
+int windowLength = (int)(Q * sampleRate / centerFreq);
+
+// New hybrid approach:
+float Q = CQT_CalculateQ(CQT_BINS_PER_OCTAVE);
+int windowLength;
+
+if (centerFreq < 100.0f) {
+    // ESP32-style for low frequencies
+    float factor = centerFreq / minFreq;
+    windowLength = (int)(fftSize / factor);
+} else {
+    // Constant-Q for higher frequencies
+    windowLength = (int)(Q * sampleRate / centerFreq);
+    
+    // Ensure it fits in FFT size with some margin
+    if (windowLength > fftSize * 0.9) {
+        windowLength = (int)(fftSize * 0.9);
+    }
+}
+```
+
+#### Step 2: Adjust Normalization
+The normalization may need adjustment based on actual window length used.
+
+#### Step 3: Test and Validate
+- Test with pure tones at 20, 50, 100, 200, 440, 1000 Hz
+- Verify smooth transition at 100 Hz boundary
+- Check musical accuracy across spectrum
+
+### Expected Results:
+- **20 Hz**: ~1-2 bin spread (using ESP32 method)
+- **100 Hz**: ~1-2 bin spread (transition point)
+- **440 Hz**: <1 bin spread (constant-Q)
+- **Electronic music**: Good sub-bass and treble accuracy
+
+### Future Improvements:
+1. Smooth transition zone (80-120 Hz) instead of hard cutoff
+2. Configurable transition frequency
+3. Optional multi-resolution mode for maximum accuracy
+
+## Phase 3: Next Steps
+1. Implement hybrid windowing approach (immediate priority)
+2. Add remaining API functions: `cqts()`, `cqto()`, `cqtos()`
+3. Create separate audio buffer for CQT (restore FFT_SIZE to 1024)
+4. Create FFT vs CQT comparison demo
+5. Performance optimization if needed
 
 ### Test Script Example
 ```lua

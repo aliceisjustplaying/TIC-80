@@ -79,15 +79,35 @@ static bool generateSingleKernel(
     CqtWindowType windowType,
     float sparsityThreshold)
 {
-    // Calculate window length based on Q factor
-    // windowLength = Q * sampleRate / centerFreq
-    // This gives us the proper frequency resolution
+    // Hybrid approach: ESP32-style for low frequencies, constant-Q for higher
     float Q = CQT_CalculateQ(CQT_BINS_PER_OCTAVE);
-    int windowLength = (int)(Q * sampleRate / centerFreq);
+    int windowLength;
+    
+    if (centerFreq < 100.0f) {
+        // With 6K FFT, we can use higher Q for better resolution
+        // 20Hz: Q=2.8 gives ~6144 samples (full FFT)
+        // 50Hz: Q=7 gives ~6174 samples (slightly truncated)
+        // 100Hz: Q=14 gives ~6174 samples (slightly truncated)
+        float targetQ = Q;  // Start with ideal Q
+        windowLength = (int)(targetQ * sampleRate / centerFreq);
+        
+        // If window doesn't fit, reduce Q to fit exactly
+        if (windowLength > fftSize) {
+            targetQ = (float)fftSize * centerFreq / sampleRate;
+            windowLength = fftSize;
+        }
+    } else {
+        // Constant-Q for higher frequencies
+        windowLength = (int)(Q * sampleRate / centerFreq);
+        
+        // Ensure it fits in FFT size with some margin
+        if (windowLength > fftSize * 0.9) {
+            windowLength = (int)(fftSize * 0.9);
+        }
+    }
     
     // Ensure window length is reasonable
     if (windowLength < 32) windowLength = 32;  // Minimum window size
-    if (windowLength > fftSize) windowLength = fftSize;
     
     // Allocate temporary arrays
     float* timeKernel = (float*)calloc(fftSize, sizeof(float));
