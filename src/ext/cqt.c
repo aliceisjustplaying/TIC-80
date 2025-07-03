@@ -119,7 +119,7 @@ void CQT_ApplyKernels(const float* fftReal, const float* fftImag)
         }
         
         // Calculate magnitude with gain boost
-        cqtData[bin] = sqrt(real * real + imag * imag) * 4.0f;  // Increased gain boost
+        cqtData[bin] = sqrt(real * real + imag * imag) * 2.0f;  // Match FFT gain factor
         
         // Check for NaN or Inf
         if (!isfinite(cqtData[bin]))
