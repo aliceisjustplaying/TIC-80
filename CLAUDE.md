@@ -531,45 +531,70 @@ The profiling code has been added to measure actual performance on each platform
 ## Current CQT Implementation Status (December 2024)
 
 ### What's Working:
-- **16K FFT implemented** - provides excellent low-frequency resolution
-- **cqt(bin)** function working correctly - returns raw CQT magnitude for bin 0-119
+- **FFT fully restored** - Returns 1024 bins with exact original behavior preserved
+- **CQT with configurable FFT size** - Currently 8K (changeable in cqtdata.h)
+- **Shared audio buffer** - Automatically sized to max(FFT needs, CQT needs)
+- **cqt(bin)** function working - Returns raw CQT magnitude for bin 0-119
 - **Frequency detection accurate** - 440Hz correctly maps to bin 54, etc.
-- **Kernels properly generated** - sparse storage working, good frequency selectivity
-- **Performance excellent** - Runtime on M1 Pro: 0.368ms total (0.255ms FFT + 0.113ms kernels)
+- **Kernels properly generated** - Sparse storage, good frequency selectivity
+- **Smoothing calculated** - But not exposed via API yet
 
-### Runtime Performance Expectations:
-- **M1 Pro MacBook**: 0.368ms total CQT processing (~2.2% of frame budget)
-- **ThinkPad i5-1130G7 (extrapolated)**:
-  - Performance mode: ~0.426ms (2.6% of frame budget)
-  - Power save mode: ~1.273ms (7.6% of frame budget)
-- Runtime is ~3.8x slower than synthetic benchmarks due to real audio data, cache effects
+### API Status:
+| Function | Status | Description |
+|----------|---------|-------------|
+| `fft(bin)` | ✅ Complete | Raw FFT data (0-1023) |
+| `ffts(bin)` | ✅ Complete | Smoothed FFT data |
+| `cqt(bin)` | ✅ Complete | Raw CQT data (0-119) |
+| `cqts(bin)` | ❌ TODO | Smoothed CQT data |
+| `cqto(octave, note)` | ❌ TODO | Raw CQT by musical note |
+| `cqtos(octave, note)` | ❌ TODO | Smoothed CQT by musical note |
 
-### Critical Implementation Details:
-1. **FFT_SIZE temporarily changed** in fftdata.h from 1024 to 8192 to support CQT
-   - This breaks FFT resolution but enables CQT
-   - Must be reverted when separate audio buffer is implemented
-   
-2. **Key fixes that were essential**:
-   - Kernel phase calculation must use full FFT position: `2π * (f/fs) * (idx - N/2)`
-   - NO scaling factor after kernel FFT - this was critical!
-   - Normalization by windowLength before FFT
-   
-3. **Test scripts created**:
-   - `test_cqt_spectrum_v2.lua` - visual spectrum analyzer
-   - `test_cqt_a4.lua` - 440Hz tone generator
-   - `test_cqt_stable.lua` - controlled testing
+### Performance with 8K FFT (Current Default):
+- **Update rate**: ~5.4 fps
+- **M1 Pro**: ~0.2ms total (1.2% of frame budget)
+- **Low frequency quality**: Q≈3.7 at 20Hz (decent for electronic music)
+- **Good balance** for livecoding applications
 
-### Resolution Characteristics with 16K FFT:
-- **20Hz**: Q≈7.4 (window truncated to 16384 samples, but much better than 6K's Q≈1.86)
-- **30Hz**: Q≈11.2 (good resolution)
-- **45Hz+**: Full Q≈17 (perfect - no truncation)
+### Resolution Characteristics:
+| FFT Size | 20Hz Quality | 40Hz Quality | Update Rate |
+|----------|--------------|--------------|-------------|
+| 4K | Q≈1.9 (poor) | Q≈3.7 (poor) | 10.8 fps |
+| 8K (current) | Q≈3.7 (decent) | Q≈7.4 (good) | 5.4 fps |
+| 16K | Q≈7.4 (good) | Q≈14.8 (excellent) | 2.7 fps |
 
-## Phase 3: Next Steps
-1. ~~Implement 16K FFT based on benchmark results~~ (COMPLETE)
-2. Add remaining API functions: `cqts()`, `cqto()`, `cqtos()`
-3. Create separate audio buffer for CQT (restore FFT_SIZE to 1024)
-4. Create FFT vs CQT comparison demo
-5. Test and verify improved frequency resolution at 20Hz, 50Hz, 100Hz
+### Implementation Architecture:
+```
+Audio Capture (44.1kHz)
+    ↓
+Shared Buffer (8192 samples currently)
+    ├─→ FFT: Uses first 2048 samples → 1024 bins
+    └─→ CQT: Uses first 8192 samples → 120 bins
+```
+
+### Key Implementation Details:
+1. **Buffer management**:
+   - `AUDIO_BUFFER_SIZE` in fft.c automatically adjusts
+   - FFT always reads samples 0-2047
+   - CQT reads samples 0-(CQT_FFT_SIZE-1)
+
+2. **Smoothing implementation**:
+   - FFT: 0.6 factor (60% old, 40% new)
+   - CQT: 0.3 factor (30% old, 70% new) - calculated but not exposed
+   - Both use peak tracking with 0.99 decay
+
+3. **Test scripts**:
+   - `demo_fft_cqt_hybrid.lua` - Combined FFT/CQT visualization
+   - `test_cqt_spectrum_v2.lua` - CQT spectrum analyzer
+   - `test_fft_restored.lua` - FFT verification
+
+## Next Steps
+1. ✅ ~~Implement configurable FFT for CQT~~ (COMPLETE - using 8K default)
+2. ✅ ~~Create separate audio buffer for CQT~~ (COMPLETE - shared buffer)
+3. ✅ ~~Restore FFT_SIZE to 1024~~ (COMPLETE)
+4. ❌ Add remaining API functions: `cqts()`, `cqto()`, `cqtos()`
+5. ❌ Add CQT to other language bindings (currently Lua only)
+6. ❌ Create comprehensive FFT vs CQT comparison demo
+7. ❌ Add configuration options for CQT parameters
 
 ### Test Script Example
 ```lua
@@ -600,6 +625,98 @@ end
 3. Separate enable flag for CQT
 4. Phase information access
 5. Inverse CQT for resynthesis
+
+## FFT vs CQT: Understanding the Tradeoffs
+
+### Fundamental Difference
+- **FFT**: Linear frequency spacing (each bin = 21.5 Hz)
+- **CQT**: Logarithmic frequency spacing (constant Q = ~17)
+
+### Time-Frequency Resolution Tradeoff (Uncertainty Principle)
+This is fundamental physics - to distinguish frequencies, you must observe for sufficient time:
+- To tell 20 Hz from 21 Hz: Need 1 second of observation
+- To tell 1000 Hz from 1001 Hz: Still need 1 second
+- Shorter window = better time resolution, worse frequency resolution
+- Longer window = better frequency resolution, worse time resolution
+
+### FFT Characteristics
+- **Window**: 2048 samples (46ms)
+- **Update rate**: ~21 fps
+- **Frequency resolution**: 21.5 Hz per bin (constant)
+- **Best for**: Beat detection, rhythm visualization, transients
+- **API**: `fft(bin)` raw, `ffts(bin)` smoothed (0.6 factor)
+
+### CQT Characteristics  
+- **Window**: Variable per frequency (up to 16384 samples)
+- **Update rate**: ~5.4 fps (8K FFT) or ~2.7 fps (16K FFT)
+- **Frequency resolution**: Constant Q≈17 (logarithmic spacing)
+- **Best for**: Note detection, chord analysis, harmonic content
+- **API**: `cqt(bin)` raw, `cqts(bin)` smoothed (0.3 factor) - smoothed not yet implemented
+
+### Resolution Comparison
+
+| Method | 40 Hz Resolution | 440 Hz Resolution | 4400 Hz Resolution |
+|--------|------------------|-------------------|-------------------|
+| FFT    | ±10.75 Hz (25%)  | ±10.75 Hz (2.4%)  | ±10.75 Hz (0.24%) |
+| CQT    | ±1.4 Hz (3.5%)   | ±15 Hz (3.5%)     | ±150 Hz (3.5%)    |
+
+### Configurable CQT FFT Sizes
+
+| FFT Size | Update Rate | Low Freq Quality | Use Case |
+|----------|-------------|------------------|----------|
+| 4K       | 10.8 fps    | Poor (Q≈1.9 @ 20Hz) | Too lossy for music |
+| 8K       | 5.4 fps     | Decent (Q≈3.7 @ 20Hz) | Good for livecoding |
+| 16K      | 2.7 fps     | Good (Q≈7.4 @ 20Hz) | Best accuracy |
+
+Current implementation uses 8K by default, configurable via `CQT_FFT_SIZE` in cqtdata.h.
+
+### Smoothing Factors
+- **FFT**: 0.6 (60% old, 40% new) - more stable
+- **CQT**: 0.3 (30% old, 70% new) - more responsive
+- Peak tracking uses 0.99 factor for slow decay
+
+### Shared Audio Buffer Architecture
+Both FFT and CQT share the same audio capture buffer:
+- Buffer size: Maximum of (2048, CQT_FFT_SIZE) samples
+- FFT reads samples 0-2047 (always the same)
+- CQT reads samples 0-(CQT_FFT_SIZE-1)
+- This preserves exact FFT behavior while allowing CQT flexibility
+
+### Practical Usage for Electronic Music Visualization
+
+**Use FFT for:**
+- Kick drum detection (bins 2-4, ~40-80 Hz)
+- Beat synchronization
+- Energy meters by frequency band
+- Reactive elements needing >10 fps update
+
+**Use CQT for:**
+- Bass note identification
+- Chord/key detection  
+- Color mapping from musical content
+- Melodic visualization
+
+**Hybrid Approach (Recommended):**
+```lua
+-- Rhythm from FFT
+local kick = fft(2) + fft(3) + fft(4)
+
+-- Musical content from CQT  
+local bassNote = 0
+for i=24,35 do  -- 2nd octave
+  if cqt(i) > cqt(bassNote) then bassNote = i end
+end
+
+-- Combine for visuals
+local pulse = kick * 2  -- Size from rhythm
+local color = (bassNote % 12) + 1  -- Color from note
+```
+
+### Sample Rate and Frequency Ranges
+- TIC-80 sample rate: 44100 Hz
+- Nyquist frequency: 22050 Hz  
+- Both FFT and CQT analyze 0-22050 Hz
+- CQT specifically tuned for 20 Hz - 20480 Hz (musical range)
 
 ## Important Notes
 
