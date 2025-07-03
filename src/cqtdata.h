@@ -7,7 +7,7 @@
 #define CQT_FFT_SIZE 4096  // Larger FFT for better sub-bass resolution
 
 // CQT frequency range
-#define CQT_MIN_FREQ 20.0f    // Below piano's lowest A
+#define CQT_MIN_FREQ 20.0f    // Sub-bass for electronic music
 #define CQT_MAX_FREQ 20480.0f // Nearest note to 20kHz
 
 // Smoothing parameters
