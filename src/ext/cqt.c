@@ -8,6 +8,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <time.h>
 
 #define CQT_DEBUG
 
@@ -15,6 +16,62 @@
 static kiss_fftr_cfg cqtFftCfg = NULL;
 static float* cqtAudioBuffer = NULL;
 static kiss_fft_cpx* cqtFftOutput = NULL;
+
+// Benchmark different FFT sizes
+static void CQT_BenchmarkFFT(void)
+{
+    printf("\nCQT FFT Benchmark on this CPU:\n");
+    printf("================================\n");
+    
+    int sizes[] = {4096, 6144, 8192, 12288, 16384};
+    int numSizes = 5;
+    
+    for (int s = 0; s < numSizes; s++)
+    {
+        int fftSize = sizes[s];
+        
+        // Allocate buffers
+        float* testInput = (float*)calloc(fftSize, sizeof(float));
+        kiss_fft_cpx* testOutput = (kiss_fft_cpx*)malloc((fftSize/2 + 1) * sizeof(kiss_fft_cpx));
+        kiss_fftr_cfg testCfg = kiss_fftr_alloc(fftSize, 0, NULL, NULL);
+        
+        if (!testInput || !testOutput || !testCfg)
+        {
+            printf("Failed to allocate for size %d\n", fftSize);
+            continue;
+        }
+        
+        // Fill with test signal
+        for (int i = 0; i < fftSize; i++)
+        {
+            testInput[i] = sin(2.0 * M_PI * 440.0 * i / 44100.0);
+        }
+        
+        // Warm up
+        for (int i = 0; i < 10; i++)
+        {
+            kiss_fftr(testCfg, testInput, testOutput);
+        }
+        
+        // Time 100 iterations
+        clock_t start = clock();
+        for (int i = 0; i < 100; i++)
+        {
+            kiss_fftr(testCfg, testInput, testOutput);
+        }
+        clock_t end = clock();
+        
+        double avgTime = (double)(end - start) / CLOCKS_PER_SEC * 1000.0 / 100.0;
+        printf("%5d-point FFT: %.3f ms\n", fftSize, avgTime);
+        
+        // Cleanup
+        free(testInput);
+        free(testOutput);
+        free(testCfg);
+    }
+    
+    printf("================================\n\n");
+}
 
 // Initialize CQT processing
 bool CQT_Open(void)
@@ -56,6 +113,14 @@ bool CQT_Open(void)
     {
         CQT_Close();
         return false;
+    }
+    
+    // Run FFT benchmark on first initialization
+    static bool benchmarkRun = false;
+    if (!benchmarkRun)
+    {
+        CQT_BenchmarkFFT();
+        benchmarkRun = true;
     }
     
     // Debug: Print first few center frequencies and expected FFT bins
@@ -172,8 +237,15 @@ void CQT_ProcessAudio(void)
         return;
     }
     
-    // Perform 4096-point FFT
+    // Profiling variables
+    static double totalFftTime = 0.0;
+    static double totalKernelTime = 0.0;
+    static int profileCount = 0;
+    
+    // Perform 6144-point FFT with timing
+    clock_t fftStart = clock();
     kiss_fftr(cqtFftCfg, cqtAudioBuffer, cqtFftOutput);
+    clock_t fftEnd = clock();
     
     // Extract real and imaginary components for kernel application
     float fftReal[CQT_FFT_SIZE/2 + 1];
@@ -185,8 +257,28 @@ void CQT_ProcessAudio(void)
         fftImag[i] = cqtFftOutput[i].i;
     }
     
-    // Apply CQT kernels
+    // Apply CQT kernels with timing
+    clock_t kernelStart = clock();
     CQT_ApplyKernels(fftReal, fftImag);
+    clock_t kernelEnd = clock();
+    
+    // Calculate times in milliseconds
+    double fftTime = (double)(fftEnd - fftStart) / CLOCKS_PER_SEC * 1000.0;
+    double kernelTime = (double)(kernelEnd - kernelStart) / CLOCKS_PER_SEC * 1000.0;
+    
+    totalFftTime += fftTime;
+    totalKernelTime += kernelTime;
+    profileCount++;
+    
+    // Print profiling info every 60 frames (~1 second)
+    if (profileCount % 60 == 0)
+    {
+        printf("CQT Performance (6K FFT):\n");
+        printf("  FFT avg: %.3fms\n", totalFftTime / profileCount);
+        printf("  Kernels avg: %.3fms\n", totalKernelTime / profileCount);
+        printf("  Total avg: %.3fms\n", (totalFftTime + totalKernelTime) / profileCount);
+        printf("  Samples: %d\n\n", profileCount);
+    }
     
     #ifdef CQT_DEBUG
     // Reduced debug output - CQT is working correctly now
