@@ -10,6 +10,10 @@ TIC-80 is a free and open source fantasy computer for making, playing and sharin
 
 **IMPORTANT: Never run `./debug-macos.sh` or any build commands unless explicitly instructed by the user. The user will handle building and testing.**
 
+**IMPORTANT:** When given permission to build and test, use **THIS EXACT COMMAND**: ./debug-macos.sh -p -h -s
+
+You will find the build output in `build/bin/tic80`.
+
 ### macOS
 ```bash
 # Recommended: Use the debug script
