@@ -11,7 +11,7 @@
 #define CQT_MAX_FREQ 20480.0f // Nearest note to 20kHz
 
 // Smoothing parameters
-#define CQT_SMOOTHING_FACTOR 0.7f
+#define CQT_SMOOTHING_FACTOR 0.3f  // Reduced from 0.7f for more responsive display
 #define CQT_SPARSITY_THRESHOLD 0.01f
 
 // Raw CQT magnitude data

@@ -1,6 +1,9 @@
 #pragma once
 #include <stdbool.h>
-#define FFT_SIZE 1024
+// TEMPORARY: Changed from 1024 to 2048 to support CQT's 4096-point FFT
+// This breaks FFT bin resolution but enables CQT to work properly
+// TODO: Restore to 1024 and implement separate buffer for CQT
+#define FFT_SIZE 2048
 extern float fPeakMinValue;
 extern float fPeakSmoothing;
 extern float fPeakSmoothValue;

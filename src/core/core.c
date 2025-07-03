@@ -445,36 +445,13 @@ void tic_core_tick(tic_mem* tic, tic_tick_data* data)
     {
         FFT_GetFFT(fftData);
         
-        // Process CQT using existing FFT data
+        // Process CQT using raw audio buffer
         // For now, tie CQT to FFT enable flag
         cqtEnabled = fftEnabled;
         if (cqtEnabled)
         {
-            // TODO: In a full implementation, we would:
-            // 1. Get raw audio samples
-            // 2. Perform our own 4096-point FFT
-            // 3. Apply CQT kernels
-            // For now, we'll use a simplified approach with existing FFT data
-            
-            // TEMPORARY: Generate test data for Phase 1 testing
-            // This creates a simple frequency sweep pattern
-            for (int i = 0; i < CQT_BINS; i++)
-            {
-                // Use existing FFT data to create some movement
-                int fftIndex = (i * FFT_SIZE) / CQT_BINS;
-                if (fftIndex < FFT_SIZE)
-                {
-                    // Map FFT data to CQT bins with some scaling
-                    cqtData[i] = fftData[fftIndex] * 0.5f;
-                    
-                    // Apply smoothing
-                    cqtSmoothingData[i] = cqtSmoothingData[i] * 0.8f + cqtData[i] * 0.2f;
-                    
-                    // Normalize
-                    cqtNormalizedData[i] = cqtSmoothingData[i];
-                    if (cqtNormalizedData[i] > 1.0f) cqtNormalizedData[i] = 1.0f;
-                }
-            }
+            // Process CQT from the shared audio buffer
+            CQT_ProcessAudio();
         }
     }
     if (!core->state.initialized)
