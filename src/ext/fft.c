@@ -186,6 +186,8 @@ bool FFT_Open(bool CapturePlaybackDevices, const char* CaptureDeviceSearchString
 
     memset(sampleBuf, 0, sizeof(float) * FFT_SIZE * 2);
 
+    // TEMPORARY: Using 4096-point FFT to support CQT
+    // TODO: Restore to 2048 and implement separate buffer for CQT
     fftcfg = kiss_fftr_alloc(FFT_SIZE * 2, false, NULL, NULL);
 
     ma_context_config context_config = ma_context_config_init();

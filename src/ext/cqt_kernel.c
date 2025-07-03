@@ -1,4 +1,5 @@
 #include "cqt_kernel.h"
+#include "../cqtdata.h"
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
@@ -8,13 +9,28 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-// Generate logarithmically spaced center frequencies
+// Generate logarithmically spaced center frequencies for musical notes
 void CQT_GenerateCenterFrequencies(float* frequencies, int numBins, float minFreq, float maxFreq)
 {
-    float logRatio = log(maxFreq / minFreq);
+    // For musical CQT with 12 bins per octave, we want equal temperament spacing
+    // Each semitone is a factor of 2^(1/12) ≈ 1.0594631
+    const float semitone = pow(2.0f, 1.0f / 12.0f);
+    
     for (int i = 0; i < numBins; i++)
     {
-        frequencies[i] = minFreq * exp(logRatio * i / (numBins - 1));
+        // Calculate frequency for each bin based on semitone spacing
+        frequencies[i] = minFreq * pow(semitone, i);
+    }
+    
+    // Verify we don't exceed maxFreq
+    if (frequencies[numBins - 1] > maxFreq)
+    {
+        // Scale down if necessary
+        float scale = maxFreq / frequencies[numBins - 1];
+        for (int i = 0; i < numBins; i++)
+        {
+            frequencies[i] *= scale;
+        }
     }
 }
 
@@ -63,10 +79,14 @@ static bool generateSingleKernel(
     CqtWindowType windowType,
     float sparsityThreshold)
 {
-    // Calculate window length based on frequency (inverse relationship)
-    float factor = centerFreq / minFreq;
-    int windowLength = (int)(fftSize / factor);
-    if (windowLength < 1) windowLength = 1;
+    // Calculate window length based on Q factor
+    // windowLength = Q * sampleRate / centerFreq
+    // This gives us the proper frequency resolution
+    float Q = CQT_CalculateQ(CQT_BINS_PER_OCTAVE);
+    int windowLength = (int)(Q * sampleRate / centerFreq);
+    
+    // Ensure window length is reasonable
+    if (windowLength < 32) windowLength = 32;  // Minimum window size
     if (windowLength > fftSize) windowLength = fftSize;
     
     // Allocate temporary arrays
@@ -82,30 +102,44 @@ static bool generateSingleKernel(
     
     // Generate window in the center of the kernel
     int windowStart = (fftSize - windowLength) / 2;
-    float* window = &timeKernel[windowStart];
+    
+    // First generate the window
+    float* tempWindow = (float*)malloc(windowLength * sizeof(float));
+    if (!tempWindow)
+    {
+        free(timeKernel);
+        free(freqKernel);
+        return false;
+    }
     
     switch (windowType)
     {
         case CQT_WINDOW_HAMMING:
-            generateHammingWindow(window, windowLength);
+            generateHammingWindow(tempWindow, windowLength);
             break;
         case CQT_WINDOW_GAUSSIAN:
-            generateGaussianWindow(window, windowLength);
+            generateGaussianWindow(tempWindow, windowLength);
             break;
     }
     
-    // Modulate window with complex exponential
-    for (int i = 0; i < fftSize; i++)
+    // Apply window and modulate with complex exponential
+    // Following ESP32 reference: modulate based on full FFT size, not window size
+    for (int i = 0; i < windowLength; i++)
     {
-        float phase = 2.0f * M_PI * centerFreq / sampleRate * (i - fftSize / 2);
-        timeKernel[i] *= cos(phase);
+        int idx = windowStart + i;
+        // Key insight: use idx (position in full FFT buffer) not i (position in window)
+        // and center around N/2 where N is the full FFT size
+        float phase = 2.0f * M_PI * (centerFreq / sampleRate) * (idx - fftSize/2);
+        timeKernel[idx] = tempWindow[i] * cos(phase);
     }
     
-    // Normalize by window length
+    // Normalize by window length before FFT (like ESP32)
     for (int i = 0; i < fftSize; i++)
     {
         timeKernel[i] /= windowLength;
     }
+    
+    free(tempWindow);
     
     // Perform FFT
     kiss_fftr(fftCfg, timeKernel, freqKernel);
@@ -140,6 +174,7 @@ static bool generateSingleKernel(
     
     // Store non-zero elements
     int sparseIndex = 0;
+    int minIdx = fftSize, maxIdx = 0;  // Track range for debug
     for (int i = 0; i <= fftSize/2; i++)
     {
         float magnitude = sqrt(freqKernel[i].r * freqKernel[i].r + 
@@ -149,9 +184,20 @@ static bool generateSingleKernel(
             kernel->real[sparseIndex] = freqKernel[i].r;
             kernel->imag[sparseIndex] = freqKernel[i].i;
             kernel->indices[sparseIndex] = i;
+            if (i < minIdx) minIdx = i;
+            if (i > maxIdx) maxIdx = i;
             sparseIndex++;
         }
     }
+    
+    #ifdef CQT_DEBUG
+    // Debug output for specific frequencies
+    if (fabs(centerFreq - 110.0f) < 1.0f || fabs(centerFreq - 440.0f) < 1.0f)
+    {
+        printf("Kernel for %.1f Hz: FFT bins %d-%d (count: %d)\n", 
+               centerFreq, minIdx, maxIdx, nonZeroCount);
+    }
+    #endif
     
     free(timeKernel);
     free(freqKernel);
