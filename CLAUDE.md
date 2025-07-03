@@ -524,6 +524,42 @@ CQT FFT Benchmark on this CPU:
 
 The profiling code has been added to measure actual performance on each platform.
 
+## Current CQT Implementation Status (December 2024)
+
+### What's Working:
+- **16K FFT implemented** - provides excellent low-frequency resolution
+- **cqt(bin)** function working correctly - returns raw CQT magnitude for bin 0-119
+- **Frequency detection accurate** - 440Hz correctly maps to bin 54, etc.
+- **Kernels properly generated** - sparse storage working, good frequency selectivity
+- **Performance excellent** - Runtime on M1 Pro: 0.368ms total (0.255ms FFT + 0.113ms kernels)
+
+### Runtime Performance Expectations:
+- **M1 Pro MacBook**: 0.368ms total CQT processing (~2.2% of frame budget)
+- **ThinkPad i5-1130G7 (extrapolated)**:
+  - Performance mode: ~0.426ms (2.6% of frame budget)
+  - Power save mode: ~1.273ms (7.6% of frame budget)
+- Runtime is ~3.8x slower than synthetic benchmarks due to real audio data, cache effects
+
+### Critical Implementation Details:
+1. **FFT_SIZE temporarily changed** in fftdata.h from 1024 to 8192 to support CQT
+   - This breaks FFT resolution but enables CQT
+   - Must be reverted when separate audio buffer is implemented
+   
+2. **Key fixes that were essential**:
+   - Kernel phase calculation must use full FFT position: `2π * (f/fs) * (idx - N/2)`
+   - NO scaling factor after kernel FFT - this was critical!
+   - Normalization by windowLength before FFT
+   
+3. **Test scripts created**:
+   - `test_cqt_spectrum_v2.lua` - visual spectrum analyzer
+   - `test_cqt_a4.lua` - 440Hz tone generator
+   - `test_cqt_stable.lua` - controlled testing
+
+### Resolution Characteristics with 16K FFT:
+- **20Hz**: Q≈7.4 (window truncated to 16384 samples, but much better than 6K's Q≈1.86)
+- **30Hz**: Q≈11.2 (good resolution)
+- **45Hz+**: Full Q≈17 (perfect - no truncation)
+
 ## Phase 3: Next Steps
 1. ~~Implement 16K FFT based on benchmark results~~ (COMPLETE)
 2. Add remaining API functions: `cqts()`, `cqto()`, `cqtos()`
