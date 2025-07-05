@@ -19,12 +19,12 @@
 kiss_fftr_cfg fftcfg;
 ma_context context;
 ma_device captureDevice;
-// Include CQT header to get CQT_FFT_SIZE
-#include "../cqtdata.h"
+// Include VQT header to get VQT_FFT_SIZE
+#include "../vqtdata.h"
 
-// Shared audio buffer - must be large enough for both FFT and CQT
-// FFT needs FFT_SIZE * 2 (2048) samples, CQT needs CQT_FFT_SIZE samples
-#define AUDIO_BUFFER_SIZE (CQT_FFT_SIZE > (FFT_SIZE * 2) ? CQT_FFT_SIZE : (FFT_SIZE * 2))
+// Shared audio buffer - must be large enough for both FFT and VQT
+// FFT needs FFT_SIZE * 2 (2048) samples, VQT needs VQT_FFT_SIZE samples
+#define AUDIO_BUFFER_SIZE (VQT_FFT_SIZE > (FFT_SIZE * 2) ? VQT_FFT_SIZE : (FFT_SIZE * 2))
 float sampleBuf[AUDIO_BUFFER_SIZE];
 
 void miniaudioLogCallback(void* userData, ma_uint32 level, const char* message)

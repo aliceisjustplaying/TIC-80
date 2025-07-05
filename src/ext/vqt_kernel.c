@@ -1,5 +1,5 @@
-#include "cqt_kernel.h"
-#include "../cqtdata.h"
+#include "vqt_kernel.h"
+#include "../vqtdata.h"
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
@@ -10,9 +10,9 @@
 #endif
 
 // Generate logarithmically spaced center frequencies for musical notes
-void CQT_GenerateCenterFrequencies(float* frequencies, int numBins, float minFreq, float maxFreq)
+void VQT_GenerateCenterFrequencies(float* frequencies, int numBins, float minFreq, float maxFreq)
 {
-    // For musical CQT with 12 bins per octave, we want equal temperament spacing
+    // For musical VQT with 12 bins per octave, we want equal temperament spacing
     // Each semitone is a factor of 2^(1/12) ≈ 1.0594631
     const float semitone = pow(2.0f, 1.0f / 12.0f);
     
@@ -35,7 +35,7 @@ void CQT_GenerateCenterFrequencies(float* frequencies, int numBins, float minFre
 }
 
 // Calculate Q factor for constant-Q transform
-float CQT_CalculateQ(int binsPerOctave)
+float VQT_CalculateQ(int binsPerOctave)
 {
     // Q = 1 / (2^(1/binsPerOctave) - 1)
     // For 12 bins/octave, Q ≈ 17.0
@@ -53,7 +53,7 @@ static float calculateVariableQ(float centerFreq)
     else if (centerFreq < 50.0f) return 14.5f;  // 40-50 Hz: Near ideal
     else if (centerFreq < 65.0f) return 16.0f;  // 50-65 Hz: Almost full Q
     else if (centerFreq < 80.0f) return 17.0f;  // 65-80 Hz: Full standard Q
-    else if (centerFreq < 160.0f) return 17.0f; // 80-160 Hz: Standard CQT
+    else if (centerFreq < 160.0f) return 17.0f; // 80-160 Hz: Standard VQT
     else if (centerFreq < 320.0f) return 15.0f; // 160-320 Hz: Slightly wider
     else if (centerFreq < 640.0f) return 13.0f; // 320-640 Hz: Smoother
     else return 11.0f;                           // 640+ Hz: Very smooth
@@ -95,15 +95,15 @@ static void generateGaussianWindow(float* window, int length)
     }
 }
 
-// Generate a single CQT kernel
+// Generate a single VQT kernel
 static bool generateSingleKernel(
-    CqtKernel* kernel,
+    VqtKernel* kernel,
     kiss_fftr_cfg fftCfg,
     int fftSize,
     float centerFreq,
     float minFreq,
     float sampleRate,
-    CqtWindowType windowType,
+    VqtWindowType windowType,
     float sparsityThreshold)
 {
     // Use variable Q optimized for 8K FFT
@@ -124,7 +124,7 @@ static bool generateSingleKernel(
         windowLength = fftSize;
         // Calculate effective Q after truncation
         float effectiveQ = windowLength * centerFreq / sampleRate;
-        #ifdef CQT_DEBUG
+        #ifdef VQT_DEBUG
         printf("Freq %.1f Hz: Q designed=%.1f, window=%d, Q effective=%.1f (truncated)\n",
                centerFreq, Q, windowLength, effectiveQ);
         #endif
@@ -158,10 +158,10 @@ static bool generateSingleKernel(
     
     switch (windowType)
     {
-        case CQT_WINDOW_HAMMING:
+        case VQT_WINDOW_HAMMING:
             generateHammingWindow(tempWindow, windowLength);
             break;
-        case CQT_WINDOW_GAUSSIAN:
+        case VQT_WINDOW_GAUSSIAN:
             generateGaussianWindow(tempWindow, windowLength);
             break;
     }
@@ -235,7 +235,7 @@ static bool generateSingleKernel(
         }
     }
     
-    #ifdef CQT_DEBUG
+    #ifdef VQT_DEBUG
     // Debug output for specific frequencies
     if (fabs(centerFreq - 110.0f) < 1.0f || fabs(centerFreq - 440.0f) < 1.0f)
     {
@@ -249,14 +249,14 @@ static bool generateSingleKernel(
     return true;
 }
 
-// Generate CQT kernels for all bins
-bool CQT_GenerateKernels(CqtKernel* kernels, const CqtKernelConfig* config)
+// Generate VQT kernels for all bins
+bool VQT_GenerateKernels(VqtKernel* kernels, const VqtKernelConfig* config)
 {
     // Generate center frequencies
     float* centerFreqs = (float*)malloc(config->numBins * sizeof(float));
     if (!centerFreqs) return false;
     
-    CQT_GenerateCenterFrequencies(centerFreqs, config->numBins, 
+    VQT_GenerateCenterFrequencies(centerFreqs, config->numBins, 
                                   config->minFreq, config->maxFreq);
     
     // Create FFT configuration
@@ -267,7 +267,7 @@ bool CQT_GenerateKernels(CqtKernel* kernels, const CqtKernelConfig* config)
         return false;
     }
     
-    // Generate kernel for each CQT bin
+    // Generate kernel for each VQT bin
     bool success = true;
     for (int i = 0; i < config->numBins; i++)
     {

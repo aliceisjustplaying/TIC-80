@@ -22,8 +22,8 @@
 
 #include "fftdata.h"
 #include "../ext/fft.h"
-#include "cqtdata.h"
-#include "../ext/cqt.h"
+#include "vqtdata.h"
+#include "../ext/vqt.h"
 
 #include "api.h"
 #include "core.h"
@@ -445,13 +445,13 @@ void tic_core_tick(tic_mem* tic, tic_tick_data* data)
     {
         FFT_GetFFT(fftData);
         
-        // Process CQT using raw audio buffer
-        // For now, tie CQT to FFT enable flag
-        cqtEnabled = fftEnabled;
-        if (cqtEnabled)
+        // Process VQT using raw audio buffer
+        // For now, tie VQT to FFT enable flag
+        vqtEnabled = fftEnabled;
+        if (vqtEnabled)
         {
-            // Process CQT from the shared audio buffer
-            CQT_ProcessAudio();
+            // Process VQT from the shared audio buffer
+            VQT_ProcessAudio();
         }
     }
     if (!core->state.initialized)

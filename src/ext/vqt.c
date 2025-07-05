@@ -1,6 +1,6 @@
-#include "cqt.h"
-#include "cqt_kernel.h"
-#include "../cqtdata.h"
+#include "vqt.h"
+#include "vqt_kernel.h"
+#include "../vqtdata.h"
 #include "../fftdata.h"
 #include "fft.h"
 #include "kiss_fftr.h"
@@ -10,17 +10,17 @@
 #include <stdio.h>
 #include <time.h>
 
-#define CQT_DEBUG
+#define VQT_DEBUG
 
-// FFT configuration for CQT
-static kiss_fftr_cfg cqtFftCfg = NULL;
-static float* cqtAudioBuffer = NULL;
-static kiss_fft_cpx* cqtFftOutput = NULL;
+// FFT configuration for VQT
+static kiss_fftr_cfg vqtFftCfg = NULL;
+static float* vqtAudioBuffer = NULL;
+static kiss_fft_cpx* vqtFftOutput = NULL;
 
 // Benchmark different FFT sizes
-static void CQT_BenchmarkFFT(void)
+static void VQT_BenchmarkFFT(void)
 {
-    printf("\nCQT FFT Benchmark on this CPU:\n");
+    printf("\nVQT FFT Benchmark on this CPU:\n");
     printf("================================\n");
     
     int sizes[] = {4096, 6144, 8192, 12288, 16384, 24576, 32768};
@@ -73,45 +73,45 @@ static void CQT_BenchmarkFFT(void)
     printf("================================\n\n");
 }
 
-// Initialize CQT processing
-bool CQT_Open(void)
+// Initialize VQT processing
+bool VQT_Open(void)
 {
     // Initialize data structures
-    CQT_Init();
+    VQT_Init();
     
     // Allocate FFT buffers
-    cqtAudioBuffer = (float*)malloc(CQT_FFT_SIZE * sizeof(float));
-    cqtFftOutput = (kiss_fft_cpx*)malloc((CQT_FFT_SIZE/2 + 1) * sizeof(kiss_fft_cpx));
+    vqtAudioBuffer = (float*)malloc(VQT_FFT_SIZE * sizeof(float));
+    vqtFftOutput = (kiss_fft_cpx*)malloc((VQT_FFT_SIZE/2 + 1) * sizeof(kiss_fft_cpx));
     
-    if (!cqtAudioBuffer || !cqtFftOutput)
+    if (!vqtAudioBuffer || !vqtFftOutput)
     {
-        CQT_Close();
+        VQT_Close();
         return false;
     }
     
     // Create FFT configuration
-    cqtFftCfg = kiss_fftr_alloc(CQT_FFT_SIZE, 0, NULL, NULL);
-    if (!cqtFftCfg)
+    vqtFftCfg = kiss_fftr_alloc(VQT_FFT_SIZE, 0, NULL, NULL);
+    if (!vqtFftCfg)
     {
-        CQT_Close();
+        VQT_Close();
         return false;
     }
     
-    // Configure CQT kernels
-    CqtKernelConfig config = {
-        .fftSize = CQT_FFT_SIZE,
-        .numBins = CQT_BINS,
-        .minFreq = CQT_MIN_FREQ,
-        .maxFreq = CQT_MAX_FREQ,
+    // Configure VQT kernels
+    VqtKernelConfig config = {
+        .fftSize = VQT_FFT_SIZE,
+        .numBins = VQT_BINS,
+        .minFreq = VQT_MIN_FREQ,
+        .maxFreq = VQT_MAX_FREQ,
         .sampleRate = 44100.0f,  // Standard TIC-80 sample rate
-        .windowType = CQT_WINDOW_HAMMING,
-        .sparsityThreshold = CQT_SPARSITY_THRESHOLD
+        .windowType = VQT_WINDOW_HAMMING,
+        .sparsityThreshold = VQT_SPARSITY_THRESHOLD
     };
     
     // Generate kernels
-    if (!CQT_GenerateKernels(cqtKernels, &config))
+    if (!VQT_GenerateKernels(vqtKernels, &config))
     {
-        CQT_Close();
+        VQT_Close();
         return false;
     }
     
@@ -119,16 +119,16 @@ bool CQT_Open(void)
     static bool benchmarkRun = false;
     if (!benchmarkRun)
     {
-        CQT_BenchmarkFFT();
+        VQT_BenchmarkFFT();
         benchmarkRun = true;
     }
     
     // Debug: Print variable Q values across frequency spectrum
-    #ifdef CQT_DEBUG
-    float centerFreqs[CQT_BINS];
-    CQT_GenerateCenterFrequencies(centerFreqs, CQT_BINS, CQT_MIN_FREQ, CQT_MAX_FREQ);
+    #ifdef VQT_DEBUG
+    float centerFreqs[VQT_BINS];
+    VQT_GenerateCenterFrequencies(centerFreqs, VQT_BINS, VQT_MIN_FREQ, VQT_MAX_FREQ);
     
-    printf("\nCQT Variable-Q Implementation (8K FFT Optimized):\n");
+    printf("\nVQT Variable-Q Implementation (8K FFT Optimized):\n");
     printf("================================================\n");
     
     // Show Q values for key frequency ranges
@@ -139,10 +139,10 @@ bool CQT_Open(void)
     for (int i = 0; i < 16; i++)
     {
         float freq = testFreqs[i];
-        // Find closest CQT bin
+        // Find closest VQT bin
         int closestBin = 0;
         float minDiff = fabs(centerFreqs[0] - freq);
-        for (int j = 1; j < CQT_BINS; j++)
+        for (int j = 1; j < VQT_BINS; j++)
         {
             float diff = fabs(centerFreqs[j] - freq);
             if (diff < minDiff)
@@ -166,7 +166,7 @@ bool CQT_Open(void)
         else designQ = 11.0f;
         
         int windowLength = (int)(designQ * 44100.0f / freq);
-        if (windowLength > CQT_FFT_SIZE) windowLength = CQT_FFT_SIZE;
+        if (windowLength > VQT_FFT_SIZE) windowLength = VQT_FFT_SIZE;
         float effectiveQ = windowLength * freq / 44100.0f;
         float bandwidth = freq / effectiveQ;
         
@@ -174,10 +174,10 @@ bool CQT_Open(void)
                freq, designQ, windowLength, effectiveQ, bandwidth);
     }
     
-    printf("\nFirst 10 CQT bins:\n");
-    for (int i = 0; i < 10 && i < CQT_BINS; i++)
+    printf("\nFirst 10 VQT bins:\n");
+    for (int i = 0; i < 10 && i < VQT_BINS; i++)
     {
-        int expectedBin = (int)(centerFreqs[i] * CQT_FFT_SIZE / 44100.0f);
+        int expectedBin = (int)(centerFreqs[i] * VQT_FFT_SIZE / 44100.0f);
         printf("  Bin %d: %.2f Hz -> FFT bin %d\n", i, centerFreqs[i], expectedBin);
     }
     #endif
@@ -185,21 +185,21 @@ bool CQT_Open(void)
     return true;
 }
 
-// Apply CQT kernels to FFT output
-void CQT_ApplyKernels(const float* fftReal, const float* fftImag)
+// Apply VQT kernels to FFT output
+void VQT_ApplyKernels(const float* fftReal, const float* fftImag)
 {
-    // Clear CQT output
-    memset(cqtData, 0, sizeof(cqtData));
+    // Clear VQT output
+    memset(vqtData, 0, sizeof(vqtData));
     
-    // Apply each kernel to compute CQT bins
-    for (int bin = 0; bin < CQT_BINS; bin++)
+    // Apply each kernel to compute VQT bins
+    for (int bin = 0; bin < VQT_BINS; bin++)
     {
-        CqtKernel* kernel = &cqtKernels[bin];
+        VqtKernel* kernel = &vqtKernels[bin];
         
         // Check if kernel is valid
         if (!kernel->real || !kernel->imag || !kernel->indices || kernel->length == 0)
         {
-            cqtData[bin] = 0.0f;
+            vqtData[bin] = 0.0f;
             continue;
         }
         
@@ -211,7 +211,7 @@ void CQT_ApplyKernels(const float* fftReal, const float* fftImag)
         {
             int idx = kernel->indices[k];
             // Ensure index is within bounds
-            if (idx < 0 || idx >= CQT_FFT_SIZE/2 + 1)
+            if (idx < 0 || idx >= VQT_FFT_SIZE/2 + 1)
                 continue;
                 
             // Complex multiplication: (a + bi) * (c + di) = (ac - bd) + (ad + bc)i
@@ -220,24 +220,24 @@ void CQT_ApplyKernels(const float* fftReal, const float* fftImag)
         }
         
         // Calculate magnitude with gain boost
-        cqtData[bin] = sqrt(real * real + imag * imag) * 2.0f;  // Match FFT gain factor
+        vqtData[bin] = sqrt(real * real + imag * imag) * 2.0f;  // Match FFT gain factor
         
         // Check for NaN or Inf
-        if (!isfinite(cqtData[bin]))
-            cqtData[bin] = 0.0f;
+        if (!isfinite(vqtData[bin]))
+            vqtData[bin] = 0.0f;
     }
 }
 
-// Process CQT from audio data
-void CQT_ProcessAudio(void)
+// Process VQT from audio data
+void VQT_ProcessAudio(void)
 {
-    if (!cqtFftCfg || !cqtEnabled) return;
+    if (!vqtFftCfg || !vqtEnabled) return;
     
     // Check if kernels are initialized
     bool kernelsValid = false;
-    for (int i = 0; i < CQT_BINS; i++)
+    for (int i = 0; i < VQT_BINS; i++)
     {
-        if (cqtKernels[i].real && cqtKernels[i].length > 0)
+        if (vqtKernels[i].real && vqtKernels[i].length > 0)
         {
             kernelsValid = true;
             break;
@@ -247,30 +247,30 @@ void CQT_ProcessAudio(void)
     if (!kernelsValid)
     {
         // Kernels not initialized, set all output to zero
-        memset(cqtData, 0, sizeof(cqtData));
-        memset(cqtSmoothingData, 0, sizeof(cqtSmoothingData));
-        memset(cqtNormalizedData, 0, sizeof(cqtNormalizedData));
+        memset(vqtData, 0, sizeof(vqtData));
+        memset(vqtSmoothingData, 0, sizeof(vqtSmoothingData));
+        memset(vqtNormalizedData, 0, sizeof(vqtNormalizedData));
         return;
     }
     
     // Copy audio data from the shared buffer
     // sampleBuf is defined in fft.c as extern
     extern float sampleBuf[];
-    memcpy(cqtAudioBuffer, sampleBuf, CQT_FFT_SIZE * sizeof(float));
+    memcpy(vqtAudioBuffer, sampleBuf, VQT_FFT_SIZE * sizeof(float));
     
     // Check if we have any audio data
     float audioSum = 0.0f;
-    for (int i = 0; i < CQT_FFT_SIZE; i++)
+    for (int i = 0; i < VQT_FFT_SIZE; i++)
     {
-        audioSum += fabs(cqtAudioBuffer[i]);
+        audioSum += fabs(vqtAudioBuffer[i]);
     }
     
     if (audioSum < 0.0001f)
     {
         // No audio data, set output to zero
-        memset(cqtData, 0, sizeof(cqtData));
-        memset(cqtSmoothingData, 0, sizeof(cqtSmoothingData));
-        memset(cqtNormalizedData, 0, sizeof(cqtNormalizedData));
+        memset(vqtData, 0, sizeof(vqtData));
+        memset(vqtSmoothingData, 0, sizeof(vqtSmoothingData));
+        memset(vqtNormalizedData, 0, sizeof(vqtNormalizedData));
         return;
     }
     
@@ -281,22 +281,22 @@ void CQT_ProcessAudio(void)
     
     // Perform 16384-point FFT with timing
     clock_t fftStart = clock();
-    kiss_fftr(cqtFftCfg, cqtAudioBuffer, cqtFftOutput);
+    kiss_fftr(vqtFftCfg, vqtAudioBuffer, vqtFftOutput);
     clock_t fftEnd = clock();
     
     // Extract real and imaginary components for kernel application
-    float fftReal[CQT_FFT_SIZE/2 + 1];
-    float fftImag[CQT_FFT_SIZE/2 + 1];
+    float fftReal[VQT_FFT_SIZE/2 + 1];
+    float fftImag[VQT_FFT_SIZE/2 + 1];
     
-    for (int i = 0; i <= CQT_FFT_SIZE/2; i++)
+    for (int i = 0; i <= VQT_FFT_SIZE/2; i++)
     {
-        fftReal[i] = cqtFftOutput[i].r;
-        fftImag[i] = cqtFftOutput[i].i;
+        fftReal[i] = vqtFftOutput[i].r;
+        fftImag[i] = vqtFftOutput[i].i;
     }
     
-    // Apply CQT kernels with timing
+    // Apply VQT kernels with timing
     clock_t kernelStart = clock();
-    CQT_ApplyKernels(fftReal, fftImag);
+    VQT_ApplyKernels(fftReal, fftImag);
     clock_t kernelEnd = clock();
     
     // Calculate times in milliseconds
@@ -310,132 +310,132 @@ void CQT_ProcessAudio(void)
     // Print profiling info every 60 frames (~1 second)
     if (profileCount % 60 == 0)
     {
-        printf("CQT Performance (16K FFT):\n");
+        printf("VQT Performance (16K FFT):\n");
         printf("  FFT avg: %.3fms\n", totalFftTime / profileCount);
         printf("  Kernels avg: %.3fms\n", totalKernelTime / profileCount);
         printf("  Total avg: %.3fms\n", (totalFftTime + totalKernelTime) / profileCount);
         printf("  Samples: %d\n\n", profileCount);
     }
     
-    #ifdef CQT_DEBUG
-    // Reduced debug output - CQT is working correctly now
+    #ifdef VQT_DEBUG
+    // Reduced debug output - VQT is working correctly now
     static int debugCounter = 0;
     if (++debugCounter % 300 == 0)  // Print once every 5 seconds
     {
-        // Find peak CQT bin
+        // Find peak VQT bin
         int peakBin = 0;
         float peakVal = 0.0f;
-        for (int i = 0; i < CQT_BINS; i++)
+        for (int i = 0; i < VQT_BINS; i++)
         {
-            if (cqtData[i] > peakVal)
+            if (vqtData[i] > peakVal)
             {
-                peakVal = cqtData[i];
+                peakVal = vqtData[i];
                 peakBin = i;
             }
         }
         
         if (peakVal > 1.0f)
         {
-            float peakFreq = CQT_MIN_FREQ * pow(2.0f, peakBin / 12.0f);
-            printf("CQT: Peak at bin %d (%.1f Hz) with magnitude %.1f\n", 
+            float peakFreq = VQT_MIN_FREQ * pow(2.0f, peakBin / 12.0f);
+            printf("VQT: Peak at bin %d (%.1f Hz) with magnitude %.1f\n", 
                    peakBin, peakFreq, peakVal);
         }
     }
     #endif
     
     // Apply spectral whitening if enabled
-    #if CQT_SPECTRAL_WHITENING_ENABLED
-    for (int i = 0; i < CQT_BINS; i++)
+    #if VQT_SPECTRAL_WHITENING_ENABLED
+    for (int i = 0; i < VQT_BINS; i++)
     {
         // Update running average for this bin
-        cqtBinAverages[i] = cqtBinAverages[i] * CQT_WHITENING_DECAY + 
-                            cqtData[i] * (1.0f - CQT_WHITENING_DECAY);
+        vqtBinAverages[i] = vqtBinAverages[i] * VQT_WHITENING_DECAY + 
+                            vqtData[i] * (1.0f - VQT_WHITENING_DECAY);
         
         // Ensure average doesn't go below floor
-        if (cqtBinAverages[i] < CQT_WHITENING_FLOOR)
-            cqtBinAverages[i] = CQT_WHITENING_FLOOR;
+        if (vqtBinAverages[i] < VQT_WHITENING_FLOOR)
+            vqtBinAverages[i] = VQT_WHITENING_FLOOR;
         
         // Apply whitening by dividing by the average
-        cqtWhitenedData[i] = cqtData[i] / cqtBinAverages[i];
+        vqtWhitenedData[i] = vqtData[i] / vqtBinAverages[i];
         
         // Check for NaN or Inf
-        if (!isfinite(cqtWhitenedData[i]))
-            cqtWhitenedData[i] = 0.0f;
+        if (!isfinite(vqtWhitenedData[i]))
+            vqtWhitenedData[i] = 0.0f;
     }
     
     // Apply smoothing to whitened data
-    for (int i = 0; i < CQT_BINS; i++)
+    for (int i = 0; i < VQT_BINS; i++)
     {
-        cqtSmoothingData[i] = cqtSmoothingData[i] * CQT_SMOOTHING_FACTOR + 
-                              cqtWhitenedData[i] * (1.0f - CQT_SMOOTHING_FACTOR);
+        vqtSmoothingData[i] = vqtSmoothingData[i] * VQT_SMOOTHING_FACTOR + 
+                              vqtWhitenedData[i] * (1.0f - VQT_SMOOTHING_FACTOR);
     }
     #else
     // Apply smoothing to raw data (spectral whitening disabled)
-    for (int i = 0; i < CQT_BINS; i++)
+    for (int i = 0; i < VQT_BINS; i++)
     {
-        cqtSmoothingData[i] = cqtSmoothingData[i] * CQT_SMOOTHING_FACTOR + 
-                              cqtData[i] * (1.0f - CQT_SMOOTHING_FACTOR);
+        vqtSmoothingData[i] = vqtSmoothingData[i] * VQT_SMOOTHING_FACTOR + 
+                              vqtData[i] * (1.0f - VQT_SMOOTHING_FACTOR);
     }
     #endif
     
     // Find peak for normalization
     float currentPeak = 0.0f;
-    for (int i = 0; i < CQT_BINS; i++)
+    for (int i = 0; i < VQT_BINS; i++)
     {
-        if (cqtSmoothingData[i] > currentPeak)
-            currentPeak = cqtSmoothingData[i];
+        if (vqtSmoothingData[i] > currentPeak)
+            currentPeak = vqtSmoothingData[i];
     }
     
     // Initialize peak value if needed
-    if (cqtPeakSmoothValue <= 0.0f)
-        cqtPeakSmoothValue = 0.1f;
+    if (vqtPeakSmoothValue <= 0.0f)
+        vqtPeakSmoothValue = 0.1f;
     
     // Smooth peak value
-    if (currentPeak > cqtPeakSmoothValue)
-        cqtPeakSmoothValue = currentPeak;
+    if (currentPeak > vqtPeakSmoothValue)
+        vqtPeakSmoothValue = currentPeak;
     else
-        cqtPeakSmoothValue = cqtPeakSmoothValue * 0.99f + currentPeak * 0.01f;
+        vqtPeakSmoothValue = vqtPeakSmoothValue * 0.99f + currentPeak * 0.01f;
     
     // Ensure peak value doesn't go too low
-    if (cqtPeakSmoothValue < 0.0001f)
-        cqtPeakSmoothValue = 0.0001f;
+    if (vqtPeakSmoothValue < 0.0001f)
+        vqtPeakSmoothValue = 0.0001f;
     
     // Normalize data
-    float normalizer = 1.0f / cqtPeakSmoothValue;
-    for (int i = 0; i < CQT_BINS; i++)
+    float normalizer = 1.0f / vqtPeakSmoothValue;
+    for (int i = 0; i < VQT_BINS; i++)
     {
-        cqtNormalizedData[i] = cqtSmoothingData[i] * normalizer;
-        if (cqtNormalizedData[i] > 1.0f) 
-            cqtNormalizedData[i] = 1.0f;
+        vqtNormalizedData[i] = vqtSmoothingData[i] * normalizer;
+        if (vqtNormalizedData[i] > 1.0f) 
+            vqtNormalizedData[i] = 1.0f;
         
         // Final NaN check
-        if (!isfinite(cqtNormalizedData[i]))
-            cqtNormalizedData[i] = 0.0f;
+        if (!isfinite(vqtNormalizedData[i]))
+            vqtNormalizedData[i] = 0.0f;
     }
 }
 
 
-// Close CQT processing and free resources
-void CQT_Close(void)
+// Close VQT processing and free resources
+void VQT_Close(void)
 {
-    if (cqtFftCfg)
+    if (vqtFftCfg)
     {
-        free(cqtFftCfg);
-        cqtFftCfg = NULL;
+        free(vqtFftCfg);
+        vqtFftCfg = NULL;
     }
     
-    if (cqtAudioBuffer)
+    if (vqtAudioBuffer)
     {
-        free(cqtAudioBuffer);
-        cqtAudioBuffer = NULL;
+        free(vqtAudioBuffer);
+        vqtAudioBuffer = NULL;
     }
     
-    if (cqtFftOutput)
+    if (vqtFftOutput)
     {
-        free(cqtFftOutput);
-        cqtFftOutput = NULL;
+        free(vqtFftOutput);
+        vqtFftOutput = NULL;
     }
     
     // Clean up kernels
-    CQT_Cleanup();
+    VQT_Cleanup();
 }
