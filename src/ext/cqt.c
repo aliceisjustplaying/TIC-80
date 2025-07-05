@@ -123,26 +123,62 @@ bool CQT_Open(void)
         benchmarkRun = true;
     }
     
-    // Debug: Print first few center frequencies and expected FFT bins
+    // Debug: Print variable Q values across frequency spectrum
     #ifdef CQT_DEBUG
     float centerFreqs[CQT_BINS];
     CQT_GenerateCenterFrequencies(centerFreqs, CQT_BINS, CQT_MIN_FREQ, CQT_MAX_FREQ);
-    printf("CQT: First 10 center frequencies:\n");
-    for (int i = 0; i < 10 && i < CQT_BINS; i++)
+    
+    printf("\nCQT Variable-Q Implementation (8K FFT Optimized):\n");
+    printf("================================================\n");
+    
+    // Show Q values for key frequency ranges
+    float testFreqs[] = {20, 25, 30, 40, 50, 65, 80, 120, 160, 240, 320, 440, 640, 1000, 2000, 4000};
+    printf("Frequency | Design Q | Window Length | Effective Q | Resolution\n");
+    printf("----------|----------|---------------|-------------|------------\n");
+    
+    for (int i = 0; i < 16; i++)
     {
-        // FFT bin = freq * fftSize / sampleRate
-        int expectedBin = (int)(centerFreqs[i] * CQT_FFT_SIZE / 44100.0f);
-        printf("  Bin %d: %.2f Hz -> FFT bin %d\n", i, centerFreqs[i], expectedBin);
+        float freq = testFreqs[i];
+        // Find closest CQT bin
+        int closestBin = 0;
+        float minDiff = fabs(centerFreqs[0] - freq);
+        for (int j = 1; j < CQT_BINS; j++)
+        {
+            float diff = fabs(centerFreqs[j] - freq);
+            if (diff < minDiff)
+            {
+                minDiff = diff;
+                closestBin = j;
+            }
+        }
+        
+        // Calculate Q values using 8K-optimized function
+        float designQ;
+        if (freq < 25.0f) designQ = 7.4f;
+        else if (freq < 30.0f) designQ = 9.2f;
+        else if (freq < 40.0f) designQ = 11.5f;
+        else if (freq < 50.0f) designQ = 14.5f;
+        else if (freq < 65.0f) designQ = 16.0f;
+        else if (freq < 80.0f) designQ = 17.0f;
+        else if (freq < 160.0f) designQ = 17.0f;
+        else if (freq < 320.0f) designQ = 15.0f;
+        else if (freq < 640.0f) designQ = 13.0f;
+        else designQ = 11.0f;
+        
+        int windowLength = (int)(designQ * 44100.0f / freq);
+        if (windowLength > CQT_FFT_SIZE) windowLength = CQT_FFT_SIZE;
+        float effectiveQ = windowLength * freq / 44100.0f;
+        float bandwidth = freq / effectiveQ;
+        
+        printf("%7.0f Hz | %7.1f | %13d | %11.1f | %7.1f Hz\n", 
+               freq, designQ, windowLength, effectiveQ, bandwidth);
     }
     
-    // Also print expected bins for test frequencies
-    printf("\nCQT: Expected bins for test frequencies:\n");
-    float testFreqs[] = {110, 220, 440, 880};
-    for (int i = 0; i < 4; i++)
+    printf("\nFirst 10 CQT bins:\n");
+    for (int i = 0; i < 10 && i < CQT_BINS; i++)
     {
-        int cqtBin = (int)(12 * log(testFreqs[i] / 20.0) / log(2.0) + 0.5);
-        int fftBin = (int)(testFreqs[i] * CQT_FFT_SIZE / 44100.0f);
-        printf("  %.0f Hz -> CQT bin %d, FFT bin %d\n", testFreqs[i], cqtBin, fftBin);
+        int expectedBin = (int)(centerFreqs[i] * CQT_FFT_SIZE / 44100.0f);
+        printf("  Bin %d: %.2f Hz -> FFT bin %d\n", i, centerFreqs[i], expectedBin);
     }
     #endif
     
