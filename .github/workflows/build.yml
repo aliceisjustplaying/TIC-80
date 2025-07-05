@@ -81,6 +81,15 @@ jobs:
           cmake -G "MSYS Makefiles" -DBUILD_SDLGPU=On -DBUILD_STATIC=ON -DCMAKE_BUILD_TYPE=Release -DBUILD_WITH_ALL=ON ..
           cmake --build . --parallel
 
+      - name: Deploy
+        uses: actions/upload-artifact@v4
+        with:
+          name: "tic80-mingw"
+          path: |
+            build/bin/tic80.exe
+            build/bin/*.dll
+  
+
   # === Ubuntu ===
   linux-gcc12-glibc235:
     runs-on: ubuntu-22.04
