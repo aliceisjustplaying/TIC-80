@@ -21,12 +21,7 @@
 #define VQT_BASS_Q_MAX 17.0f        // Full Q achieved at 80+ Hz
 #define VQT_TREBLE_Q_FACTOR 11.0f   // Smoother for high frequencies
 
-// Spectral whitening toggle (set to 0 to disable)
-#define VQT_SPECTRAL_WHITENING_ENABLED 1
-
-// Spectral whitening parameters
-#define VQT_WHITENING_DECAY 0.99f      // Running average decay (0.98-0.995 for 1-2 second adaptation)
-#define VQT_WHITENING_FLOOR 0.001f     // Minimum average to prevent divide-by-zero
+// Spectral whitening removed - caused spreading issues with VQT's inherent spectral leakage
 
 // Raw VQT magnitude data
 extern float vqtData[VQT_BINS];
@@ -43,10 +38,6 @@ extern float vqtPeakSmoothValue;
 
 // Enable flag (tied to fftEnabled initially)
 extern bool vqtEnabled;
-
-// Spectral whitening data
-extern float vqtBinAverages[VQT_BINS];   // Long-term running averages per bin
-extern float vqtWhitenedData[VQT_BINS];  // Whitened VQT data
 
 // Sparse kernel storage structures
 typedef struct {

@@ -343,40 +343,12 @@ void VQT_ProcessAudio(void)
     }
     #endif
     
-    // Apply spectral whitening if enabled
-    #if VQT_SPECTRAL_WHITENING_ENABLED
-    for (int i = 0; i < VQT_BINS; i++)
-    {
-        // Update running average for this bin
-        vqtBinAverages[i] = vqtBinAverages[i] * VQT_WHITENING_DECAY + 
-                            vqtData[i] * (1.0f - VQT_WHITENING_DECAY);
-        
-        // Ensure average doesn't go below floor
-        if (vqtBinAverages[i] < VQT_WHITENING_FLOOR)
-            vqtBinAverages[i] = VQT_WHITENING_FLOOR;
-        
-        // Apply whitening by dividing by the average
-        vqtWhitenedData[i] = vqtData[i] / vqtBinAverages[i];
-        
-        // Check for NaN or Inf
-        if (!isfinite(vqtWhitenedData[i]))
-            vqtWhitenedData[i] = 0.0f;
-    }
-    
-    // Apply smoothing to whitened data
-    for (int i = 0; i < VQT_BINS; i++)
-    {
-        vqtSmoothingData[i] = vqtSmoothingData[i] * VQT_SMOOTHING_FACTOR + 
-                              vqtWhitenedData[i] * (1.0f - VQT_SMOOTHING_FACTOR);
-    }
-    #else
-    // Apply smoothing to raw data (spectral whitening disabled)
+    // Apply smoothing to raw data
     for (int i = 0; i < VQT_BINS; i++)
     {
         vqtSmoothingData[i] = vqtSmoothingData[i] * VQT_SMOOTHING_FACTOR + 
                               vqtData[i] * (1.0f - VQT_SMOOTHING_FACTOR);
     }
-    #endif
     
     // Find peak for normalization
     float currentPeak = 0.0f;
