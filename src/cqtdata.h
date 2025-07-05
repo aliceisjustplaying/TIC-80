@@ -4,7 +4,7 @@
 #define CQT_BINS 120
 #define CQT_OCTAVES 10
 #define CQT_BINS_PER_OCTAVE 12
-#define CQT_FFT_SIZE 8192   // 8K FFT - balanced time/frequency resolution, ~5.4 fps update rate
+#define CQT_FFT_SIZE 8192   // 8K FFT - optimized variable-Q for responsive visualization, ~5.4 fps
 
 // CQT frequency range
 #define CQT_MIN_FREQ 20.0f    // Sub-bass for electronic music
@@ -13,6 +13,13 @@
 // Smoothing parameters
 #define CQT_SMOOTHING_FACTOR 0.3f  // Reduced from 0.7f for more responsive display
 #define CQT_SPARSITY_THRESHOLD 0.01f
+
+// Variable-Q configuration (optimized for 8K FFT)
+#define CQT_VARIABLE_Q_ENABLED 1
+#define CQT_8K_OPTIMIZED 1          // Uses Q values that fit within 8K FFT
+#define CQT_BASS_Q_MIN 7.4f         // Minimum Q at 20 Hz (constrained by 8K)
+#define CQT_BASS_Q_MAX 17.0f        // Full Q achieved at 80+ Hz
+#define CQT_TREBLE_Q_FACTOR 11.0f   // Smoother for high frequencies
 
 // Raw CQT magnitude data
 extern float cqtData[CQT_BINS];
