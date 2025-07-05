@@ -1,6 +1,7 @@
 #include "vqtdata.h"
 #include <string.h>
 #include <stdlib.h>
+#include <math.h>
 
 // Global VQT data arrays
 float vqtData[VQT_BINS];
@@ -17,9 +18,6 @@ bool vqtEnabled = false;
 // Array of kernels, one per VQT bin
 VqtKernel vqtKernels[VQT_BINS];
 
-// Spectral whitening data
-float vqtBinAverages[VQT_BINS];
-float vqtWhitenedData[VQT_BINS];
 
 void VQT_Init(void)
 {
@@ -34,16 +32,6 @@ void VQT_Init(void)
     
     // Zero kernel pointers
     memset(vqtKernels, 0, sizeof(vqtKernels));
-    
-    // Initialize spectral whitening arrays
-    memset(vqtBinAverages, 0, sizeof(vqtBinAverages));
-    memset(vqtWhitenedData, 0, sizeof(vqtWhitenedData));
-    
-    // Start with small initial averages to avoid divide-by-zero
-    for (int i = 0; i < VQT_BINS; i++)
-    {
-        vqtBinAverages[i] = VQT_WHITENING_FLOOR;
-    }
 }
 
 void VQT_Cleanup(void)

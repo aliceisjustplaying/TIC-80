@@ -1611,14 +1611,40 @@ static s32 lua_vqt(lua_State* lua)
             return 0;
         }
 
-        // Return normalized VQT data
-        lua_pushnumber(lua, vqtNormalizedData[bin]);
+        // Return raw VQT data (normalized but unsmoothed)
+        lua_pushnumber(lua, vqtData[bin] / vqtPeakSmoothValue);
         return 1;
     }
 
     luaL_error(lua, "invalid params, vqt(bin)\n");
     return 0;
 }
+
+static s32 lua_vqts(lua_State* lua)
+{
+    s32 top = lua_gettop(lua);
+
+    if (top >= 1)
+    {
+        s32 bin = getLuaNumber(lua, 1);
+        
+        // Validate bin range
+        if (bin < 0 || bin >= VQT_BINS)
+        {
+            luaL_error(lua, "vqts bin out of range (0-%d)\n", VQT_BINS - 1);
+            return 0;
+        }
+
+        // Return smoothed VQT data (smoothed + normalized)
+        // This gives more stable values
+        lua_pushnumber(lua, vqtNormalizedData[bin]);
+        return 1;
+    }
+
+    luaL_error(lua, "invalid params, vqts(bin)\n");
+    return 0;
+}
+
 
 static int lua_dofile(lua_State *lua)
 {
@@ -1674,8 +1700,9 @@ void luaapi_init(tic_core* core)
     registerLuaFunction(core, lua_dofile, "dofile");
     registerLuaFunction(core, lua_loadfile, "loadfile");
     
-    // Register VQT function
+    // Register VQT functions
     registerLuaFunction(core, lua_vqt, "vqt");
+    registerLuaFunction(core, lua_vqts, "vqts");
 }
 
 void luaapi_close(tic_mem* tic)
