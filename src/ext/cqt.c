@@ -343,12 +343,40 @@ void CQT_ProcessAudio(void)
     }
     #endif
     
-    // Apply smoothing
+    // Apply spectral whitening if enabled
+    #if CQT_SPECTRAL_WHITENING_ENABLED
+    for (int i = 0; i < CQT_BINS; i++)
+    {
+        // Update running average for this bin
+        cqtBinAverages[i] = cqtBinAverages[i] * CQT_WHITENING_DECAY + 
+                            cqtData[i] * (1.0f - CQT_WHITENING_DECAY);
+        
+        // Ensure average doesn't go below floor
+        if (cqtBinAverages[i] < CQT_WHITENING_FLOOR)
+            cqtBinAverages[i] = CQT_WHITENING_FLOOR;
+        
+        // Apply whitening by dividing by the average
+        cqtWhitenedData[i] = cqtData[i] / cqtBinAverages[i];
+        
+        // Check for NaN or Inf
+        if (!isfinite(cqtWhitenedData[i]))
+            cqtWhitenedData[i] = 0.0f;
+    }
+    
+    // Apply smoothing to whitened data
+    for (int i = 0; i < CQT_BINS; i++)
+    {
+        cqtSmoothingData[i] = cqtSmoothingData[i] * CQT_SMOOTHING_FACTOR + 
+                              cqtWhitenedData[i] * (1.0f - CQT_SMOOTHING_FACTOR);
+    }
+    #else
+    // Apply smoothing to raw data (spectral whitening disabled)
     for (int i = 0; i < CQT_BINS; i++)
     {
         cqtSmoothingData[i] = cqtSmoothingData[i] * CQT_SMOOTHING_FACTOR + 
                               cqtData[i] * (1.0f - CQT_SMOOTHING_FACTOR);
     }
+    #endif
     
     // Find peak for normalization
     float currentPeak = 0.0f;
@@ -395,12 +423,40 @@ void CQT_Process(const float* fftReal, const float* fftImag)
     // Apply CQT kernels
     CQT_ApplyKernels(fftReal, fftImag);
     
-    // Apply smoothing
+    // Apply spectral whitening if enabled
+    #if CQT_SPECTRAL_WHITENING_ENABLED
+    for (int i = 0; i < CQT_BINS; i++)
+    {
+        // Update running average for this bin
+        cqtBinAverages[i] = cqtBinAverages[i] * CQT_WHITENING_DECAY + 
+                            cqtData[i] * (1.0f - CQT_WHITENING_DECAY);
+        
+        // Ensure average doesn't go below floor
+        if (cqtBinAverages[i] < CQT_WHITENING_FLOOR)
+            cqtBinAverages[i] = CQT_WHITENING_FLOOR;
+        
+        // Apply whitening by dividing by the average
+        cqtWhitenedData[i] = cqtData[i] / cqtBinAverages[i];
+        
+        // Check for NaN or Inf
+        if (!isfinite(cqtWhitenedData[i]))
+            cqtWhitenedData[i] = 0.0f;
+    }
+    
+    // Apply smoothing to whitened data
+    for (int i = 0; i < CQT_BINS; i++)
+    {
+        cqtSmoothingData[i] = cqtSmoothingData[i] * CQT_SMOOTHING_FACTOR + 
+                              cqtWhitenedData[i] * (1.0f - CQT_SMOOTHING_FACTOR);
+    }
+    #else
+    // Apply smoothing to raw data (spectral whitening disabled)
     for (int i = 0; i < CQT_BINS; i++)
     {
         cqtSmoothingData[i] = cqtSmoothingData[i] * CQT_SMOOTHING_FACTOR + 
                               cqtData[i] * (1.0f - CQT_SMOOTHING_FACTOR);
     }
+    #endif
     
     // Find peak for normalization
     float currentPeak = 0.0f;
