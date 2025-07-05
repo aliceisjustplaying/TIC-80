@@ -21,6 +21,13 @@
 #define CQT_BASS_Q_MAX 17.0f        // Full Q achieved at 80+ Hz
 #define CQT_TREBLE_Q_FACTOR 11.0f   // Smoother for high frequencies
 
+// Spectral whitening toggle (set to 0 to disable)
+#define CQT_SPECTRAL_WHITENING_ENABLED 1
+
+// Spectral whitening parameters
+#define CQT_WHITENING_DECAY 0.99f      // Running average decay (0.98-0.995 for 1-2 second adaptation)
+#define CQT_WHITENING_FLOOR 0.001f     // Minimum average to prevent divide-by-zero
+
 // Raw CQT magnitude data
 extern float cqtData[CQT_BINS];
 
@@ -36,6 +43,10 @@ extern float cqtPeakSmoothValue;
 
 // Enable flag (tied to fftEnabled initially)
 extern bool cqtEnabled;
+
+// Spectral whitening data
+extern float cqtBinAverages[CQT_BINS];   // Long-term running averages per bin
+extern float cqtWhitenedData[CQT_BINS];  // Whitened CQT data
 
 // Sparse kernel storage structures
 typedef struct {
