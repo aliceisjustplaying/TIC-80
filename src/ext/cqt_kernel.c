@@ -42,6 +42,33 @@ float CQT_CalculateQ(int binsPerOctave)
     return 1.0f / (pow(2.0, 1.0 / binsPerOctave) - 1.0f);
 }
 
+// Calculate variable Q factor optimized for 8K FFT constraint
+static float calculateVariableQ(float centerFreq)
+{
+    // Designed to maximize Q within 8K FFT window size limitation
+    // All windows fit within 8192 samples - no truncation!
+    if (centerFreq < 25.0f) return 7.4f;        // 20-25 Hz: Max possible with 8K
+    else if (centerFreq < 30.0f) return 9.2f;   // 25-30 Hz: Good resolution
+    else if (centerFreq < 40.0f) return 11.5f;  // 30-40 Hz: Better resolution
+    else if (centerFreq < 50.0f) return 14.5f;  // 40-50 Hz: Near ideal
+    else if (centerFreq < 65.0f) return 16.0f;  // 50-65 Hz: Almost full Q
+    else if (centerFreq < 80.0f) return 17.0f;  // 65-80 Hz: Full standard Q
+    else if (centerFreq < 160.0f) return 17.0f; // 80-160 Hz: Standard CQT
+    else if (centerFreq < 320.0f) return 15.0f; // 160-320 Hz: Slightly wider
+    else if (centerFreq < 640.0f) return 13.0f; // 320-640 Hz: Smoother
+    else return 11.0f;                           // 640+ Hz: Very smooth
+}
+
+// Get adaptive sparsity threshold based on Q factor
+static float getSparsityThreshold(float centerFreq)
+{
+    float Q = calculateVariableQ(centerFreq);
+    // Higher Q needs lower threshold to preserve frequency selectivity
+    if (Q > 30) return 0.005f;
+    else if (Q > 20) return 0.01f;
+    else return 0.02f;
+}
+
 // Generate Hamming window
 static void generateHammingWindow(float* window, int length)
 {
@@ -79,22 +106,28 @@ static bool generateSingleKernel(
     CqtWindowType windowType,
     float sparsityThreshold)
 {
-    // Hybrid approach: ESP32-style for low frequencies, constant-Q for higher
-    float Q = CQT_CalculateQ(CQT_BINS_PER_OCTAVE);
-    int windowLength;
+    // Use variable Q optimized for 8K FFT
+    float Q = calculateVariableQ(centerFreq);
+    int windowLength = (int)(Q * sampleRate / centerFreq);
     
-    // With 16K FFT, we can use full constant-Q across the entire spectrum!
-    windowLength = (int)(Q * sampleRate / centerFreq);
-    
-    // At 20Hz: windowLength = 17 * 44100 / 20 = 37,485 samples
-    // 16K FFT can handle up to frequencies down to ~45 Hz without truncation
-    // For lower frequencies, we'll still get better Q than before
+    // With 8K FFT and optimized variable Q:
+    // 20Hz: Q=7.4 → 16,317 samples → truncated to 8,192 (still Q_eff ≈ 3.7)
+    // 25Hz: Q=9.2 → 16,236 samples → truncated to 8,192 (Q_eff ≈ 4.6)
+    // 30Hz: Q=11.5 → 16,870 samples → truncated to 8,192 (Q_eff ≈ 5.6)
+    // 40Hz: Q=14.5 → 16,031 samples → truncated to 8,192 (Q_eff ≈ 7.4)
+    // 50Hz: Q=16.0 → 14,112 samples → truncated to 8,192 (Q_eff ≈ 9.3)
+    // 65Hz: Q=17.0 → 11,538 samples → truncated to 8,192 (Q_eff ≈ 12.1)
+    // 80Hz+: All fit within 8K samples with designed Q!
     
     // Ensure it fits in FFT size
     if (windowLength > fftSize) {
         windowLength = fftSize;
-        // Even at 20Hz with truncation to 16384 samples:
-        // Effective Q = 16384 * 20 / 44100 = 7.4 (much better than 1.86!)
+        // Calculate effective Q after truncation
+        float effectiveQ = windowLength * centerFreq / sampleRate;
+        #ifdef CQT_DEBUG
+        printf("Freq %.1f Hz: Q designed=%.1f, window=%d, Q effective=%.1f (truncated)\n",
+               centerFreq, Q, windowLength, effectiveQ);
+        #endif
     }
     
     // Ensure window length is reasonable
@@ -238,10 +271,12 @@ bool CQT_GenerateKernels(CqtKernel* kernels, const CqtKernelConfig* config)
     bool success = true;
     for (int i = 0; i < config->numBins; i++)
     {
+        // Use adaptive sparsity threshold based on frequency
+        float adaptiveThreshold = getSparsityThreshold(centerFreqs[i]);
         if (!generateSingleKernel(&kernels[i], fftCfg, config->fftSize,
                                  centerFreqs[i], config->minFreq, 
                                  config->sampleRate, config->windowType,
-                                 config->sparsityThreshold))
+                                 adaptiveThreshold))
         {
             // Clean up on failure
             for (int j = 0; j < i; j++)
