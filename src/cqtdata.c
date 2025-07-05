@@ -17,6 +17,10 @@ bool cqtEnabled = false;
 // Array of kernels, one per CQT bin
 CqtKernel cqtKernels[CQT_BINS];
 
+// Spectral whitening data
+float cqtBinAverages[CQT_BINS];
+float cqtWhitenedData[CQT_BINS];
+
 void CQT_Init(void)
 {
     // Zero all data arrays
@@ -30,6 +34,16 @@ void CQT_Init(void)
     
     // Zero kernel pointers
     memset(cqtKernels, 0, sizeof(cqtKernels));
+    
+    // Initialize spectral whitening arrays
+    memset(cqtBinAverages, 0, sizeof(cqtBinAverages));
+    memset(cqtWhitenedData, 0, sizeof(cqtWhitenedData));
+    
+    // Start with small initial averages to avoid divide-by-zero
+    for (int i = 0; i < CQT_BINS; i++)
+    {
+        cqtBinAverages[i] = CQT_WHITENING_FLOOR;
+    }
 }
 
 void CQT_Cleanup(void)
