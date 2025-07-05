@@ -116,14 +116,14 @@ value = fft(bin)   -- Get raw FFT magnitude for bin (0-1023)
 value = ffts(bin)  -- Get smoothed FFT magnitude for bin (0-1023)
 ```
 
-### CQT Implementation
+### VQT Implementation
 
 Constant-Q Transform provides logarithmic frequency spacing for better musical analysis.
 
 #### Architecture
-- **src/ext/cqt.c**: CQT processing with separate FFT
-- **src/ext/cqt_kernel.c**: Kernel generation with sparse storage
-- **src/cqtdata.h/c**: CQT data storage and configuration
+- **src/ext/vqt.c**: VQT processing with separate FFT
+- **src/ext/vqt_kernel.c**: Kernel generation with sparse storage
+- **src/vqtdata.h/c**: VQT data storage and configuration
 - **Processing**: In `tic_core_tick` after FFT processing
 
 #### Specifications
@@ -132,7 +132,7 @@ Constant-Q Transform provides logarithmic frequency spacing for better musical a
 - Update rate: ~5.4 fps with 8K FFT
 - Variable-Q implementation optimized for 8K FFT constraint
 - Smoothing factor: 0.3
-- Spectral whitening: Enabled by default (toggle via `CQT_SPECTRAL_WHITENING_ENABLED`)
+- Spectral whitening: Enabled by default (toggle via `VQT_SPECTRAL_WHITENING_ENABLED`)
 
 #### Variable-Q Design (8K FFT Optimized)
 | Frequency Range | Design Q | Effective Q | Resolution |
@@ -143,18 +143,18 @@ Constant-Q Transform provides logarithmic frequency spacing for better musical a
 | 40-50 Hz | 14.5 | 7.4-9.3 | ~4.3 Hz |
 | 50-65 Hz | 16.0 | 9.3-12.1 | ~4.1 Hz |
 | 65-80 Hz | 17.0 | 12.1-17.0 | ~4.7 Hz |
-| 80+ Hz | 17.0 | 17.0 | Standard CQT |
+| 80+ Hz | 17.0 | 17.0 | Standard VQT |
 
 #### API Functions
 ```lua
-value = cqt(bin)   -- Get raw CQT magnitude for bin (0-119)
+value = vqt(bin)   -- Get raw VQT magnitude for bin (0-119)
 -- Note mapping: Bin = octave * 12 + note
 -- Note: C=0, C#=1, D=2, D#=3, E=4, F=5, F#=6, G=7, G#=8, A=9, A#=10, B=11
 ```
 
-### FFT vs CQT Comparison
+### FFT vs VQT Comparison
 
-| Aspect | FFT | CQT |
+| Aspect | FFT | VQT |
 |--------|-----|-----|
 | Frequency spacing | Linear (21.5 Hz/bin) | Logarithmic (musical) |
 | Update rate | ~21 fps | ~5.4 fps |
@@ -165,10 +165,10 @@ value = cqt(bin)   -- Get raw CQT magnitude for bin (0-119)
 
 ### Shared Audio Buffer Architecture
 
-Both FFT and CQT share the same audio capture buffer:
-- Buffer size: Maximum of (2048, CQT_FFT_SIZE) samples
+Both FFT and VQT share the same audio capture buffer:
+- Buffer size: Maximum of (2048, VQT_FFT_SIZE) samples
 - FFT reads samples 0-2047
-- CQT reads samples 0-(CQT_FFT_SIZE-1)
+- VQT reads samples 0-(VQT_FFT_SIZE-1)
 - Uses miniaudio for audio capture (mic or loopback on Windows)
 
 ### Practical Usage Guidelines
@@ -179,7 +179,7 @@ Both FFT and CQT share the same audio capture buffer:
 - Energy meters by frequency band
 - Any rhythm visualization above 150 BPM
 
-**Use CQT for:**
+**Use VQT for:**
 - Bass note identification
 - Chord/key detection
 - Color mapping from musical content
@@ -190,10 +190,10 @@ Both FFT and CQT share the same audio capture buffer:
 -- Rhythm from FFT (21 fps)
 local kick = fft(2) + fft(3) + fft(4)
 
--- Musical content from CQT (5.4 fps)
+-- Musical content from VQT (5.4 fps)
 local bassNote = 0
 for i=24,35 do  -- 2nd octave
-  if cqt(i) > cqt(bassNote) then bassNote = i end
+  if vqt(i) > vqt(bassNote) then bassNote = i end
 end
 
 -- Combine for visuals
@@ -205,30 +205,30 @@ local color = (bassNote % 12) + 1  -- Color from note
 
 ### Completed Features
 - **FFT**: 1024 bins with exact original behavior preserved
-- **CQT**: 120 bins with Variable-Q implementation
-- **Spectral Whitening**: Per-bin normalization for CQT
-- **Shared Audio Buffer**: Automatic sizing for both FFT and CQT
-- **Lua API**: `fft()`, `ffts()`, `cqt()` functions implemented
+- **VQT**: 120 bins with Variable-Q implementation
+- **Spectral Whitening**: Per-bin normalization for VQT
+- **Shared Audio Buffer**: Automatic sizing for both FFT and VQT
+- **Lua API**: `fft()`, `ffts()`, `vqt()` functions implemented
 
 ### Configuration Options
-- `CQT_FFT_SIZE`: Default 8192 (configurable in cqtdata.h)
-- `CQT_SPECTRAL_WHITENING_ENABLED`: Toggle spectral whitening (0/1)
-- `CQT_WHITENING_DECAY`: Running average decay factor (default 0.99)
-- `CQT_SMOOTHING_FACTOR`: CQT smoothing factor (default 0.3)
+- `VQT_FFT_SIZE`: Default 8192 (configurable in vqtdata.h)
+- `VQT_SPECTRAL_WHITENING_ENABLED`: Toggle spectral whitening (0/1)
+- `VQT_WHITENING_DECAY`: Running average decay factor (default 0.99)
+- `VQT_SMOOTHING_FACTOR`: VQT smoothing factor (default 0.3)
 
 ### Test Scripts
-- `demo_fft_cqt_hybrid.lua`: Combined FFT/CQT visualization
-- `test_cqt_spectrum_v2.lua`: CQT spectrum analyzer
+- `demo_fft_vqt_hybrid.lua`: Combined FFT/VQT visualization
+- `test_vqt_spectrum_v2.lua`: VQT spectrum analyzer
 - `test_fft_restored.lua`: FFT verification
-- `test_cqt_variable_q.lua`: Variable-Q demonstration
-- `test_cqt_whitening.lua`: Spectral whitening comparison
+- `test_vqt_variable_q.lua`: Variable-Q demonstration
+- `test_vqt_whitening.lua`: Spectral whitening comparison
 
 ## Future Enhancements
 
 ### Additional API Functions
-- `cqts(bin)`: Smoothed CQT data
-- `cqto(octave, note)`: Raw CQT by musical note
-- `cqtos(octave, note)`: Smoothed CQT by musical note
+- `vqts(bin)`: Smoothed VQT data
+- `vqto(octave, note)`: Raw VQT by musical note
+- `vqtos(octave, note)`: Smoothed VQT by musical note
 
 ### Signal Processing Enhancements
 - **Harmonic-Percussive Separation**: Isolate tonal content from drums
@@ -237,7 +237,7 @@ local color = (bassNote % 12) + 1  -- Color from note
 - **Enhanced Variable-Q**: Support for 16K FFT for better bass resolution
 
 ### Platform Support
-- Add CQT to other language bindings (currently Lua only)
+- Add VQT to other language bindings (currently Lua only)
 - GPU acceleration for kernel application
 - Configurable FFT sizes at runtime
 
@@ -253,12 +253,12 @@ local color = (bassNote % 12) + 1  -- Color from note
 
 ### Overview
 
-Harmonic-Percussive Separation isolates tonal (harmonic) content from rhythmic (percussive) content in audio signals. This enhancement will apply HPS exclusively to CQT data, providing better separation of musical elements like sustained notes from drum hits.
+Harmonic-Percussive Separation isolates tonal (harmonic) content from rhythmic (percussive) content in audio signals. This enhancement will apply HPS exclusively to VQT data, providing better separation of musical elements like sustained notes from drum hits.
 
 ### Algorithm Design
 
 **Median Filtering Approach (Fitzgerald 2010):**
-- Apply median filters on CQT magnitude spectrogram
+- Apply median filters on VQT magnitude spectrogram
 - Horizontal (time) median filter → captures harmonic content (sustained tones)
 - Vertical (frequency) median filter → captures percussive content (transients)
 - Generate masks by comparing filtered outputs
@@ -273,9 +273,9 @@ Harmonic-Percussive Separation isolates tonal (harmonic) content from rhythmic (
 
 #### Data Flow
 ```
-Audio Buffer → CQT Processing → CQT Magnitude → HPS Processing → Separated Components
+Audio Buffer → VQT Processing → VQT Magnitude → HPS Processing → Separated Components
                                                        ↓
-                                              Harmonic & Percussive CQT
+                                              Harmonic & Percussive VQT
 ```
 
 #### Integration in tic_core_tick
@@ -283,11 +283,11 @@ Audio Buffer → CQT Processing → CQT Magnitude → HPS Processing → Separat
 if (fftEnabled) {
     FFT_GetFFT(fftData);  // Regular FFT processing (unchanged)
     
-    if (cqtEnabled) {
-        CQT_ProcessAudio();
+    if (vqtEnabled) {
+        VQT_ProcessAudio();
         
         if (hpsEnabled) {
-            HPS_ProcessCQT(cqtData);  // Apply HPS to CQT only
+            HPS_ProcessVQT(vqtData);  // Apply HPS to VQT only
         }
     }
 }
@@ -302,13 +302,13 @@ if (fftEnabled) {
 #define HPS_MEDIAN_SIZE_P 17     // Vertical filter size (1.4 octaves)
 
 typedef struct {
-    // CQT magnitude history buffer
-    float cqtHistory[HPS_HISTORY_SIZE][120];
+    // VQT magnitude history buffer
+    float vqtHistory[HPS_HISTORY_SIZE][120];
     int historyIndex;
     
-    // Separated CQT components
-    float harmonicCQT[120];      // Sustained tonal content
-    float percussiveCQT[120];    // Transient/rhythmic content
+    // Separated VQT components
+    float harmonicVQT[120];      // Sustained tonal content
+    float percussiveVQT[120];    // Transient/rhythmic content
     
     // Smoothed outputs
     float harmonicSmoothing[120];
@@ -329,9 +329,9 @@ typedef struct {
 ### API Functions
 
 ```lua
--- CQT-based HPS functions (update rate ~5.4 fps)
-hpsh(bin)    -- Get harmonic component at CQT bin (0-119)
-hpsp(bin)    -- Get percussive component at CQT bin (0-119)
+-- VQT-based HPS functions (update rate ~5.4 fps)
+hpsh(bin)    -- Get harmonic component at VQT bin (0-119)
+hpsp(bin)    -- Get percussive component at VQT bin (0-119)
 hpshs(bin)   -- Get smoothed harmonic component
 hpsps(bin)   -- Get smoothed percussive component
 
@@ -348,13 +348,13 @@ hpscfg(param, value) -- Configure HPS parameters
 
 #### Median Filtering
 - Use efficient sliding window median algorithm
-- Handle CQT's logarithmic frequency spacing
+- Handle VQT's logarithmic frequency spacing
 - Circular buffer for time history
 - Optimize for 120 bins and 32 frame history
 
 #### Masking Strategy
-1. Compute harmonic emphasis: `H = median_h(|CQT|²)`
-2. Compute percussive emphasis: `P = median_p(|CQT|²)`
+1. Compute harmonic emphasis: `H = median_h(|VQT|²)`
+2. Compute percussive emphasis: `P = median_p(|VQT|²)`
 3. Generate binary masks:
    - Harmonic mask: `M_h = H >= P`
    - Percussive mask: `M_p = P > H`
@@ -367,8 +367,8 @@ hpscfg(param, value) -- Configure HPS parameters
 
 ### Performance Considerations
 
-- Process only when CQT is updated (~5.4 fps)
-- Reuse existing CQT magnitude calculations
+- Process only when VQT is updated (~5.4 fps)
+- Reuse existing VQT magnitude calculations
 - Optimize median filters for small kernel sizes
 - Cache-friendly memory access patterns
 - Optional SIMD for median operations
@@ -428,7 +428,7 @@ end
 ### Implementation Phases
 
 **Phase 1: Core HPS Algorithm**
-- Implement circular buffer for CQT history
+- Implement circular buffer for VQT history
 - Create median filtering functions
 - Implement basic binary masking
 - Add core API functions
