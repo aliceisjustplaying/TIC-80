@@ -1,13 +1,14 @@
 #include "vqt_kernel.h"
 #include "../vqtdata.h"
+
+#ifndef TIC80_FFT_UNSUPPORTED
+
+#define _USE_MATH_DEFINES
 #include <math.h>
+
 #include <stdlib.h>
 #include <string.h>
 #include "../ext/kiss_fftr.h"
-
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
-#endif
 
 // Generate logarithmically spaced center frequencies for musical notes
 void VQT_GenerateCenterFrequencies(float* frequencies, int numBins, float minFreq, float maxFreq)
@@ -294,3 +295,12 @@ bool VQT_GenerateKernels(VqtKernel* kernels, const VqtKernelConfig* config)
     free(centerFreqs);
     return success;
 }
+
+#else // TIC80_FFT_UNSUPPORTED
+
+// Stub implementations when FFT is unsupported
+void VQT_GenerateCenterFrequencies(float* frequencies, int numBins, float minFreq, float maxFreq) {}
+float VQT_CalculateQ(int binsPerOctave) { return 0.0f; }
+bool VQT_GenerateKernels(VqtKernel* kernels, const VqtKernelConfig* config) { return false; }
+
+#endif // TIC80_FFT_UNSUPPORTED

@@ -1611,8 +1611,12 @@ static s32 lua_vqt(lua_State* lua)
             return 0;
         }
 
+#ifdef TIC80_FFT_UNSUPPORTED
+        lua_pushnumber(lua, 0.0);
+#else
         // Return raw VQT data (normalized but unsmoothed)
         lua_pushnumber(lua, vqtData[bin] / vqtPeakSmoothValue);
+#endif
         return 1;
     }
 
@@ -1635,9 +1639,13 @@ static s32 lua_vqts(lua_State* lua)
             return 0;
         }
 
+#ifdef TIC80_FFT_UNSUPPORTED
+        lua_pushnumber(lua, 0.0);
+#else
         // Return smoothed VQT data (smoothed + normalized)
         // This gives more stable values
         lua_pushnumber(lua, vqtNormalizedData[bin]);
+#endif
         return 1;
     }
 

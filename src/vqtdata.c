@@ -1,4 +1,7 @@
 #include "vqtdata.h"
+
+#ifndef TIC80_FFT_UNSUPPORTED
+
 #include <string.h>
 #include <stdlib.h>
 #include <math.h>
@@ -57,3 +60,19 @@ void VQT_Cleanup(void)
         vqtKernels[i].length = 0;
     }
 }
+
+#else // TIC80_FFT_UNSUPPORTED
+
+// When FFT is unsupported, provide empty implementations
+float vqtData[VQT_BINS] = {0};
+float vqtSmoothingData[VQT_BINS] = {0};
+float vqtNormalizedData[VQT_BINS] = {0};
+float vqtPeakValue = 1.0f;
+float vqtPeakSmoothValue = 1.0f;
+bool vqtEnabled = false;
+VqtKernel vqtKernels[VQT_BINS] = {{0}};
+
+void VQT_Init(void) {}
+void VQT_Cleanup(void) {}
+
+#endif // TIC80_FFT_UNSUPPORTED
