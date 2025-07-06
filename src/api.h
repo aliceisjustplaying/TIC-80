@@ -852,6 +852,64 @@ enum
         1,                                                                                                              \
         0,                                                                                                              \
         double,                                                                                                         \
+        tic_mem*, s32 bin)                                                                                              \
+                                                                                                                        \
+                                                                                                                        \
+    macro(fftr,                                                                                                         \
+        "fftr(startFreq,[endFreq])",                                                                                    \
+                                                                                                                        \
+        "Get raw (non-normalized) Fast Fourier Transform magnitude for frequency range.\n"                              \
+        "Reads one or averages many FFT values.\n"                                                                      \
+        "If endFreq is not given it returns a single value.\n"                                                          \
+        "Returns raw magnitude without peak normalization.",                                                            \
+        1,                                                                                                              \
+        2,                                                                                                              \
+        0,                                                                                                              \
+        double,                                                                                                         \
+        tic_mem*, s32 startFreq, s32 endFreq)                                                                           \
+                                                                                                                        \
+                                                                                                                        \
+    macro(fftrs,                                                                                                        \
+        "fftrs(startFreq,[endFreq])",                                                                                   \
+                                                                                                                        \
+        "Get raw smoothed Fast Fourier Transform magnitude for frequency range.\n"                                      \
+        "Reads one or averages many FFT values.\n"                                                                      \
+        "If endFreq is not given it returns a single value.\n"                                                          \
+        "Returns raw smoothed magnitude without peak normalization.",                                                   \
+        1,                                                                                                              \
+        2,                                                                                                              \
+        0,                                                                                                              \
+        double,                                                                                                         \
+        tic_mem*, s32 startFreq, s32 endFreq)                                                                           \
+                                                                                                                        \
+                                                                                                                        \
+    macro(vqtr,                                                                                                         \
+        "vqtr(bin)",                                                                                                    \
+                                                                                                                        \
+        "Get raw (non-normalized) Variable-Q Transform magnitude for a specific frequency bin.\n"                       \
+        "VQT provides 120 bins (0-119) with logarithmic frequency spacing for musical analysis.\n"                      \
+        "Each bin corresponds to a musical note: bin = octave * 12 + note\n"                                            \
+        "where octave is 0-9 and note is 0-11 (C=0, C#=1, D=2, ..., B=11).\n"                                          \
+        "Returns raw magnitude without peak normalization.",                                                            \
+        1,                                                                                                              \
+        1,                                                                                                              \
+        0,                                                                                                              \
+        double,                                                                                                         \
+        tic_mem*, s32 bin)                                                                                              \
+                                                                                                                        \
+                                                                                                                        \
+    macro(vqtrs,                                                                                                        \
+        "vqtrs(bin)",                                                                                                   \
+                                                                                                                        \
+        "Get raw smoothed Variable-Q Transform magnitude for a specific frequency bin.\n"                               \
+        "VQT provides 120 bins (0-119) with logarithmic frequency spacing for musical analysis.\n"                      \
+        "Each bin corresponds to a musical note: bin = octave * 12 + note\n"                                            \
+        "where octave is 0-9 and note is 0-11 (C=0, C#=1, D=2, ..., B=11).\n"                                          \
+        "Returns raw smoothed magnitude without peak normalization.",                                                   \
+        1,                                                                                                              \
+        1,                                                                                                              \
+        0,                                                                                                              \
+        double,                                                                                                         \
         tic_mem*, s32 bin)
 
 #define TIC_API_DEF(name, _, __, ___, ____, _____, ret, ...) ret tic_api_##name(__VA_ARGS__);
