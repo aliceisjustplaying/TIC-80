@@ -1032,6 +1032,22 @@ static JSValue js_ffts(JSContext *ctx, JSValueConst this_val, s32 argc, JSValueC
     return JS_NewFloat64(ctx, core->api.ffts(tic, start_freq, end_freq));
 }
 
+static JSValue js_vqt(JSContext *ctx, JSValueConst this_val, s32 argc, JSValueConst *argv)
+{
+    tic_core* core = getCore(ctx); tic_mem* tic = (tic_mem*)core;
+    s32 bin = getInteger(ctx, argv[0]);
+
+    return JS_NewFloat64(ctx, core->api.vqt(tic, bin));
+}
+
+static JSValue js_vqts(JSContext *ctx, JSValueConst this_val, s32 argc, JSValueConst *argv)
+{
+    tic_core* core = getCore(ctx); tic_mem* tic = (tic_mem*)core;
+    s32 bin = getInteger(ctx, argv[0]);
+
+    return JS_NewFloat64(ctx, core->api.vqts(tic, bin));
+}
+
 static bool initJavascript(tic_mem* tic, const char* code)
 {
     closeJavascript(tic);

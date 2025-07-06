@@ -21,7 +21,7 @@
 // SOFTWARE.
 
 #include "core/core.h"
-#include "vqtdata.h"
+#include "ext/vqt.h"
 
 #include <stdlib.h>
 #include <lua.h>
@@ -1598,25 +1598,15 @@ static s32 lua_ffts(lua_State* lua)
 
 static s32 lua_vqt(lua_State* lua)
 {
+    tic_core* core = getLuaCore(lua);
+    tic_mem* tic = (tic_mem*)core;
     s32 top = lua_gettop(lua);
 
     if (top >= 1)
     {
         s32 bin = getLuaNumber(lua, 1);
         
-        // Validate bin range
-        if (bin < 0 || bin >= VQT_BINS)
-        {
-            luaL_error(lua, "vqt bin out of range (0-%d)\n", VQT_BINS - 1);
-            return 0;
-        }
-
-#ifdef TIC80_FFT_UNSUPPORTED
-        lua_pushnumber(lua, 0.0);
-#else
-        // Return raw VQT data (normalized but unsmoothed)
-        lua_pushnumber(lua, vqtData[bin] / vqtPeakSmoothValue);
-#endif
+        lua_pushnumber(lua, tic_api_vqt(tic, bin));
         return 1;
     }
 
@@ -1626,26 +1616,15 @@ static s32 lua_vqt(lua_State* lua)
 
 static s32 lua_vqts(lua_State* lua)
 {
+    tic_core* core = getLuaCore(lua);
+    tic_mem* tic = (tic_mem*)core;
     s32 top = lua_gettop(lua);
 
     if (top >= 1)
     {
         s32 bin = getLuaNumber(lua, 1);
         
-        // Validate bin range
-        if (bin < 0 || bin >= VQT_BINS)
-        {
-            luaL_error(lua, "vqts bin out of range (0-%d)\n", VQT_BINS - 1);
-            return 0;
-        }
-
-#ifdef TIC80_FFT_UNSUPPORTED
-        lua_pushnumber(lua, 0.0);
-#else
-        // Return smoothed VQT data (smoothed + normalized)
-        // This gives more stable values
-        lua_pushnumber(lua, vqtNormalizedData[bin]);
-#endif
+        lua_pushnumber(lua, tic_api_vqts(tic, bin));
         return 1;
     }
 
@@ -1707,10 +1686,6 @@ void luaapi_init(tic_core* core)
 
     registerLuaFunction(core, lua_dofile, "dofile");
     registerLuaFunction(core, lua_loadfile, "loadfile");
-    
-    // Register VQT functions
-    registerLuaFunction(core, lua_vqt, "vqt");
-    registerLuaFunction(core, lua_vqts, "vqts");
 }
 
 void luaapi_close(tic_mem* tic)
