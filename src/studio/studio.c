@@ -1596,6 +1596,8 @@ void runGame(Studio* studio)
         memset(fftSmoothingData, 0, sizeof(fftSmoothingData[0]) * FFT_SIZE);
         memset(fftNormalizedData, 0, sizeof(fftNormalizedData[0]) * FFT_SIZE);
         memset(fftNormalizedMaxData, 0, sizeof(fftNormalizedMaxData[0]) * FFT_SIZE);
+        memset(fftRawData, 0, sizeof(fftRawData[0]) * FFT_SIZE);
+        memset(fftRawSmoothingData, 0, sizeof(fftRawSmoothingData[0]) * FFT_SIZE);
     }
 #endif
 
