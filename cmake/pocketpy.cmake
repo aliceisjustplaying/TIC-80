@@ -7,6 +7,11 @@ message("BUILD_WITH_PYTHON: ${BUILD_WITH_PYTHON}")
 if(BUILD_WITH_PYTHON)
     option(PK_ENABLE_OS "" OFF)
     option(PK_ENABLE_THREADS "" OFF)
+    
+    # Disable IPO/LTO for bare metal Pi builds as the linker doesn't support it
+    if(BAREMETALPI)
+        set(PK_BUILD_WITH_IPO OFF CACHE BOOL "" FORCE)
+    endif()
 
     add_subdirectory(${THIRDPARTY_DIR}/pocketpy)
 
