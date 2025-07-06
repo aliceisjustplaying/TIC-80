@@ -2,9 +2,15 @@
 #include "vqt_kernel.h"
 #include "../vqtdata.h"
 #include "../fftdata.h"
+
+#ifndef TIC80_FFT_UNSUPPORTED
+
 #include "fft.h"
 #include "kiss_fftr.h"
+
+#define _USE_MATH_DEFINES
 #include <math.h>
+
 #include <string.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -411,3 +417,13 @@ void VQT_Close(void)
     // Clean up kernels
     VQT_Cleanup();
 }
+
+#else // TIC80_FFT_UNSUPPORTED
+
+// Stub implementations when FFT is unsupported
+bool VQT_Open(void) { return true; }
+void VQT_ProcessAudio(void) {}
+void VQT_Close(void) {}
+void VQT_ApplyKernels(const float* fftReal, const float* fftImag) {}
+
+#endif // TIC80_FFT_UNSUPPORTED
