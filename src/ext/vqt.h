@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdbool.h>
+#include "tic80_types.h"
 
 // Initialize VQT processing
 // Returns true on success, false on failure

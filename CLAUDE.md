@@ -112,9 +112,11 @@ TIC-80 includes FFT support for audio visualization and livecoding.
 
 #### API Functions
 ```lua
-value = fft(bin)   -- Get raw FFT magnitude for bin (0-1023)
-value = ffts(bin)  -- Get smoothed FFT magnitude for bin (0-1023)
+value = fft(bin)   -- Get peak-normalized FFT magnitude for bin (0-1023)
+value = ffts(bin)  -- Get smoothed peak-normalized FFT magnitude for bin (0-1023)
 ```
+
+**Note:** Both FFT functions return peak-normalized values (auto-gain controlled), not raw magnitudes.
 
 ### VQT Implementation
 
@@ -147,10 +149,12 @@ Constant-Q Transform provides logarithmic frequency spacing for better musical a
 
 #### API Functions
 ```lua
-value = vqt(bin)   -- Get raw VQT magnitude for bin (0-119)
+value = vqt(bin)   -- Get peak-normalized VQT magnitude for bin (0-119)
 -- Note mapping: Bin = octave * 12 + note
 -- Note: C=0, C#=1, D=2, D#=3, E=4, F=5, F#=6, G=7, G#=8, A=9, A#=10, B=11
 ```
+
+**Note:** VQT also returns peak-normalized values (auto-gain controlled), not raw magnitudes.
 
 ### FFT vs VQT Comparison
 
@@ -206,9 +210,10 @@ local color = (bassNote % 12) + 1  -- Color from note
 ### Completed Features
 - **FFT**: 1024 bins with exact original behavior preserved
 - **VQT**: 120 bins with Variable-Q implementation
-- **Spectral Whitening**: Per-bin normalization for VQT
+- **Spectral Whitening**: Per-bin normalization for VQT (removed due to spreading issues)
 - **Shared Audio Buffer**: Automatic sizing for both FFT and VQT
-- **Lua API**: `fft()`, `ffts()`, `vqt()` functions implemented
+- **API Functions**: `fft()`, `ffts()`, `vqt()`, `vqts()` implemented for all supported languages
+- **Peak Normalization**: Both FFT and VQT use auto-gain control
 
 ### Configuration Options
 - `VQT_FFT_SIZE`: Default 8192 (configurable in vqtdata.h)
@@ -226,9 +231,13 @@ local color = (bassNote % 12) + 1  -- Color from note
 ## Future Enhancements
 
 ### Additional API Functions
-- `vqts(bin)`: Smoothed VQT data
-- `vqto(octave, note)`: Raw VQT by musical note
+- `vqts(bin)`: Smoothed VQT data (already implemented)
+- `vqto(octave, note)`: VQT by musical note
 - `vqtos(octave, note)`: Smoothed VQT by musical note
+- `fftr(bin)`: Raw (non-normalized) FFT magnitude
+- `fftrs(bin)`: Raw smoothed FFT magnitude  
+- `vqtr(bin)`: Raw (non-normalized) VQT magnitude
+- `vqtrs(bin)`: Raw smoothed VQT magnitude
 
 ### Signal Processing Enhancements
 - **Adaptive Thresholding**: Dynamic noise floor removal

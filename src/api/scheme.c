@@ -772,6 +772,28 @@ s7_pointer scheme_ffts(s7_scheme* sc, s7_pointer args)
     return s7_make_real(sc, core->api.ffts(tic, start_freq, end_freq));
 }
 
+s7_pointer scheme_vqt(s7_scheme* sc, s7_pointer args)
+{
+    // vqt(int bin) -> float_value
+    tic_core* core = getSchemeCore(sc);
+    tic_mem* tic = (tic_mem*)core;
+    const int argn = s7_list_length(sc, args);
+    const s32 bin = argn > 0 ? s7_integer(s7_car(args)) : 0;
+
+    return s7_make_real(sc, core->api.vqt(tic, bin));
+}
+
+s7_pointer scheme_vqts(s7_scheme* sc, s7_pointer args)
+{
+    // vqts(int bin) -> float_value
+    tic_core* core = getSchemeCore(sc);
+    tic_mem* tic = (tic_mem*)core;
+    const int argn = s7_list_length(sc, args);
+    const s32 bin = argn > 0 ? s7_integer(s7_car(args)) : 0;
+
+    return s7_make_real(sc, core->api.vqts(tic, bin));
+}
+
 static void initAPI(tic_core* core)
 {
     s7_scheme* sc = core->currentVM;

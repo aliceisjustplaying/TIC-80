@@ -1581,6 +1581,46 @@ static SQInteger squirrel_ffts(HSQUIRRELVM vm)
     return 0;
 }
 
+static SQInteger squirrel_vqt(HSQUIRRELVM vm)
+{
+    tic_core* core = getSquirrelCore(vm);
+    tic_mem* tic = (tic_mem*)core;
+
+    SQInteger top = sq_gettop(vm);
+
+    if (top >= 2)
+    {
+        double bin = getSquirrelNumber(vm, 2);
+
+        sq_pushfloat(vm, (SQFloat)(core->api.vqt(tic, bin)));
+        return 1;
+    }
+
+    sq_throwerror(vm, "invalid params, vqt(bin)\n");
+
+    return 0;
+}
+
+static SQInteger squirrel_vqts(HSQUIRRELVM vm)
+{
+    tic_core* core = getSquirrelCore(vm);
+    tic_mem* tic = (tic_mem*)core;
+
+    SQInteger top = sq_gettop(vm);
+
+    if (top >= 2)
+    {
+        double bin = getSquirrelNumber(vm, 2);
+
+        sq_pushfloat(vm, (SQFloat)(core->api.vqts(tic, bin)));
+        return 1;
+    }
+
+    sq_throwerror(vm, "invalid params, vqts(bin)\n");
+
+    return 0;
+}
+
 static SQInteger squirrel_dofile(HSQUIRRELVM vm)
 {
     return sq_throwerror(vm, "unknown method: \"dofile\"\n");

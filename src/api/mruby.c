@@ -568,6 +568,44 @@ static mrb_value mrb_ffts(mrb_state* mrb, mrb_value self)
     }
 }
 
+static mrb_value mrb_vqt(mrb_state* mrb, mrb_value self)
+{
+    mrb_int bin;
+    mrb_int argc = mrb_get_args(mrb, "i", &bin);
+
+    tic_core* core = getMRubyMachine(mrb);
+    tic_mem* tic = (tic_mem*)core;
+
+    if (argc == 0)
+    {
+        mrb_raise(mrb, E_ARGUMENT_ERROR, "invalid params, vqt(bin)\n");
+        return mrb_nil_value();
+    }
+    else
+    {
+        return mrb_float_value(mrb, core->api.vqt(tic, bin));
+    }
+}
+
+static mrb_value mrb_vqts(mrb_state* mrb, mrb_value self)
+{
+    mrb_int bin;
+    mrb_int argc = mrb_get_args(mrb, "i", &bin);
+
+    tic_core* core = getMRubyMachine(mrb);
+    tic_mem* tic = (tic_mem*)core;
+
+    if (argc == 0)
+    {
+        mrb_raise(mrb, E_ARGUMENT_ERROR, "invalid params, vqts(bin)\n");
+        return mrb_nil_value();
+    }
+    else
+    {
+        return mrb_float_value(mrb, core->api.vqts(tic, bin));
+    }
+}
+
 typedef struct
 {
     mrb_state* mrb;
