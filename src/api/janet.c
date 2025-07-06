@@ -83,6 +83,10 @@ static Janet janet_fft(int32_t argc, Janet* argv);
 static Janet janet_ffts(int32_t argc, Janet* argv);
 static Janet janet_vqt(int32_t argc, Janet* argv);
 static Janet janet_vqts(int32_t argc, Janet* argv);
+static Janet janet_fftr(int32_t argc, Janet* argv);
+static Janet janet_fftrs(int32_t argc, Janet* argv);
+static Janet janet_vqtr(int32_t argc, Janet* argv);
+static Janet janet_vqtrs(int32_t argc, Janet* argv);
 
 static void closeJanet(tic_mem* tic);
 static bool initJanet(tic_mem* tic, const char* code);
@@ -150,6 +154,10 @@ static const JanetReg janet_c_functions[] =
     {"ffts", janet_ffts, NULL},
     {"vqt", janet_vqt, NULL},
     {"vqts", janet_vqts, NULL},
+    {"fftr", janet_fftr, NULL},
+    {"fftrs", janet_fftrs, NULL},
+    {"vqtr", janet_vqtr, NULL},
+    {"vqtrs", janet_vqtrs, NULL},
     {NULL, NULL, NULL}
 };
 
@@ -1106,6 +1114,48 @@ static Janet janet_vqts(int32_t argc, Janet* argv)
 
     tic_core* core = getJanetMachine(); tic_mem* tic = (tic_mem*)core;
     return janet_wrap_number(core->api.vqts(tic, bin));
+}
+
+static Janet janet_fftr(int32_t argc, Janet* argv)
+{
+    janet_arity(argc, 1, 2);
+
+    s32 start_freq = janet_getinteger(argv, 0);
+    s32 end_freq = argc >= 2 ? janet_getinteger(argv, 1) : -1;
+
+    tic_core* core = getJanetMachine(); tic_mem* tic = (tic_mem*)core;
+    return janet_wrap_number(core->api.fftr(tic, start_freq, end_freq));
+}
+
+static Janet janet_fftrs(int32_t argc, Janet* argv)
+{
+    janet_arity(argc, 1, 2);
+
+    s32 start_freq = janet_getinteger(argv, 0);
+    s32 end_freq = argc >= 2 ? janet_getinteger(argv, 1) : -1;
+
+    tic_core* core = getJanetMachine(); tic_mem* tic = (tic_mem*)core;
+    return janet_wrap_number(core->api.fftrs(tic, start_freq, end_freq));
+}
+
+static Janet janet_vqtr(int32_t argc, Janet* argv)
+{
+    janet_fixarity(argc, 1);
+
+    s32 bin = janet_getinteger(argv, 0);
+
+    tic_core* core = getJanetMachine(); tic_mem* tic = (tic_mem*)core;
+    return janet_wrap_number(core->api.vqtr(tic, bin));
+}
+
+static Janet janet_vqtrs(int32_t argc, Janet* argv)
+{
+    janet_fixarity(argc, 1);
+
+    s32 bin = janet_getinteger(argv, 0);
+
+    tic_core* core = getJanetMachine(); tic_mem* tic = (tic_mem*)core;
+    return janet_wrap_number(core->api.vqtrs(tic, bin));
 }
 
 /* ***************** */

@@ -794,6 +794,52 @@ s7_pointer scheme_vqts(s7_scheme* sc, s7_pointer args)
     return s7_make_real(sc, core->api.vqts(tic, bin));
 }
 
+s7_pointer scheme_fftr(s7_scheme* sc, s7_pointer args)
+{
+    // fftr(int start_freq, int end_freq=-1) -> float_value
+    tic_core* core = getSchemeCore(sc);
+    tic_mem* tic = (tic_mem*)core;
+    const int argn = s7_list_length(sc, args);
+    const s32 start_freq = argn > 0 ? s7_integer(s7_car(args)) : -1;
+    const s32 end_freq = argn > 1 ? s7_integer(s7_cadr(args)) : -1;
+
+    return s7_make_real(sc, core->api.fftr(tic, start_freq, end_freq));
+}
+
+s7_pointer scheme_fftrs(s7_scheme* sc, s7_pointer args)
+{
+    // fftrs(int start_freq, int end_freq=-1) -> float_value
+    tic_core* core = getSchemeCore(sc);
+    tic_mem* tic = (tic_mem*)core;
+    const int argn = s7_list_length(sc, args);
+    const s32 start_freq = argn > 0 ? s7_integer(s7_car(args)) : -1;
+    const s32 end_freq = argn > 1 ? s7_integer(s7_cadr(args)) : -1;
+
+    return s7_make_real(sc, core->api.fftrs(tic, start_freq, end_freq));
+}
+
+s7_pointer scheme_vqtr(s7_scheme* sc, s7_pointer args)
+{
+    // vqtr(int bin) -> float_value
+    tic_core* core = getSchemeCore(sc);
+    tic_mem* tic = (tic_mem*)core;
+    const int argn = s7_list_length(sc, args);
+    const s32 bin = argn > 0 ? s7_integer(s7_car(args)) : 0;
+
+    return s7_make_real(sc, core->api.vqtr(tic, bin));
+}
+
+s7_pointer scheme_vqtrs(s7_scheme* sc, s7_pointer args)
+{
+    // vqtrs(int bin) -> float_value
+    tic_core* core = getSchemeCore(sc);
+    tic_mem* tic = (tic_mem*)core;
+    const int argn = s7_list_length(sc, args);
+    const s32 bin = argn > 0 ? s7_integer(s7_car(args)) : 0;
+
+    return s7_make_real(sc, core->api.vqtrs(tic, bin));
+}
+
 static void initAPI(tic_core* core)
 {
     s7_scheme* sc = core->currentVM;

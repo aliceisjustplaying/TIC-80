@@ -426,7 +426,7 @@ double tic_api_vqt(tic_mem* memory, s32 bin)
     if (bin < 0 || bin >= VQT_BINS)
         return 0.0;
     
-    // Return raw VQT data (normalized but unsmoothed)
+    // Return normalized VQT data
     return vqtData[bin] / vqtPeakSmoothValue;
 }
 
@@ -436,8 +436,29 @@ double tic_api_vqts(tic_mem* memory, s32 bin)
     if (bin < 0 || bin >= VQT_BINS)
         return 0.0;
     
-    // Return smoothed VQT data (smoothed + normalized)
+    // Return smoothed normalized VQT data
     return vqtNormalizedData[bin];
+}
+
+// Raw (non-normalized) VQT access functions
+double tic_api_vqtr(tic_mem* memory, s32 bin)
+{
+    // Validate bin range
+    if (bin < 0 || bin >= VQT_BINS)
+        return 0.0;
+    
+    // Return raw VQT data (non-normalized)
+    return vqtData[bin];
+}
+
+double tic_api_vqtrs(tic_mem* memory, s32 bin)
+{
+    // Validate bin range
+    if (bin < 0 || bin >= VQT_BINS)
+        return 0.0;
+    
+    // Return raw smoothed VQT data (non-normalized)
+    return vqtSmoothingData[bin];
 }
 
 #else // TIC80_FFT_UNSUPPORTED
@@ -451,5 +472,7 @@ void VQT_ApplyKernels(const float* fftReal, const float* fftImag) {}
 // API stubs when FFT is unsupported
 double tic_api_vqt(tic_mem* memory, s32 bin) { return 0.0; }
 double tic_api_vqts(tic_mem* memory, s32 bin) { return 0.0; }
+double tic_api_vqtr(tic_mem* memory, s32 bin) { return 0.0; }
+double tic_api_vqtrs(tic_mem* memory, s32 bin) { return 0.0; }
 
 #endif // TIC80_FFT_UNSUPPORTED

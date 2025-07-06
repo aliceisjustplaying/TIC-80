@@ -342,6 +342,7 @@ void FFT_GetFFT(float* _samples)
     {
         float val = 2.0f * sqrtf(out[i].r * out[i].r + out[i].i * out[i].i);
         if (val > peakValue) peakValue = val;
+        fftRawData[i] = val;  // Store raw magnitude
         _samples[i] = val * fAmplification;
     }
     if (peakValue > fPeakSmoothValue)
@@ -357,6 +358,7 @@ void FFT_GetFFT(float* _samples)
     float fFFTSmoothingFactor = 0.6f;
     for (int i = 0; i < FFT_SIZE; i++)
     {
+        fftRawSmoothingData[i] = fftRawSmoothingData[i] * fFFTSmoothingFactor + (1 - fFFTSmoothingFactor) * fftRawData[i];
         fftSmoothingData[i] = fftSmoothingData[i] * fFFTSmoothingFactor + (1 - fFFTSmoothingFactor) * _samples[i];
     }
 
@@ -443,5 +445,86 @@ double tic_api_ffts(tic_mem* memory, s32 startFreq, s32 endFreq)
     return 0.0;
 #else
     return fft(startFreq, endFreq, true);
+#endif
+}
+
+// Raw FFT access function
+static double fftr(s32 startFreq, s32 endFreq, bool smoothing)
+{
+#ifdef TIC80_FFT_UNSUPPORTED
+    return 0.0;
+#else
+    if (!fftEnabled)
+    {
+        FFT_DebugLog(FFT_LOG_TRACE, "FFT: fft not enabled\n");
+        return 0.0;
+    }
+
+    if (endFreq == -1)
+    {
+        if (startFreq < 0 || startFreq >= FFT_SIZE)
+        {
+            FFT_DebugLog(FFT_LOG_TRACE, "FFT: freq out of bounds at %d\n", startFreq);
+            return 0.0;
+        }
+        return smoothing ? fftRawSmoothingData[startFreq] : fftRawData[startFreq];
+    }
+    else
+    {
+        if ((startFreq < 0 && endFreq < 0) || (startFreq >= FFT_SIZE && endFreq >= FFT_SIZE))
+        {
+            FFT_DebugLog(FFT_LOG_TRACE, "FFT: both startFreq and endFreq out of bounds, startFreq %d, endFreq %d\n", startFreq, endFreq);
+            return 0.0;
+        }
+
+        if (startFreq < 0)
+        {
+            FFT_DebugLog(FFT_LOG_TRACE, "FFT: clamped startFreq to 0\n");
+            startFreq = 0;
+        }
+
+        if (startFreq >= FFT_SIZE)
+        {
+            FFT_DebugLog(FFT_LOG_TRACE, "FFT: clamped startFreq to %d\n", FFT_SIZE - 1);
+            startFreq = 0;
+        }
+
+        if (endFreq >= FFT_SIZE)
+        {
+            FFT_DebugLog(FFT_LOG_TRACE, "FFT: clamped endFreq to %d\n", FFT_SIZE - 1);
+            endFreq = FFT_SIZE - 1;
+        }
+
+        if (startFreq > endFreq)
+        {
+            FFT_DebugLog(FFT_LOG_TRACE, "FFT: clamped startFreq to endFreq\n");
+            endFreq = startFreq;
+        }
+
+        double sum = 0.0;
+        for (int i = startFreq; i <= endFreq; i++)
+        {
+            sum += smoothing ? fftRawSmoothingData[i] : fftRawData[i];
+        }
+        return sum;
+    }
+#endif
+}
+
+double tic_api_fftr(tic_mem* memory, s32 startFreq, s32 endFreq)
+{
+#ifdef TIC80_FFT_UNSUPPORTED
+    return 0.0;
+#else
+    return fftr(startFreq, endFreq, false);
+#endif
+}
+
+double tic_api_fftrs(tic_mem* memory, s32 startFreq, s32 endFreq)
+{
+#ifdef TIC80_FFT_UNSUPPORTED
+    return 0.0;
+#else
+    return fftr(startFreq, endFreq, true);
 #endif
 }
