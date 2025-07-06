@@ -822,7 +822,37 @@ enum
         1,                                                                                                              \
         0,                                                                                                              \
         double,                                                                                                         \
-        tic_mem*, s32 startFreq, s32 endFreq)
+        tic_mem*, s32 startFreq, s32 endFreq)                                                                           \
+                                                                                                                        \
+                                                                                                                        \
+    macro(vqt,                                                                                                          \
+        "vqt(bin)",                                                                                                     \
+                                                                                                                        \
+        "Get Variable-Q Transform magnitude for a specific frequency bin.\n"                                            \
+        "VQT provides 120 bins (0-119) with logarithmic frequency spacing for musical analysis.\n"                      \
+        "Each bin corresponds to a musical note: bin = octave * 12 + note\n"                                            \
+        "where octave is 0-9 and note is 0-11 (C=0, C#=1, D=2, ..., B=11).\n"                                          \
+        "Returns a value roughly 0..1 based on the intensity at that frequency.",                                       \
+        1,                                                                                                              \
+        1,                                                                                                              \
+        0,                                                                                                              \
+        double,                                                                                                         \
+        tic_mem*, s32 bin)                                                                                              \
+                                                                                                                        \
+                                                                                                                        \
+    macro(vqts,                                                                                                         \
+        "vqts(bin)",                                                                                                    \
+                                                                                                                        \
+        "Get smoothed Variable-Q Transform magnitude for a specific frequency bin.\n"                                   \
+        "VQT provides 120 bins (0-119) with logarithmic frequency spacing for musical analysis.\n"                      \
+        "Each bin corresponds to a musical note: bin = octave * 12 + note\n"                                            \
+        "where octave is 0-9 and note is 0-11 (C=0, C#=1, D=2, ..., B=11).\n"                                          \
+        "Returns a smoothed value roughly 0..1 based on the intensity at that frequency.",                              \
+        1,                                                                                                              \
+        1,                                                                                                              \
+        0,                                                                                                              \
+        double,                                                                                                         \
+        tic_mem*, s32 bin)
 
 #define TIC_API_DEF(name, _, __, ___, ____, _____, ret, ...) ret tic_api_##name(__VA_ARGS__);
 TIC_API_LIST(TIC_API_DEF)

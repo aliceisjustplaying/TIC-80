@@ -1,3 +1,4 @@
+#include "api.h"
 #include "vqt.h"
 #include "vqt_kernel.h"
 #include "../vqtdata.h"
@@ -418,6 +419,27 @@ void VQT_Close(void)
     VQT_Cleanup();
 }
 
+// API functions for VQT
+double tic_api_vqt(tic_mem* memory, s32 bin)
+{
+    // Validate bin range
+    if (bin < 0 || bin >= VQT_BINS)
+        return 0.0;
+    
+    // Return raw VQT data (normalized but unsmoothed)
+    return vqtData[bin] / vqtPeakSmoothValue;
+}
+
+double tic_api_vqts(tic_mem* memory, s32 bin)
+{
+    // Validate bin range
+    if (bin < 0 || bin >= VQT_BINS)
+        return 0.0;
+    
+    // Return smoothed VQT data (smoothed + normalized)
+    return vqtNormalizedData[bin];
+}
+
 #else // TIC80_FFT_UNSUPPORTED
 
 // Stub implementations when FFT is unsupported
@@ -425,5 +447,9 @@ bool VQT_Open(void) { return true; }
 void VQT_ProcessAudio(void) {}
 void VQT_Close(void) {}
 void VQT_ApplyKernels(const float* fftReal, const float* fftImag) {}
+
+// API stubs when FFT is unsupported
+double tic_api_vqt(tic_mem* memory, s32 bin) { return 0.0; }
+double tic_api_vqts(tic_mem* memory, s32 bin) { return 0.0; }
 
 #endif // TIC80_FFT_UNSUPPORTED
