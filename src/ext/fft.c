@@ -335,7 +335,8 @@ void FFT_GetFFT(float* _samples)
 #else
 
     kiss_fft_cpx out[FFT_SIZE + 1];
-    kiss_fftr(fftcfg, sampleBuf, out);
+    // Use the newest samples for FFT (they're at the end of the buffer)
+    kiss_fftr(fftcfg, sampleBuf + AUDIO_BUFFER_SIZE - (FFT_SIZE * 2), out);
 
     float peakValue = fPeakMinValue;
     for (int i = 0; i < FFT_SIZE; i++)

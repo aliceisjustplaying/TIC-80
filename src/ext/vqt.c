@@ -263,7 +263,9 @@ void VQT_ProcessAudio(void)
     // Copy audio data from the shared buffer
     // sampleBuf is defined in fft.c as extern
     extern float sampleBuf[];
-    memcpy(vqtAudioBuffer, sampleBuf, VQT_FFT_SIZE * sizeof(float));
+    // Use the newest samples for VQT (they're at the end of the buffer)
+    #define AUDIO_BUFFER_SIZE (VQT_FFT_SIZE > (FFT_SIZE * 2) ? VQT_FFT_SIZE : (FFT_SIZE * 2))
+    memcpy(vqtAudioBuffer, sampleBuf + AUDIO_BUFFER_SIZE - VQT_FFT_SIZE, VQT_FFT_SIZE * sizeof(float));
     
     // Check if we have any audio data
     float audioSum = 0.0f;
@@ -317,7 +319,7 @@ void VQT_ProcessAudio(void)
     // Print profiling info every 60 frames (~1 second)
     if (profileCount % 60 == 0)
     {
-        printf("VQT Performance (16K FFT):\n");
+        printf("VQT Performance (8K FFT):\n");
         printf("  FFT avg: %.3fms\n", totalFftTime / profileCount);
         printf("  Kernels avg: %.3fms\n", totalKernelTime / profileCount);
         printf("  Total avg: %.3fms\n", (totalFftTime + totalKernelTime) / profileCount);
