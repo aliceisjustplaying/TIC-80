@@ -263,7 +263,7 @@ void VQT_ProcessAudio(void)
     // Copy audio data from the shared buffer
     // sampleBuf is defined in fft.c as extern
     extern float sampleBuf[];
-    // Use the newest samples for VQT (they're at the end of the buffer)
+    // Align FFT and VQT to start from the same temporal position
     #define AUDIO_BUFFER_SIZE (VQT_FFT_SIZE > (FFT_SIZE * 2) ? VQT_FFT_SIZE : (FFT_SIZE * 2))
     memcpy(vqtAudioBuffer, sampleBuf + AUDIO_BUFFER_SIZE - VQT_FFT_SIZE, VQT_FFT_SIZE * sizeof(float));
     

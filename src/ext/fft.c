@@ -335,8 +335,8 @@ void FFT_GetFFT(float* _samples)
 #else
 
     kiss_fft_cpx out[FFT_SIZE + 1];
-    // Use the newest samples for FFT (they're at the end of the buffer)
-    kiss_fftr(fftcfg, sampleBuf + AUDIO_BUFFER_SIZE - (FFT_SIZE * 2), out);
+    // Align FFT and VQT to start from the same temporal position
+    kiss_fftr(fftcfg, sampleBuf + AUDIO_BUFFER_SIZE - VQT_FFT_SIZE, out);
 
     float peakValue = fPeakMinValue;
     for (int i = 0; i < FFT_SIZE; i++)
