@@ -20,8 +20,12 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+#ifndef TIC80_FFT_UNSUPPORTED
 #include "fftdata.h"
 #include "../ext/fft.h"
+#include "vqtdata.h"
+#include "../ext/vqt.h"
+#endif
 
 #include "api.h"
 #include "core.h"
@@ -439,10 +443,21 @@ void tic_core_tick(tic_mem* tic, tic_tick_data* data)
 
     core->data = data;
 
+#ifndef TIC80_FFT_UNSUPPORTED
     if (fftEnabled)
     {
         FFT_GetFFT(fftData);
+        
+        // Process VQT using raw audio buffer
+        // For now, tie VQT to FFT enable flag
+        vqtEnabled = fftEnabled;
+        if (vqtEnabled)
+        {
+            // Process VQT from the shared audio buffer
+            VQT_ProcessAudio();
+        }
     }
+#endif
     if (!core->state.initialized)
     {
         const char* code = tic->cart.code.data;

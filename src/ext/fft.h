@@ -8,4 +8,7 @@ void FFT_EnumerateDevices();
 void FFT_GetFFT(float* _samples);
 void FFT_Close();
 
+// VQT needs access to the raw audio buffer
+extern float sampleBuf[];
+
 //////////////////////////////////////////////////////////////////////////

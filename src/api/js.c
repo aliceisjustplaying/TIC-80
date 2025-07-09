@@ -1032,6 +1032,56 @@ static JSValue js_ffts(JSContext *ctx, JSValueConst this_val, s32 argc, JSValueC
     return JS_NewFloat64(ctx, core->api.ffts(tic, start_freq, end_freq));
 }
 
+static JSValue js_vqt(JSContext *ctx, JSValueConst this_val, s32 argc, JSValueConst *argv)
+{
+    tic_core* core = getCore(ctx); tic_mem* tic = (tic_mem*)core;
+    s32 bin = getInteger(ctx, argv[0]);
+
+    return JS_NewFloat64(ctx, core->api.vqt(tic, bin));
+}
+
+static JSValue js_vqts(JSContext *ctx, JSValueConst this_val, s32 argc, JSValueConst *argv)
+{
+    tic_core* core = getCore(ctx); tic_mem* tic = (tic_mem*)core;
+    s32 bin = getInteger(ctx, argv[0]);
+
+    return JS_NewFloat64(ctx, core->api.vqts(tic, bin));
+}
+
+static JSValue js_fftr(JSContext *ctx, JSValueConst this_val, s32 argc, JSValueConst *argv)
+{
+    tic_core* core = getCore(ctx); tic_mem* tic = (tic_mem*)core;
+    s32 startFreq = getInteger(ctx, argv[0]);
+    s32 endFreq = argc >= 2 ? getInteger(ctx, argv[1]) : -1;
+
+    return JS_NewFloat64(ctx, core->api.fftr(tic, startFreq, endFreq));
+}
+
+static JSValue js_fftrs(JSContext *ctx, JSValueConst this_val, s32 argc, JSValueConst *argv)
+{
+    tic_core* core = getCore(ctx); tic_mem* tic = (tic_mem*)core;
+    s32 startFreq = getInteger(ctx, argv[0]);
+    s32 endFreq = argc >= 2 ? getInteger(ctx, argv[1]) : -1;
+
+    return JS_NewFloat64(ctx, core->api.fftrs(tic, startFreq, endFreq));
+}
+
+static JSValue js_vqtr(JSContext *ctx, JSValueConst this_val, s32 argc, JSValueConst *argv)
+{
+    tic_core* core = getCore(ctx); tic_mem* tic = (tic_mem*)core;
+    s32 bin = getInteger(ctx, argv[0]);
+
+    return JS_NewFloat64(ctx, core->api.vqtr(tic, bin));
+}
+
+static JSValue js_vqtrs(JSContext *ctx, JSValueConst this_val, s32 argc, JSValueConst *argv)
+{
+    tic_core* core = getCore(ctx); tic_mem* tic = (tic_mem*)core;
+    s32 bin = getInteger(ctx, argv[0]);
+
+    return JS_NewFloat64(ctx, core->api.vqtrs(tic, bin));
+}
+
 static bool initJavascript(tic_mem* tic, const char* code)
 {
     closeJavascript(tic);

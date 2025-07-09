@@ -19,7 +19,13 @@
 kiss_fftr_cfg fftcfg;
 ma_context context;
 ma_device captureDevice;
-float sampleBuf[FFT_SIZE * 2];
+// Include VQT header to get VQT_FFT_SIZE
+#include "../vqtdata.h"
+
+// Shared audio buffer - must be large enough for both FFT and VQT
+// FFT needs FFT_SIZE * 2 (2048) samples, VQT needs VQT_FFT_SIZE samples
+#define AUDIO_BUFFER_SIZE (VQT_FFT_SIZE > (FFT_SIZE * 2) ? VQT_FFT_SIZE : (FFT_SIZE * 2))
+float sampleBuf[AUDIO_BUFFER_SIZE];
 
 void miniaudioLogCallback(void* userData, ma_uint32 level, const char* message)
 {
@@ -47,12 +53,12 @@ void miniaudioLogCallback(void* userData, ma_uint32 level, const char* message)
 
 void OnReceiveFrames(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount)
 {
-    frameCount = frameCount < FFT_SIZE * 2 ? frameCount : FFT_SIZE * 2;
+    frameCount = frameCount < AUDIO_BUFFER_SIZE ? frameCount : AUDIO_BUFFER_SIZE;
 
     // Just rotate the buffer; copy existing, append new
     const float* samples = (const float*)pInput;
     float* p = sampleBuf;
-    for (int i = 0; i < FFT_SIZE * 2 - frameCount; i++)
+    for (int i = 0; i < AUDIO_BUFFER_SIZE - frameCount; i++)
     {
         *(p++) = sampleBuf[i + frameCount];
     }
@@ -184,8 +190,9 @@ bool FFT_Open(bool CapturePlaybackDevices, const char* CaptureDeviceSearchString
     return true;
 #else
 
-    memset(sampleBuf, 0, sizeof(float) * FFT_SIZE * 2);
+    memset(sampleBuf, 0, sizeof(float) * AUDIO_BUFFER_SIZE);
 
+    // FFT uses 2048-point FFT as originally intended
     fftcfg = kiss_fftr_alloc(FFT_SIZE * 2, false, NULL, NULL);
 
     ma_context_config context_config = ma_context_config_init();
@@ -328,13 +335,15 @@ void FFT_GetFFT(float* _samples)
 #else
 
     kiss_fft_cpx out[FFT_SIZE + 1];
-    kiss_fftr(fftcfg, sampleBuf, out);
+    // Align FFT and VQT to start from the same temporal position
+    kiss_fftr(fftcfg, sampleBuf + AUDIO_BUFFER_SIZE - VQT_FFT_SIZE, out);
 
     float peakValue = fPeakMinValue;
     for (int i = 0; i < FFT_SIZE; i++)
     {
         float val = 2.0f * sqrtf(out[i].r * out[i].r + out[i].i * out[i].i);
         if (val > peakValue) peakValue = val;
+        fftRawData[i] = val;  // Store raw magnitude
         _samples[i] = val * fAmplification;
     }
     if (peakValue > fPeakSmoothValue)
@@ -350,6 +359,7 @@ void FFT_GetFFT(float* _samples)
     float fFFTSmoothingFactor = 0.6f;
     for (int i = 0; i < FFT_SIZE; i++)
     {
+        fftRawSmoothingData[i] = fftRawSmoothingData[i] * fFFTSmoothingFactor + (1 - fFFTSmoothingFactor) * fftRawData[i];
         fftSmoothingData[i] = fftSmoothingData[i] * fFFTSmoothingFactor + (1 - fFFTSmoothingFactor) * _samples[i];
     }
 
@@ -436,5 +446,86 @@ double tic_api_ffts(tic_mem* memory, s32 startFreq, s32 endFreq)
     return 0.0;
 #else
     return fft(startFreq, endFreq, true);
+#endif
+}
+
+// Raw FFT access function
+static double fftr(s32 startFreq, s32 endFreq, bool smoothing)
+{
+#ifdef TIC80_FFT_UNSUPPORTED
+    return 0.0;
+#else
+    if (!fftEnabled)
+    {
+        FFT_DebugLog(FFT_LOG_TRACE, "FFT: fft not enabled\n");
+        return 0.0;
+    }
+
+    if (endFreq == -1)
+    {
+        if (startFreq < 0 || startFreq >= FFT_SIZE)
+        {
+            FFT_DebugLog(FFT_LOG_TRACE, "FFT: freq out of bounds at %d\n", startFreq);
+            return 0.0;
+        }
+        return smoothing ? fftRawSmoothingData[startFreq] : fftRawData[startFreq];
+    }
+    else
+    {
+        if ((startFreq < 0 && endFreq < 0) || (startFreq >= FFT_SIZE && endFreq >= FFT_SIZE))
+        {
+            FFT_DebugLog(FFT_LOG_TRACE, "FFT: both startFreq and endFreq out of bounds, startFreq %d, endFreq %d\n", startFreq, endFreq);
+            return 0.0;
+        }
+
+        if (startFreq < 0)
+        {
+            FFT_DebugLog(FFT_LOG_TRACE, "FFT: clamped startFreq to 0\n");
+            startFreq = 0;
+        }
+
+        if (startFreq >= FFT_SIZE)
+        {
+            FFT_DebugLog(FFT_LOG_TRACE, "FFT: clamped startFreq to %d\n", FFT_SIZE - 1);
+            startFreq = 0;
+        }
+
+        if (endFreq >= FFT_SIZE)
+        {
+            FFT_DebugLog(FFT_LOG_TRACE, "FFT: clamped endFreq to %d\n", FFT_SIZE - 1);
+            endFreq = FFT_SIZE - 1;
+        }
+
+        if (startFreq > endFreq)
+        {
+            FFT_DebugLog(FFT_LOG_TRACE, "FFT: clamped startFreq to endFreq\n");
+            endFreq = startFreq;
+        }
+
+        double sum = 0.0;
+        for (int i = startFreq; i <= endFreq; i++)
+        {
+            sum += smoothing ? fftRawSmoothingData[i] : fftRawData[i];
+        }
+        return sum;
+    }
+#endif
+}
+
+double tic_api_fftr(tic_mem* memory, s32 startFreq, s32 endFreq)
+{
+#ifdef TIC80_FFT_UNSUPPORTED
+    return 0.0;
+#else
+    return fftr(startFreq, endFreq, false);
+#endif
+}
+
+double tic_api_fftrs(tic_mem* memory, s32 startFreq, s32 endFreq)
+{
+#ifdef TIC80_FFT_UNSUPPORTED
+    return 0.0;
+#else
+    return fftr(startFreq, endFreq, true);
 #endif
 }

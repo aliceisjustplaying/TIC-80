@@ -1595,6 +1595,117 @@ static s32 lua_ffts(lua_State* lua)
     return 0;
 }
 
+static s32 lua_vqt(lua_State* lua)
+{
+    tic_core* core = getLuaCore(lua);
+    tic_mem* tic = (tic_mem*)core;
+    s32 top = lua_gettop(lua);
+
+    if (top >= 1)
+    {
+        s32 bin = getLuaNumber(lua, 1);
+        
+        lua_pushnumber(lua, core->api.vqt(tic, bin));
+        return 1;
+    }
+
+    luaL_error(lua, "invalid params, vqt(bin)\n");
+    return 0;
+}
+
+static s32 lua_vqts(lua_State* lua)
+{
+    tic_core* core = getLuaCore(lua);
+    tic_mem* tic = (tic_mem*)core;
+    s32 top = lua_gettop(lua);
+
+    if (top >= 1)
+    {
+        s32 bin = getLuaNumber(lua, 1);
+        
+        lua_pushnumber(lua, core->api.vqts(tic, bin));
+        return 1;
+    }
+
+    luaL_error(lua, "invalid params, vqts(bin)\n");
+    return 0;
+}
+
+static s32 lua_fftr(lua_State* lua)
+{
+    tic_core* core = getLuaCore(lua);
+    tic_mem* tic = (tic_mem*)core;
+    s32 top = lua_gettop(lua);
+
+    if (top >= 1)
+    {
+        s32 startFreq = getLuaNumber(lua, 1);
+        s32 endFreq = top >= 2 ? getLuaNumber(lua, 2) : -1;
+        
+        lua_pushnumber(lua, core->api.fftr(tic, startFreq, endFreq));
+        return 1;
+    }
+
+    luaL_error(lua, "invalid params, fftr(startFreq [, endFreq])\n");
+    return 0;
+}
+
+static s32 lua_fftrs(lua_State* lua)
+{
+    tic_core* core = getLuaCore(lua);
+    tic_mem* tic = (tic_mem*)core;
+    s32 top = lua_gettop(lua);
+
+    if (top >= 1)
+    {
+        s32 startFreq = getLuaNumber(lua, 1);
+        s32 endFreq = top >= 2 ? getLuaNumber(lua, 2) : -1;
+        
+        lua_pushnumber(lua, core->api.fftrs(tic, startFreq, endFreq));
+        return 1;
+    }
+
+    luaL_error(lua, "invalid params, fftrs(startFreq [, endFreq])\n");
+    return 0;
+}
+
+static s32 lua_vqtr(lua_State* lua)
+{
+    tic_core* core = getLuaCore(lua);
+    tic_mem* tic = (tic_mem*)core;
+    s32 top = lua_gettop(lua);
+
+    if (top >= 1)
+    {
+        s32 bin = getLuaNumber(lua, 1);
+        
+        lua_pushnumber(lua, core->api.vqtr(tic, bin));
+        return 1;
+    }
+
+    luaL_error(lua, "invalid params, vqtr(bin)\n");
+    return 0;
+}
+
+static s32 lua_vqtrs(lua_State* lua)
+{
+    tic_core* core = getLuaCore(lua);
+    tic_mem* tic = (tic_mem*)core;
+    s32 top = lua_gettop(lua);
+
+    if (top >= 1)
+    {
+        s32 bin = getLuaNumber(lua, 1);
+        
+        lua_pushnumber(lua, core->api.vqtrs(tic, bin));
+        return 1;
+    }
+
+    luaL_error(lua, "invalid params, vqtrs(bin)\n");
+    return 0;
+}
+
+
 static int lua_dofile(lua_State *lua)
 {
     luaL_error(lua, "unknown method: \"dofile\"\n");
