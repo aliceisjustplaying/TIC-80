@@ -1127,6 +1127,134 @@ static bool py_throw_error(tic_core* core, const char* msg)
     return false;
 }
 
+static bool py_fft(int argc, py_Ref argv)
+{
+    int startFreq, endFreq = -1;
+    PY_CHECK_ARG_TYPE(0, tp_int);
+    if (argc > 1) PY_CHECK_ARG_TYPE(1, tp_int);
+    
+    tic_core* core = get_core();
+    tic_mem* tic = (tic_mem*)core;
+    
+    startFreq = py_toint(py_arg(0));
+    if (argc > 1) endFreq = py_toint(py_arg(1));
+    
+    double result = tic_api_fft(tic, startFreq, endFreq);
+    py_newfloat(py_retval(), result);
+    return true;
+}
+
+static bool py_ffts(int argc, py_Ref argv)
+{
+    int startFreq, endFreq = -1;
+    PY_CHECK_ARG_TYPE(0, tp_int);
+    if (argc > 1) PY_CHECK_ARG_TYPE(1, tp_int);
+    
+    tic_core* core = get_core();
+    tic_mem* tic = (tic_mem*)core;
+    
+    startFreq = py_toint(py_arg(0));
+    if (argc > 1) endFreq = py_toint(py_arg(1));
+    
+    double result = tic_api_ffts(tic, startFreq, endFreq);
+    py_newfloat(py_retval(), result);
+    return true;
+}
+
+static bool py_fftr(int argc, py_Ref argv)
+{
+    int startFreq, endFreq = -1;
+    PY_CHECK_ARG_TYPE(0, tp_int);
+    if (argc > 1) PY_CHECK_ARG_TYPE(1, tp_int);
+    
+    tic_core* core = get_core();
+    tic_mem* tic = (tic_mem*)core;
+    
+    startFreq = py_toint(py_arg(0));
+    if (argc > 1) endFreq = py_toint(py_arg(1));
+    
+    double result = tic_api_fftr(tic, startFreq, endFreq);
+    py_newfloat(py_retval(), result);
+    return true;
+}
+
+static bool py_fftrs(int argc, py_Ref argv)
+{
+    int startFreq, endFreq = -1;
+    PY_CHECK_ARG_TYPE(0, tp_int);
+    if (argc > 1) PY_CHECK_ARG_TYPE(1, tp_int);
+    
+    tic_core* core = get_core();
+    tic_mem* tic = (tic_mem*)core;
+    
+    startFreq = py_toint(py_arg(0));
+    if (argc > 1) endFreq = py_toint(py_arg(1));
+    
+    double result = tic_api_fftrs(tic, startFreq, endFreq);
+    py_newfloat(py_retval(), result);
+    return true;
+}
+
+static bool py_vqt(int argc, py_Ref argv)
+{
+    int bin;
+    PY_CHECK_ARG_TYPE(0, tp_int);
+    
+    tic_core* core = get_core();
+    tic_mem* tic = (tic_mem*)core;
+    
+    bin = py_toint(py_arg(0));
+    
+    double result = tic_api_vqt(tic, bin);
+    py_newfloat(py_retval(), result);
+    return true;
+}
+
+static bool py_vqts(int argc, py_Ref argv)
+{
+    int bin;
+    PY_CHECK_ARG_TYPE(0, tp_int);
+    
+    tic_core* core = get_core();
+    tic_mem* tic = (tic_mem*)core;
+    
+    bin = py_toint(py_arg(0));
+    
+    double result = tic_api_vqts(tic, bin);
+    py_newfloat(py_retval(), result);
+    return true;
+}
+
+static bool py_vqtr(int argc, py_Ref argv)
+{
+    int bin;
+    PY_CHECK_ARG_TYPE(0, tp_int);
+    
+    tic_core* core = get_core();
+    tic_mem* tic = (tic_mem*)core;
+    
+    bin = py_toint(py_arg(0));
+    
+    double result = tic_api_vqtr(tic, bin);
+    py_newfloat(py_retval(), result);
+    return true;
+}
+
+static bool py_vqtrs(int argc, py_Ref argv)
+{
+    int bin;
+    PY_CHECK_ARG_TYPE(0, tp_int);
+    
+    tic_core* core = get_core();
+    tic_mem* tic = (tic_mem*)core;
+    
+    bin = py_toint(py_arg(0));
+    
+    double result = tic_api_vqtrs(tic, bin);
+    py_newfloat(py_retval(), result);
+    return true;
+}
+
 static bool bind_pkpy_v2()
 {
     py_GlobalRef mod = py_getmodule("__main__");
@@ -1177,6 +1305,14 @@ static bool bind_pkpy_v2()
     py_bind(mod, "trib(x1: float, y1: float, x2: float, y2: float, x3: float, y3: float, color: int)", py_trib);
     py_bind(mod, "tstamp() -> int", py_tstamp);
     py_bind(mod, "vbank(bank: int=None) -> int", py_vbank);
+    py_bind(mod, "fft(startFreq: int, endFreq: int=-1) -> float", py_fft);
+    py_bind(mod, "ffts(startFreq: int, endFreq: int=-1) -> float", py_ffts);
+    py_bind(mod, "fftr(startFreq: int, endFreq: int=-1) -> float", py_fftr);
+    py_bind(mod, "fftrs(startFreq: int, endFreq: int=-1) -> float", py_fftrs);
+    py_bind(mod, "vqt(bin: int) -> float", py_vqt);
+    py_bind(mod, "vqts(bin: int) -> float", py_vqts);
+    py_bind(mod, "vqtr(bin: int) -> float", py_vqtr);
+    py_bind(mod, "vqtrs(bin: int) -> float", py_vqtrs);
     return true;
 }
 
