@@ -4,7 +4,6 @@
 
 #include <string.h>
 #include <stdlib.h>
-#include <math.h>
 
 // Global VQT data arrays
 float vqtData[VQT_BINS];
@@ -12,7 +11,6 @@ float vqtSmoothingData[VQT_BINS];
 float vqtNormalizedData[VQT_BINS];
 
 // Peak tracking for auto-gain
-float vqtPeakValue = 1.0f;
 float vqtPeakSmoothValue = 1.0f;
 
 // Enable flag (tied to fftEnabled initially)
@@ -29,8 +27,7 @@ void VQT_Init(void)
     memset(vqtSmoothingData, 0, sizeof(vqtSmoothingData));
     memset(vqtNormalizedData, 0, sizeof(vqtNormalizedData));
     
-    // Initialize peak values
-    vqtPeakValue = 1.0f;
+    // Initialize peak value
     vqtPeakSmoothValue = 1.0f;
     
     // Zero kernel pointers
@@ -67,7 +64,6 @@ void VQT_Cleanup(void)
 float vqtData[VQT_BINS] = {0};
 float vqtSmoothingData[VQT_BINS] = {0};
 float vqtNormalizedData[VQT_BINS] = {0};
-float vqtPeakValue = 1.0f;
 float vqtPeakSmoothValue = 1.0f;
 bool vqtEnabled = false;
 VqtKernel vqtKernels[VQT_BINS] = {{0}};

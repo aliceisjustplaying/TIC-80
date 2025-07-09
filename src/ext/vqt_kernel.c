@@ -35,14 +35,6 @@ void VQT_GenerateCenterFrequencies(float* frequencies, int numBins, float minFre
     }
 }
 
-// Calculate Q factor for constant-Q transform
-float VQT_CalculateQ(int binsPerOctave)
-{
-    // Q = 1 / (2^(1/binsPerOctave) - 1)
-    // For 12 bins/octave, Q ≈ 17.0
-    return 1.0f / (pow(2.0, 1.0 / binsPerOctave) - 1.0f);
-}
-
 // Calculate variable Q factor optimized for 8K FFT constraint
 static float calculateVariableQ(float centerFreq)
 {
@@ -300,7 +292,6 @@ bool VQT_GenerateKernels(VqtKernel* kernels, const VqtKernelConfig* config)
 
 // Stub implementations when FFT is unsupported
 void VQT_GenerateCenterFrequencies(float* frequencies, int numBins, float minFreq, float maxFreq) {}
-float VQT_CalculateQ(int binsPerOctave) { return 0.0f; }
 bool VQT_GenerateKernels(VqtKernel* kernels, const VqtKernelConfig* config) { return false; }
 
 #endif // TIC80_FFT_UNSUPPORTED
