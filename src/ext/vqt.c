@@ -266,23 +266,7 @@ void VQT_ProcessAudio(void)
     // Align FFT and VQT to start from the same temporal position
     #define AUDIO_BUFFER_SIZE (VQT_FFT_SIZE > (FFT_SIZE * 2) ? VQT_FFT_SIZE : (FFT_SIZE * 2))
     memcpy(vqtAudioBuffer, sampleBuf + AUDIO_BUFFER_SIZE - VQT_FFT_SIZE, VQT_FFT_SIZE * sizeof(float));
-    
-    // Check if we have any audio data
-    float audioSum = 0.0f;
-    for (int i = 0; i < VQT_FFT_SIZE; i++)
-    {
-        audioSum += fabs(vqtAudioBuffer[i]);
-    }
-    
-    if (audioSum < 0.0001f)
-    {
-        // No audio data, set output to zero
-        memset(vqtData, 0, sizeof(vqtData));
-        memset(vqtSmoothingData, 0, sizeof(vqtSmoothingData));
-        memset(vqtNormalizedData, 0, sizeof(vqtNormalizedData));
-        return;
-    }
-    
+        
     // Profiling variables
     static double totalFftTime = 0.0;
     static double totalKernelTime = 0.0;
