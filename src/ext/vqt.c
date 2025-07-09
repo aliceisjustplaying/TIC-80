@@ -146,18 +146,6 @@ bool VQT_Open(void)
     for (int i = 0; i < 16; i++)
     {
         float freq = testFreqs[i];
-        // Find closest VQT bin
-        int closestBin = 0;
-        float minDiff = fabs(centerFreqs[0] - freq);
-        for (int j = 1; j < VQT_BINS; j++)
-        {
-            float diff = fabs(centerFreqs[j] - freq);
-            if (diff < minDiff)
-            {
-                minDiff = diff;
-                closestBin = j;
-            }
-        }
         
         // Calculate Q values using 8K-optimized function
         float designQ;
@@ -266,7 +254,7 @@ void VQT_ProcessAudio(void)
     // Align FFT and VQT to start from the same temporal position
     #define AUDIO_BUFFER_SIZE (VQT_FFT_SIZE > (FFT_SIZE * 2) ? VQT_FFT_SIZE : (FFT_SIZE * 2))
     memcpy(vqtAudioBuffer, sampleBuf + AUDIO_BUFFER_SIZE - VQT_FFT_SIZE, VQT_FFT_SIZE * sizeof(float));
-        
+
     // Profiling variables
     static double totalFftTime = 0.0;
     static double totalKernelTime = 0.0;
