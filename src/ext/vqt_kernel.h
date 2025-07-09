@@ -24,8 +24,5 @@ typedef struct {
 // Returns true on success, false on failure
 bool VQT_GenerateKernels(VqtKernel* kernels, const VqtKernelConfig* config);
 
-// Calculate Q factor for given parameters
-float VQT_CalculateQ(int binsPerOctave);
-
 // Generate center frequencies for VQT bins
 void VQT_GenerateCenterFrequencies(float* frequencies, int numBins, float minFreq, float maxFreq);
