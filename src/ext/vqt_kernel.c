@@ -8,30 +8,34 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include "../ext/kiss_fftr.h"
+#include "kiss_fftr.h"
 
 // Generate logarithmically spaced center frequencies for musical notes
+// Keeps equal-tempered semitone spacing exact (2^(1/12)) without scaling the ladder.
+// If the last bin slightly exceeds maxFreq due to floating-point error, adjust the
+// base frequency minimally so that the last bin matches maxFreq exactly.
 void VQT_GenerateCenterFrequencies(float* frequencies, int numBins, float minFreq, float maxFreq)
 {
-    // For musical VQT with 12 bins per octave, we want equal temperament spacing
-    // Each semitone is a factor of 2^(1/12) ≈ 1.0594631
-    const float semitone = pow(2.0f, 1.0f / 12.0f);
-    
+    const double step = pow(2.0, 1.0 / 12.0);          // semitone ratio
+    const double stepsToTop = (double)(numBins - 1) / 12.0; // octaves to the top bin
+
+    // Compute the ideal top frequency using high precision
+    double base = (double)minFreq;
+    double idealTop = base * pow(2.0, stepsToTop);
+
+    // Allow a tiny tolerance for FP error before correcting the base
+    const double eps = 1e-7; // relative tolerance
+    if (idealTop > (double)maxFreq * (1.0 + eps))
+    {
+        // Adjust base so that the top bin lands exactly at maxFreq
+        base = (double)maxFreq / pow(2.0, stepsToTop);
+    }
+
+    // Fill frequencies using exact semitone spacing from the (possibly adjusted) base
     for (int i = 0; i < numBins; i++)
     {
-        // Calculate frequency for each bin based on semitone spacing
-        frequencies[i] = minFreq * pow(semitone, i);
-    }
-    
-    // Verify we don't exceed maxFreq
-    if (frequencies[numBins - 1] > maxFreq)
-    {
-        // Scale down if necessary
-        float scale = maxFreq / frequencies[numBins - 1];
-        for (int i = 0; i < numBins; i++)
-        {
-            frequencies[i] *= scale;
-        }
+        double f = base * pow(2.0, (double)i / 12.0);
+        frequencies[i] = (float)f;
     }
 }
 
@@ -206,7 +210,7 @@ static bool generateSingleKernel(
         free(kernel->indices);
         free(timeKernel);
         free(freqKernel);
-        free(tempWindow);
+        // tempWindow was already freed earlier
         return false;
     }
     
@@ -283,7 +287,7 @@ bool VQT_GenerateKernels(VqtKernel* kernels, const VqtKernelConfig* config)
         }
     }
     
-    free(fftCfg);
+    kiss_fft_free(fftCfg);
     free(centerFreqs);
     return success;
 }

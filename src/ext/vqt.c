@@ -17,7 +17,10 @@
 #include <stdio.h>
 #include <time.h>
 
+// Enable verbose VQT debug prints only for debug builds unless explicitly forced
+#if !defined(NDEBUG) && !defined(VQT_DEBUG)
 #define VQT_DEBUG
+#endif
 
 // FFT configuration for VQT
 static kiss_fftr_cfg vqtFftCfg = NULL;
@@ -74,7 +77,7 @@ static void VQT_BenchmarkFFT(void)
         // Cleanup
         free(testInput);
         free(testOutput);
-        free(testCfg);
+        kiss_fft_free(testCfg);
     }
     
     printf("================================\n\n");
@@ -251,8 +254,7 @@ void VQT_ProcessAudio(void)
     // Copy audio data from the shared buffer
     // sampleBuf is defined in fft.c as extern
     extern float sampleBuf[];
-    // Align FFT and VQT to start from the same temporal position
-    #define AUDIO_BUFFER_SIZE (VQT_FFT_SIZE > (FFT_SIZE * 2) ? VQT_FFT_SIZE : (FFT_SIZE * 2))
+    // Align to the most recent VQT window using centralized AUDIO_BUFFER_SIZE
     memcpy(vqtAudioBuffer, sampleBuf + AUDIO_BUFFER_SIZE - VQT_FFT_SIZE, VQT_FFT_SIZE * sizeof(float));
 
     // Profiling variables
@@ -373,7 +375,7 @@ void VQT_Close(void)
 {
     if (vqtFftCfg)
     {
-        free(vqtFftCfg);
+        kiss_fft_free(vqtFftCfg);
         vqtFftCfg = NULL;
     }
     
