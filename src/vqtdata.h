@@ -5,8 +5,11 @@
 #define VQT_FFT_SIZE 8192   // 8K FFT - optimized variable-Q for responsive visualization, ~5.4 fps
 
 // VQT frequency range
-#define VQT_MIN_FREQ 20.0f    // Sub-bass for electronic music
-#define VQT_MAX_FREQ 20480.0f // Nearest note to 20kHz
+// Use a musical base note for exact semitone alignment across bins.
+// D#0/Eb0 ≈ 19.445 Hz; over 10 octaves (120 semitones) this reaches ≈19.9 kHz.
+// This keeps every bin on a real note and fits within the audible band.
+#define VQT_MIN_FREQ 19.445f   // D#0 / Eb0 base (A4=440)
+#define VQT_MAX_FREQ 20480.0f  // Upper reference (not used to scale bins)
 
 // Smoothing parameters
 #define VQT_SMOOTHING_FACTOR 0.3f  // Reduced from 0.7f for more responsive display

@@ -23,8 +23,6 @@ ma_device captureDevice;
 #include "../vqtdata.h"
 
 // Shared audio buffer - must be large enough for both FFT and VQT
-// FFT needs FFT_SIZE * 2 (2048) samples, VQT needs VQT_FFT_SIZE samples
-#define AUDIO_BUFFER_SIZE (VQT_FFT_SIZE > (FFT_SIZE * 2) ? VQT_FFT_SIZE : (FFT_SIZE * 2))
 float sampleBuf[AUDIO_BUFFER_SIZE];
 
 void miniaudioLogCallback(void* userData, ma_uint32 level, const char* message)
@@ -335,8 +333,9 @@ void FFT_GetFFT(float* _samples)
 #else
 
     kiss_fft_cpx out[FFT_SIZE + 1];
-    // Align FFT and VQT to start from the same temporal position
-    kiss_fftr(fftcfg, sampleBuf + AUDIO_BUFFER_SIZE - VQT_FFT_SIZE, out);
+    // Align FFT and VQT to the same recent audio window
+    // Use the last 2048 samples for the 2K FFT, not the start of the 8K VQT window
+    kiss_fftr(fftcfg, sampleBuf + AUDIO_BUFFER_SIZE - (FFT_SIZE * 2), out);
 
     float peakValue = fPeakMinValue;
     for (int i = 0; i < FFT_SIZE; i++)
