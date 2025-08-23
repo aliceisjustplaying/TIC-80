@@ -15,6 +15,23 @@
 #define VQT_SMOOTHING_FACTOR 0.3f  // Reduced from 0.7f for more responsive display
 #define VQT_SPARSITY_THRESHOLD 0.01f
 
+// Spectral whitening configuration (disabled by default)
+#ifndef VQT_SPECTRAL_WHITENING_ENABLED
+#define VQT_SPECTRAL_WHITENING_ENABLED 1
+#endif
+
+#ifndef VQT_WHITENING_WIDTH_BINS
+#define VQT_WHITENING_WIDTH_BINS 11   // odd window width for envelope smoothing
+#endif
+
+#ifndef VQT_WHITENING_STRENGTH
+#define VQT_WHITENING_STRENGTH 0.7f   // 0..1 mix toward whitened spectrum
+#endif
+
+#ifndef VQT_WHITENING_EPS
+#define VQT_WHITENING_EPS 1e-6f       // floor to stabilize log domain
+#endif
+
 // Raw VQT magnitude data
 extern float vqtData[VQT_BINS];
 
