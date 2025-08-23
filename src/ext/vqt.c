@@ -281,6 +281,55 @@ void VQT_ProcessAudio(void)
     clock_t kernelStart = clock();
     VQT_ApplyKernels(fftReal, fftImag);
     clock_t kernelEnd = clock();
+
+    // Optional spectral whitening to flatten spectral envelope for clearer peaks
+#if VQT_SPECTRAL_WHITENING_ENABLED
+    {
+        const float eps = VQT_WHITENING_EPS;
+        int width = VQT_WHITENING_WIDTH_BINS;
+        if (width < 1) width = 1;
+        int half = width / 2;
+        float alpha = VQT_WHITENING_STRENGTH;
+        if (alpha < 0.0f) alpha = 0.0f; else if (alpha > 1.0f) alpha = 1.0f;
+
+        float logM[VQT_BINS];
+        float env[VQT_BINS];
+
+        // Log domain magnitudes
+        for (int i = 0; i < VQT_BINS; i++)
+        {
+            float m = vqtData[i];
+            if (!isfinite(m) || m < 0.0f) m = 0.0f;
+            logM[i] = logf(m + eps);
+        }
+
+        // Smooth spectral envelope with a simple box filter of width 'width'
+        for (int i = 0; i < VQT_BINS; i++)
+        {
+            int start = i - half;
+            int end = i + half;
+            if (start < 0) start = 0;
+            if (end >= VQT_BINS) end = VQT_BINS - 1;
+            float sum = 0.0f;
+            int count = 0;
+            for (int j = start; j <= end; j++) { sum += logM[j]; count++; }
+            env[i] = count > 0 ? sum / (float)count : logM[i];
+        }
+
+        // Whiten: ratio in log domain, baseline to 0 (exp(w)-1), mix in amplitude domain
+        for (int i = 0; i < VQT_BINS; i++)
+        {
+            float m = vqtData[i];
+            if (!isfinite(m) || m < 0.0f) m = 0.0f;
+            float wLog = logM[i] - env[i];            // log(m+eps) - log(env)
+            float wAmp = expf(wLog) - 1.0f;           // = (m+eps)/env - 1 → 0 on flat
+            if (!isfinite(wAmp) || wAmp < 0.0f) wAmp = 0.0f;
+            float mp = (1.0f - alpha) * m + alpha * wAmp;
+            if (!isfinite(mp) || mp < 0.0f) mp = 0.0f;
+            vqtData[i] = mp;
+        }
+    }
+#endif
     
     // Calculate times in milliseconds
     double fftTime = (double)(fftEnd - fftStart) / CLOCKS_PER_SEC * 1000.0;
