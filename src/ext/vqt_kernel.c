@@ -11,31 +11,15 @@
 #include "kiss_fftr.h"
 
 // Generate logarithmically spaced center frequencies for musical notes
-// Keeps equal-tempered semitone spacing exact (2^(1/12)) without scaling the ladder.
-// If the last bin slightly exceeds maxFreq due to floating-point error, adjust the
-// base frequency minimally so that the last bin matches maxFreq exactly.
+// Keeps equal-tempered semitone spacing exact (2^(1/12)) without any scaling.
+// Uses minFreq as the musical base and ignores maxFreq for placement.
 void VQT_GenerateCenterFrequencies(float* frequencies, int numBins, float minFreq, float maxFreq)
 {
-    const double step = pow(2.0, 1.0 / 12.0);          // semitone ratio
-    const double stepsToTop = (double)(numBins - 1) / 12.0; // octaves to the top bin
-
-    // Compute the ideal top frequency using high precision
-    double base = (double)minFreq;
-    double idealTop = base * pow(2.0, stepsToTop);
-
-    // Allow a tiny tolerance for FP error before correcting the base
-    const double eps = 1e-7; // relative tolerance
-    if (idealTop > (double)maxFreq * (1.0 + eps))
-    {
-        // Adjust base so that the top bin lands exactly at maxFreq
-        base = (double)maxFreq / pow(2.0, stepsToTop);
-    }
-
-    // Fill frequencies using exact semitone spacing from the (possibly adjusted) base
+    (void)maxFreq; // base is authoritative; maxFreq is not used to scale bins
+    const double base = (double)minFreq;
     for (int i = 0; i < numBins; i++)
     {
-        double f = base * pow(2.0, (double)i / 12.0);
-        frequencies[i] = (float)f;
+        frequencies[i] = (float)(base * pow(2.0, (double)i / 12.0));
     }
 }
 
