@@ -129,12 +129,12 @@ Constant-Q Transform provides logarithmic frequency spacing for better musical a
 - **Processing**: In `tic_core_tick` after FFT processing
 
 #### Specifications
-- Frequency range: 20 Hz - 20480 Hz (10 octaves × 12 notes = 120 bins)
+- Frequency range: 19.445 Hz (D#0/Eb0) - 20480 Hz (10 octaves × 12 notes = 120 bins)
 - FFT size: 8192 samples (configurable)
 - Update rate: ~5.4 fps with 8K FFT
 - Variable-Q implementation optimized for 8K FFT constraint
 - Smoothing factor: 0.3
-- Spectral whitening: Enabled by default (toggle via `VQT_SPECTRAL_WHITENING_ENABLED`)
+- Spectral whitening: Provided via separate whitened VQT functions (see API)
 
 #### Variable-Q Design (8K FFT Optimized)
 | Frequency Range | Design Q | Effective Q | Resolution |
@@ -152,9 +152,37 @@ Constant-Q Transform provides logarithmic frequency spacing for better musical a
 value = vqt(bin)   -- Get peak-normalized VQT magnitude for bin (0-119)
 -- Note mapping: Bin = octave * 12 + note
 -- Note: C=0, C#=1, D=2, D#=3, E=4, F=5, F#=6, G=7, G#=8, A=9, A#=10, B=11
+-- Smoothed: vqts(bin)
+
+-- Raw (non-normalized) VQT
+value = vqtr(bin)
+value = vqtrs(bin) -- smoothed raw
+
+-- Whitened VQT (spectral envelope flattened)
+value = vqtw(bin)   -- peak-normalized whitened
+value = vqtsw(bin)  -- smoothed peak-normalized whitened
+value = vqtrw(bin)  -- raw whitened
+value = vqtrsw(bin) -- smoothed raw whitened
 ```
 
 **Note:** VQT also returns peak-normalized values (auto-gain controlled), not raw magnitudes.
+
+##### Function Index (FFT and VQT)
+- `fft(startFreq, endFreq=-1)`: Peak-normalized FFT magnitude over [start,end] Hz.
+- `ffts(startFreq, endFreq=-1)`: Smoothed peak-normalized FFT magnitude.
+- `fftr(startFreq, endFreq=-1)`: Raw FFT magnitude (no auto-gain).
+- `fftrs(startFreq, endFreq=-1)`: Raw smoothed FFT magnitude.
+- `vqt(bin)`: Peak-normalized VQT bin magnitude (0–119).
+- `vqts(bin)`: Smoothed peak-normalized VQT magnitude.
+- `vqtr(bin)`: Raw VQT magnitude (no auto-gain).
+- `vqtrs(bin)`: Raw smoothed VQT magnitude.
+- `vqtw(bin)`: Peak-normalized whitened VQT magnitude.
+- `vqtsw(bin)`: Smoothed peak-normalized whitened VQT magnitude.
+- `vqtrw(bin)`: Raw whitened VQT magnitude (no auto-gain).
+- `vqtrsw(bin)`: Raw smoothed whitened VQT magnitude.
+
+##### Smoothing
+Smoothing reduces frame-to-frame jitter by applying an exponential moving average (EMA) over time to each frequency bin. It does not blur across frequency; instead it blends the current frame with previous frames to stabilize visuals and detections. The smoothing factor controls responsiveness versus stability (lower = more responsive, higher = steadier but laggier). Defaults: FFT uses 0.6; VQT uses `VQT_SMOOTHING_FACTOR` (0.3). “Smoothed” variants (`ffts`, `vqts`, `fftrs`, `vqtrs`, and their whitened counterparts) are the temporally smoothed forms of their respective raw/normalized signals.
 
 ### FFT vs VQT Comparison
 
@@ -171,8 +199,8 @@ value = vqt(bin)   -- Get peak-normalized VQT magnitude for bin (0-119)
 
 Both FFT and VQT share the same audio capture buffer:
 - Buffer size: Maximum of (2048, VQT_FFT_SIZE) samples
-- FFT reads samples 0-2047
-- VQT reads samples 0-(VQT_FFT_SIZE-1)
+- FFT reads the latest 2048 samples
+- VQT reads the latest `VQT_FFT_SIZE` samples
 - Uses miniaudio for audio capture (mic or loopback on Windows)
 
 ### Practical Usage Guidelines
@@ -210,16 +238,40 @@ local color = (bassNote % 12) + 1  -- Color from note
 ### Completed Features
 - **FFT**: 1024 bins with exact original behavior preserved
 - **VQT**: 120 bins with Variable-Q implementation
-- **Spectral Whitening**: Per-bin normalization for VQT (removed due to spreading issues)
+- **Spectral Whitening**: Whitened VQT outputs and APIs (`vqtw`, `vqtsw`, `vqtrw`, `vqtrsw`)
 - **Shared Audio Buffer**: Automatic sizing for both FFT and VQT
-- **API Functions**: `fft()`, `ffts()`, `vqt()`, `vqts()` implemented for all supported languages
+- **API Functions**: `fft()`, `ffts()`, `fftr()`, `fftrs()`, `vqt()`, `vqts()`, `vqtr()`, `vqtrs()`, `vqtw()`, `vqtsw()`, `vqtrw()`, `vqtrsw()` implemented across languages
 - **Peak Normalization**: Both FFT and VQT use auto-gain control
 
 ### Configuration Options
 - `VQT_FFT_SIZE`: Default 8192 (configurable in vqtdata.h)
-- `VQT_SPECTRAL_WHITENING_ENABLED`: Toggle spectral whitening (0/1)
-- `VQT_WHITENING_DECAY`: Running average decay factor (default 0.99)
 - `VQT_SMOOTHING_FACTOR`: VQT smoothing factor (default 0.3)
+
+#### Whitening Configuration (Build-Time)
+These macros control the whitening stage during build. The runtime API exposes whitened data via separate functions (`vqtw*` and `vqtrw*`), so no runtime toggle is required.
+
+```c
+#ifndef VQT_SPECTRAL_WHITENING_ENABLED
+#define VQT_SPECTRAL_WHITENING_ENABLED 1
+#endif
+
+#ifndef VQT_WHITENING_WIDTH_BINS
+#define VQT_WHITENING_WIDTH_BINS 21   // odd window width for envelope smoothing
+#endif
+
+#ifndef VQT_WHITENING_STRENGTH
+#define VQT_WHITENING_STRENGTH 0.95f   // 0..1 mix toward whitened spectrum
+#endif
+
+#ifndef VQT_WHITENING_EPS
+#define VQT_WHITENING_EPS 1e-6f       // floor to stabilize log domain
+#endif
+```
+
+- `VQT_SPECTRAL_WHITENING_ENABLED`: Compiles whitening path; defaults to 1.
+- `VQT_WHITENING_WIDTH_BINS`: Width of the local-mean envelope (log domain). Larger smooths more; must be odd. Default 21.
+- `VQT_WHITENING_STRENGTH`: Mix factor between raw and whitened magnitudes (0..1). Higher emphasizes notes more. Default 0.95.
+- `VQT_WHITENING_EPS`: Small positive floor added before `logf` to stabilize very small magnitudes. Default 1e-6.
 
 ### Test Scripts
 - `demo_fft_vqt_hybrid.lua`: Combined FFT/VQT visualization
@@ -231,19 +283,13 @@ local color = (bassNote % 12) + 1  -- Color from note
 ## Future Enhancements
 
 ### Additional API Functions
-- `vqts(bin)`: Smoothed VQT data (already implemented)
 - `vqto(octave, note)`: VQT by musical note
 - `vqtos(octave, note)`: Smoothed VQT by musical note
-- `fftr(bin)`: Raw (non-normalized) FFT magnitude
-- `fftrs(bin)`: Raw smoothed FFT magnitude  
-- `vqtr(bin)`: Raw (non-normalized) VQT magnitude
-- `vqtrs(bin)`: Raw smoothed VQT magnitude
 
 ### Signal Processing Enhancements
 - **Adaptive Thresholding**: Dynamic noise floor removal
 
 ### Platform Support
-- Add VQT to other language bindings (currently Lua only)
 - GPU acceleration for kernel application
 - Configurable FFT sizes at runtime
 
