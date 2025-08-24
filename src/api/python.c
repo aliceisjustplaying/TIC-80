@@ -1255,6 +1255,66 @@ static bool py_vqtrs(int argc, py_Ref argv)
     return true;
 }
 
+static bool py_vqtw(int argc, py_Ref argv)
+{
+    int bin;
+    PY_CHECK_ARG_TYPE(0, tp_int);
+
+    tic_core* core = get_core();
+    tic_mem* tic = (tic_mem*)core;
+
+    bin = py_toint(py_arg(0));
+
+    double result = tic_api_vqtw(tic, bin);
+    py_newfloat(py_retval(), result);
+    return true;
+}
+
+static bool py_vqtsw(int argc, py_Ref argv)
+{
+    int bin;
+    PY_CHECK_ARG_TYPE(0, tp_int);
+
+    tic_core* core = get_core();
+    tic_mem* tic = (tic_mem*)core;
+
+    bin = py_toint(py_arg(0));
+
+    double result = tic_api_vqtsw(tic, bin);
+    py_newfloat(py_retval(), result);
+    return true;
+}
+
+static bool py_vqtrw(int argc, py_Ref argv)
+{
+    int bin;
+    PY_CHECK_ARG_TYPE(0, tp_int);
+
+    tic_core* core = get_core();
+    tic_mem* tic = (tic_mem*)core;
+
+    bin = py_toint(py_arg(0));
+
+    double result = tic_api_vqtrw(tic, bin);
+    py_newfloat(py_retval(), result);
+    return true;
+}
+
+static bool py_vqtrsw(int argc, py_Ref argv)
+{
+    int bin;
+    PY_CHECK_ARG_TYPE(0, tp_int);
+
+    tic_core* core = get_core();
+    tic_mem* tic = (tic_mem*)core;
+
+    bin = py_toint(py_arg(0));
+
+    double result = tic_api_vqtrsw(tic, bin);
+    py_newfloat(py_retval(), result);
+    return true;
+}
+
 static bool bind_pkpy_v2()
 {
     py_GlobalRef mod = py_getmodule("__main__");
@@ -1313,6 +1373,10 @@ static bool bind_pkpy_v2()
     py_bind(mod, "vqts(bin: int) -> float", py_vqts);
     py_bind(mod, "vqtr(bin: int) -> float", py_vqtr);
     py_bind(mod, "vqtrs(bin: int) -> float", py_vqtrs);
+    py_bind(mod, "vqtw(bin: int) -> float", py_vqtw);
+    py_bind(mod, "vqtsw(bin: int) -> float", py_vqtsw);
+    py_bind(mod, "vqtrw(bin: int) -> float", py_vqtrw);
+    py_bind(mod, "vqtrsw(bin: int) -> float", py_vqtrsw);
     return true;
 }
 

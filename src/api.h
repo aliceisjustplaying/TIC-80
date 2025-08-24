@@ -913,6 +913,55 @@ enum
         tic_mem*, s32 bin)                                                                                              \
                                                                                                                        \
                                                                                                                        \
+    macro(vqtw,                                                                                                         \
+        "vqtw(bin)",                                                                                                    \
+                                                                                                                       \
+        "Get peak-normalized whitened VQT magnitude for a bin.\n"                                                       \
+        "Whitening evens out the spectral envelope so notes stand out.\n"                                          \
+        "Bin mapping: 0-119 (10 octaves × 12 notes).",                                                                 \
+        1,                                                                                                              \
+        1,                                                                                                              \
+        0,                                                                                                              \
+        double,                                                                                                         \
+        tic_mem*, s32 bin)                                                                                              \
+                                                                                                                       \
+                                                                                                                       \
+    macro(vqtsw,                                                                                                        \
+        "vqtsw(bin)",                                                                                                   \
+                                                                                                                       \
+        "Get smoothed, peak-normalized whitened VQT magnitude for a bin.\n"                                           \
+        "Useful for visuals with stable dynamics.",                                                                    \
+        1,                                                                                                              \
+        1,                                                                                                              \
+        0,                                                                                                              \
+        double,                                                                                                         \
+        tic_mem*, s32 bin)                                                                                              \
+                                                                                                                       \
+                                                                                                                       \
+    macro(vqtrw,                                                                                                        \
+        "vqtrw(bin)",                                                                                                   \
+                                                                                                                       \
+        "Get raw (non-normalized) whitened VQT magnitude for a bin.\n"                                               \
+        "Whitened but without peak auto-gain control.",                                                                \
+        1,                                                                                                              \
+        1,                                                                                                              \
+        0,                                                                                                              \
+        double,                                                                                                         \
+        tic_mem*, s32 bin)                                                                                              \
+                                                                                                                       \
+                                                                                                                       \
+    macro(vqtrsw,                                                                                                       \
+        "vqtrsw(bin)",                                                                                                  \
+                                                                                                                       \
+        "Get raw smoothed whitened VQT magnitude for a bin.\n"                                                        \
+        "Smoothed, without peak auto-gain control.",                                                                    \
+        1,                                                                                                              \
+        1,                                                                                                              \
+        0,                                                                                                              \
+        double,                                                                                                         \
+        tic_mem*, s32 bin)                                                                                              \
+                                                                                                                       \
+                                                                                                                       \
     
 
 #define TIC_API_DEF(name, _, __, ___, ____, _____, ret, ...) ret tic_api_##name(__VA_ARGS__);

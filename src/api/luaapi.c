@@ -1714,8 +1714,7 @@ static s32 lua_vqtw(lua_State* lua)
     if (top >= 1)
     {
         s32 bin = getLuaNumber(lua, 1);
-        extern double tic_api_vqtw(tic_mem*, s32);
-        lua_pushnumber(lua, tic_api_vqtw(tic, bin));
+        lua_pushnumber(lua, core->api.vqtw(tic, bin));
         return 1;
     }
 
@@ -1732,8 +1731,7 @@ static s32 lua_vqtsw(lua_State* lua)
     if (top >= 1)
     {
         s32 bin = getLuaNumber(lua, 1);
-        extern double tic_api_vqtsw(tic_mem*, s32);
-        lua_pushnumber(lua, tic_api_vqtsw(tic, bin));
+        lua_pushnumber(lua, core->api.vqtsw(tic, bin));
         return 1;
     }
 
@@ -1750,8 +1748,7 @@ static s32 lua_vqtrw(lua_State* lua)
     if (top >= 1)
     {
         s32 bin = getLuaNumber(lua, 1);
-        extern double tic_api_vqtrw(tic_mem*, s32);
-        lua_pushnumber(lua, tic_api_vqtrw(tic, bin));
+        lua_pushnumber(lua, core->api.vqtrw(tic, bin));
         return 1;
     }
 
@@ -1768,8 +1765,7 @@ static s32 lua_vqtrsw(lua_State* lua)
     if (top >= 1)
     {
         s32 bin = getLuaNumber(lua, 1);
-        extern double tic_api_vqtrsw(tic_mem*, s32);
-        lua_pushnumber(lua, tic_api_vqtrsw(tic, bin));
+        lua_pushnumber(lua, core->api.vqtrsw(tic, bin));
         return 1;
     }
 
@@ -1824,10 +1820,6 @@ void luaapi_init(tic_core* core)
 #if defined(BUILD_DEPRECATED)
         {(lua_CFunction)lua_textri, "textri"},
 #endif
-        {(lua_CFunction)lua_vqtw,   "vqtw"},
-        {(lua_CFunction)lua_vqtsw,  "vqtsw"},
-        {(lua_CFunction)lua_vqtrw,  "vqtrw"},
-        {(lua_CFunction)lua_vqtrsw, "vqtrsw"},
     };
 
     for (s32 i = 0; i < COUNT_OF(ApiItems); i++)

@@ -148,6 +148,10 @@ class TIC {\n\
     foreign static exit()\n\
     foreign static fft(start_freq, end_freq)\n\
     foreign static ffts(start_freq, end_freq)\n\
+    foreign static vqtw(bin)\n\
+    foreign static vqtsw(bin)\n\
+    foreign static vqtrw(bin)\n\
+    foreign static vqtrsw(bin)\n\
     foreign static map_width__\n\
     foreign static map_height__\n\
     foreign static spritesize__\n\
@@ -1611,6 +1615,74 @@ static void wren_vqtrs(WrenVM* vm)
     wrenError(vm, "invalid params, vqtrs(bin)\n");
 }
 
+static void wren_vqtw(WrenVM* vm)
+{
+    tic_core* core = getWrenCore(vm);
+    tic_mem* tic = (tic_mem*)core;
+    s32 top = wrenGetSlotCount(vm);
+
+    if (top > 1)
+    {
+        double bin = getWrenNumber(vm, 1);
+
+        wrenSetSlotDouble(vm, 0, core->api.vqtw(tic, bin));
+        return;
+    }
+
+    wrenError(vm, "invalid params, vqtw(bin)\n");
+}
+
+static void wren_vqtsw(WrenVM* vm)
+{
+    tic_core* core = getWrenCore(vm);
+    tic_mem* tic = (tic_mem*)core;
+    s32 top = wrenGetSlotCount(vm);
+
+    if (top > 1)
+    {
+        double bin = getWrenNumber(vm, 1);
+
+        wrenSetSlotDouble(vm, 0, core->api.vqtsw(tic, bin));
+        return;
+    }
+
+    wrenError(vm, "invalid params, vqtsw(bin)\n");
+}
+
+static void wren_vqtrw(WrenVM* vm)
+{
+    tic_core* core = getWrenCore(vm);
+    tic_mem* tic = (tic_mem*)core;
+    s32 top = wrenGetSlotCount(vm);
+
+    if (top > 1)
+    {
+        double bin = getWrenNumber(vm, 1);
+
+        wrenSetSlotDouble(vm, 0, core->api.vqtrw(tic, bin));
+        return;
+    }
+
+    wrenError(vm, "invalid params, vqtrw(bin)\n");
+}
+
+static void wren_vqtrsw(WrenVM* vm)
+{
+    tic_core* core = getWrenCore(vm);
+    tic_mem* tic = (tic_mem*)core;
+    s32 top = wrenGetSlotCount(vm);
+
+    if (top > 1)
+    {
+        double bin = getWrenNumber(vm, 1);
+
+        wrenSetSlotDouble(vm, 0, core->api.vqtrsw(tic, bin));
+        return;
+    }
+
+    wrenError(vm, "invalid params, vqtrsw(bin)\n");
+}
+
 static WrenForeignMethodFn foreignTicMethods(const char* signature)
 {
     if (strcmp(signature, "static TIC.btn()"                    ) == 0) return wren_btn;
@@ -1726,10 +1798,14 @@ static WrenForeignMethodFn foreignTicMethods(const char* signature)
     if (strcmp(signature, "static TIC.ffts(_,_)"                ) == 0) return wren_ffts;
     if (strcmp(signature, "static TIC.vqt(_)"                   ) == 0) return wren_vqt;
     if (strcmp(signature, "static TIC.vqts(_)"                  ) == 0) return wren_vqts;
+    if (strcmp(signature, "static TIC.vqtw(_)"                  ) == 0) return wren_vqtw;
+    if (strcmp(signature, "static TIC.vqtsw(_)"                 ) == 0) return wren_vqtsw;
     if (strcmp(signature, "static TIC.fftr(_,_)"                ) == 0) return wren_fftr;
     if (strcmp(signature, "static TIC.fftrs(_,_)"               ) == 0) return wren_fftrs;
     if (strcmp(signature, "static TIC.vqtr(_)"                  ) == 0) return wren_vqtr;
     if (strcmp(signature, "static TIC.vqtrs(_)"                 ) == 0) return wren_vqtrs;
+    if (strcmp(signature, "static TIC.vqtrw(_)"                 ) == 0) return wren_vqtrw;
+    if (strcmp(signature, "static TIC.vqtrsw(_)"                ) == 0) return wren_vqtrsw;
 
     // internal functions
     if (strcmp(signature, "static TIC.map_width__"              ) == 0) return wren_map_width;
