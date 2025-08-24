@@ -1082,6 +1082,38 @@ static JSValue js_vqtrs(JSContext *ctx, JSValueConst this_val, s32 argc, JSValue
     return JS_NewFloat64(ctx, core->api.vqtrs(tic, bin));
 }
 
+static JSValue js_vqtw(JSContext *ctx, JSValueConst this_val, s32 argc, JSValueConst *argv)
+{
+    tic_core* core = getCore(ctx); tic_mem* tic = (tic_mem*)core;
+    s32 bin = getInteger(ctx, argv[0]);
+
+    return JS_NewFloat64(ctx, core->api.vqtw(tic, bin));
+}
+
+static JSValue js_vqtsw(JSContext *ctx, JSValueConst this_val, s32 argc, JSValueConst *argv)
+{
+    tic_core* core = getCore(ctx); tic_mem* tic = (tic_mem*)core;
+    s32 bin = getInteger(ctx, argv[0]);
+
+    return JS_NewFloat64(ctx, core->api.vqtsw(tic, bin));
+}
+
+static JSValue js_vqtrw(JSContext *ctx, JSValueConst this_val, s32 argc, JSValueConst *argv)
+{
+    tic_core* core = getCore(ctx); tic_mem* tic = (tic_mem*)core;
+    s32 bin = getInteger(ctx, argv[0]);
+
+    return JS_NewFloat64(ctx, core->api.vqtrw(tic, bin));
+}
+
+static JSValue js_vqtrsw(JSContext *ctx, JSValueConst this_val, s32 argc, JSValueConst *argv)
+{
+    tic_core* core = getCore(ctx); tic_mem* tic = (tic_mem*)core;
+    s32 bin = getInteger(ctx, argv[0]);
+
+    return JS_NewFloat64(ctx, core->api.vqtrsw(tic, bin));
+}
+
 static bool initJavascript(tic_mem* tic, const char* code)
 {
     closeJavascript(tic);

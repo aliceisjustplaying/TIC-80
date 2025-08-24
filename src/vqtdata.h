@@ -21,11 +21,11 @@
 #endif
 
 #ifndef VQT_WHITENING_WIDTH_BINS
-#define VQT_WHITENING_WIDTH_BINS 11   // odd window width for envelope smoothing
+#define VQT_WHITENING_WIDTH_BINS 21   // odd window width for envelope smoothing
 #endif
 
 #ifndef VQT_WHITENING_STRENGTH
-#define VQT_WHITENING_STRENGTH 0.7f   // 0..1 mix toward whitened spectrum
+#define VQT_WHITENING_STRENGTH 0.95f   // 0..1 mix toward whitened spectrum
 #endif
 
 #ifndef VQT_WHITENING_EPS

@@ -87,6 +87,10 @@ static Janet janet_fftr(int32_t argc, Janet* argv);
 static Janet janet_fftrs(int32_t argc, Janet* argv);
 static Janet janet_vqtr(int32_t argc, Janet* argv);
 static Janet janet_vqtrs(int32_t argc, Janet* argv);
+static Janet janet_vqtw(int32_t argc, Janet* argv);
+static Janet janet_vqtsw(int32_t argc, Janet* argv);
+static Janet janet_vqtrw(int32_t argc, Janet* argv);
+static Janet janet_vqtrsw(int32_t argc, Janet* argv);
 
 static void closeJanet(tic_mem* tic);
 static bool initJanet(tic_mem* tic, const char* code);
@@ -158,6 +162,10 @@ static const JanetReg janet_c_functions[] =
     {"fftrs", janet_fftrs, NULL},
     {"vqtr", janet_vqtr, NULL},
     {"vqtrs", janet_vqtrs, NULL},
+    {"vqtw", janet_vqtw, NULL},
+    {"vqtsw", janet_vqtsw, NULL},
+    {"vqtrw", janet_vqtrw, NULL},
+    {"vqtrsw", janet_vqtrsw, NULL},
     {NULL, NULL, NULL}
 };
 
@@ -1156,6 +1164,46 @@ static Janet janet_vqtrs(int32_t argc, Janet* argv)
 
     tic_core* core = getJanetMachine(); tic_mem* tic = (tic_mem*)core;
     return janet_wrap_number(core->api.vqtrs(tic, bin));
+}
+
+static Janet janet_vqtw(int32_t argc, Janet* argv)
+{
+    janet_fixarity(argc, 1);
+
+    s32 bin = janet_getinteger(argv, 0);
+
+    tic_core* core = getJanetMachine(); tic_mem* tic = (tic_mem*)core;
+    return janet_wrap_number(core->api.vqtw(tic, bin));
+}
+
+static Janet janet_vqtsw(int32_t argc, Janet* argv)
+{
+    janet_fixarity(argc, 1);
+
+    s32 bin = janet_getinteger(argv, 0);
+
+    tic_core* core = getJanetMachine(); tic_mem* tic = (tic_mem*)core;
+    return janet_wrap_number(core->api.vqtsw(tic, bin));
+}
+
+static Janet janet_vqtrw(int32_t argc, Janet* argv)
+{
+    janet_fixarity(argc, 1);
+
+    s32 bin = janet_getinteger(argv, 0);
+
+    tic_core* core = getJanetMachine(); tic_mem* tic = (tic_mem*)core;
+    return janet_wrap_number(core->api.vqtrw(tic, bin));
+}
+
+static Janet janet_vqtrsw(int32_t argc, Janet* argv)
+{
+    janet_fixarity(argc, 1);
+
+    s32 bin = janet_getinteger(argv, 0);
+
+    tic_core* core = getJanetMachine(); tic_mem* tic = (tic_mem*)core;
+    return janet_wrap_number(core->api.vqtrsw(tic, bin));
 }
 
 /* ***************** */

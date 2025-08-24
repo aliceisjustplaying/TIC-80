@@ -682,6 +682,82 @@ static mrb_value mrb_vqtrs(mrb_state* mrb, mrb_value self)
     }
 }
 
+static mrb_value mrb_vqtw(mrb_state* mrb, mrb_value self)
+{
+    mrb_int bin;
+    mrb_int argc = mrb_get_args(mrb, "i", &bin);
+
+    tic_core* core = getMRubyMachine(mrb);
+    tic_mem* tic = (tic_mem*)core;
+
+    if (argc == 0)
+    {
+        mrb_raise(mrb, E_ARGUMENT_ERROR, "invalid params, vqtw(bin)\n");
+        return mrb_nil_value();
+    }
+    else
+    {
+        return mrb_float_value(mrb, core->api.vqtw(tic, bin));
+    }
+}
+
+static mrb_value mrb_vqtsw(mrb_state* mrb, mrb_value self)
+{
+    mrb_int bin;
+    mrb_int argc = mrb_get_args(mrb, "i", &bin);
+
+    tic_core* core = getMRubyMachine(mrb);
+    tic_mem* tic = (tic_mem*)core;
+
+    if (argc == 0)
+    {
+        mrb_raise(mrb, E_ARGUMENT_ERROR, "invalid params, vqtsw(bin)\n");
+        return mrb_nil_value();
+    }
+    else
+    {
+        return mrb_float_value(mrb, core->api.vqtsw(tic, bin));
+    }
+}
+
+static mrb_value mrb_vqtrw(mrb_state* mrb, mrb_value self)
+{
+    mrb_int bin;
+    mrb_int argc = mrb_get_args(mrb, "i", &bin);
+
+    tic_core* core = getMRubyMachine(mrb);
+    tic_mem* tic = (tic_mem*)core;
+
+    if (argc == 0)
+    {
+        mrb_raise(mrb, E_ARGUMENT_ERROR, "invalid params, vqtrw(bin)\n");
+        return mrb_nil_value();
+    }
+    else
+    {
+        return mrb_float_value(mrb, core->api.vqtrw(tic, bin));
+    }
+}
+
+static mrb_value mrb_vqtrsw(mrb_state* mrb, mrb_value self)
+{
+    mrb_int bin;
+    mrb_int argc = mrb_get_args(mrb, "i", &bin);
+
+    tic_core* core = getMRubyMachine(mrb);
+    tic_mem* tic = (tic_mem*)core;
+
+    if (argc == 0)
+    {
+        mrb_raise(mrb, E_ARGUMENT_ERROR, "invalid params, vqtrsw(bin)\n");
+        return mrb_nil_value();
+    }
+    else
+    {
+        return mrb_float_value(mrb, core->api.vqtrsw(tic, bin));
+    }
+}
+
 typedef struct
 {
     mrb_state* mrb;
