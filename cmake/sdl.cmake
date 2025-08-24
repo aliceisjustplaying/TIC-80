@@ -17,11 +17,18 @@ if(BUILD_SDL AND NOT EMSCRIPTEN AND NOT RPI AND NOT PREFER_SYSTEM_LIBRARIES)
 
     if(WIN32)
         set(HAVE_LIBC TRUE)
+        # SDL_LIBC must be ON for Windows MSVC builds to link properly
+        set(SDL_LIBC ON CACHE BOOL "" FORCE)
     endif()
 
     if(ANDROID)
         include_directories(${ANDROID_NDK}/sources/android/cpufeatures)
         set(SDL_STATIC_PIC ON CACHE BOOL "" FORCE)
+    endif()
+
+    # Force SDL2 to use static runtime on MSVC to match TIC-80's runtime settings
+    if(MSVC)
+        set(SDL_FORCE_STATIC_VCRT ON CACHE BOOL "" FORCE)
     endif()
 
     add_subdirectory(${THIRDPARTY_DIR}/sdl2)

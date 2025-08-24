@@ -21,6 +21,7 @@
 // SOFTWARE.
 
 #include "studio.h"
+#include "tic80_config.h"
 
 #if defined(BUILD_EDITORS)
 
@@ -39,8 +40,10 @@
 #define MSF_GIF_IMPL
 #include "msf_gif.h"
 
+#ifndef TIC80_FFT_UNSUPPORTED
 #include "../fftdata.h"
 #include "ext/fft.h"
+#endif
 
 #endif
 
@@ -1582,6 +1585,7 @@ void runGame(Studio* studio)
 {
 #if defined(BUILD_EDITORS)
 
+#ifndef TIC80_FFT_UNSUPPORTED
     if (studio->config->data.fft) {
         // initialize FFT data structures
         fPeakMinValue = 0.01f;
@@ -1592,7 +1596,10 @@ void runGame(Studio* studio)
         memset(fftSmoothingData, 0, sizeof(fftSmoothingData[0]) * FFT_SIZE);
         memset(fftNormalizedData, 0, sizeof(fftNormalizedData[0]) * FFT_SIZE);
         memset(fftNormalizedMaxData, 0, sizeof(fftNormalizedMaxData[0]) * FFT_SIZE);
+        memset(fftRawData, 0, sizeof(fftRawData[0]) * FFT_SIZE);
+        memset(fftRawSmoothingData, 0, sizeof(fftRawSmoothingData[0]) * FFT_SIZE);
     }
+#endif
 
     if(studio->console->args.keepcmd
         && studio->console->commands.count
@@ -2876,11 +2883,13 @@ Studio* studio_create(s32 argc, char **argv, s32 samplerate, tic80_pixel_color_f
         = studio->bytebattle.battle.time
         = args.battletime * 60 * 1000;
 
+#ifndef TIC80_FFT_UNSUPPORTED
     if (args.fftlist)
     {
         FFT_EnumerateDevices();
         exit(0);
     }
+#endif
     studio->config->data.fft = args.fft;
     studio->config->data.fftcaptureplaybackdevices = args.fftcaptureplaybackdevices;
     studio->config->data.fftdevice = args.fftdevice;

@@ -14,6 +14,10 @@ float fftSmoothingData[FFT_SIZE] = {0};
 float fftNormalizedData[FFT_SIZE] = {0};
 float fftNormalizedMaxData[FFT_SIZE] = {0};
 
+// Raw (non-normalized) FFT data
+float fftRawData[FFT_SIZE] = {0};
+float fftRawSmoothingData[FFT_SIZE] = {0};
+
 bool fftEnabled = false;
 
 #define FFT_DEBUG

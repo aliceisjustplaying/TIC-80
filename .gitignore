@@ -186,3 +186,7 @@ build/mruby_vendor-prefix/
 # byte battle / test files
 /*.lua
 /*.tic
+
+/*.png
+
+_references

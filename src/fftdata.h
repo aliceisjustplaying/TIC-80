@@ -1,6 +1,14 @@
 #pragma once
 #include <stdbool.h>
+
+// FFT configuration
 #define FFT_SIZE 1024
+
+// For shared audio buffer size, factor in the larger of
+// the FFT window (2*FFT_SIZE) and the VQT window (VQT_FFT_SIZE).
+// Keep this definition centralized to avoid mismatches.
+#include "vqtdata.h"
+#define AUDIO_BUFFER_SIZE (VQT_FFT_SIZE > (FFT_SIZE * 2) ? VQT_FFT_SIZE : (FFT_SIZE * 2))
 extern float fPeakMinValue;
 extern float fPeakSmoothing;
 extern float fPeakSmoothValue;
@@ -9,6 +17,10 @@ extern float fftData[FFT_SIZE];
 extern float fftSmoothingData[FFT_SIZE];
 extern float fftNormalizedData[FFT_SIZE];
 extern float fftNormalizedMaxData[FFT_SIZE];
+
+// Raw (non-normalized) FFT data
+extern float fftRawData[FFT_SIZE];
+extern float fftRawSmoothingData[FFT_SIZE];
 
 extern bool fftEnabled;
 
