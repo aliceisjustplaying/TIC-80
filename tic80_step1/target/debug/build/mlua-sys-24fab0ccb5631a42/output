@@ -1,0 +1,5 @@
+cargo:rerun-if-changed=build
+cargo:rustc-link-search=native=/Users/sarah/src/a/TIC-80/tic80_step1/target/debug/build/mlua-sys-24fab0ccb5631a42/out/lua-build/lib
+cargo:rustc-link-lib=static=lua5.4
+cargo:include=/Users/sarah/src/a/TIC-80/tic80_step1/target/debug/build/mlua-sys-24fab0ccb5631a42/out/lua-build/include
+cargo:lib=/Users/sarah/src/a/TIC-80/tic80_step1/target/debug/build/mlua-sys-24fab0ccb5631a42/out/lua-build/lib

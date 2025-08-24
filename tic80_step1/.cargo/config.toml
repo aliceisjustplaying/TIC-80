@@ -1,0 +1,3 @@
+[build]
+# Tell the Rust linker where to find the SDL2 library installed by Homebrew.
+rustflags = ["-L", "/opt/homebrew/lib"]

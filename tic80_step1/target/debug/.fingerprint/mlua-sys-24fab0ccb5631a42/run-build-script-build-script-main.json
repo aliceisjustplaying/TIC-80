@@ -1,0 +1,1 @@
+{"rustc":17575471286409424799,"features":"","declared_features":"","target":0,"profile":0,"path":0,"deps":[[8563092807153780548,"build_script_main",false,7519700989151289110]],"local":[{"RerunIfChanged":{"output":"debug/build/mlua-sys-24fab0ccb5631a42/output","paths":["build"]}}],"rustflags":["-L","/opt/homebrew/lib"],"config":0,"compile_kind":0}
