@@ -47,6 +47,12 @@ extern float vqtPeakSmoothValue;
 // Enable flag (tied to fftEnabled initially)
 extern bool vqtEnabled;
 
+// Whitened VQT data (dual outputs)
+extern float vqtWhiteData[VQT_BINS];
+extern float vqtWhiteSmoothingData[VQT_BINS];
+extern float vqtWhiteNormalizedData[VQT_BINS];
+extern float vqtWhitePeakSmoothValue;
+
 // Sparse kernel storage structures
 typedef struct {
     float* real;      // Real parts of kernel (sparse)

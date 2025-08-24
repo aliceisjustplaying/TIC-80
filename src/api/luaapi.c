@@ -1705,6 +1705,78 @@ static s32 lua_vqtrs(lua_State* lua)
     return 0;
 }
 
+static s32 lua_vqtw(lua_State* lua)
+{
+    tic_core* core = getLuaCore(lua);
+    tic_mem* tic = (tic_mem*)core;
+    s32 top = lua_gettop(lua);
+
+    if (top >= 1)
+    {
+        s32 bin = getLuaNumber(lua, 1);
+        extern double tic_api_vqtw(tic_mem*, s32);
+        lua_pushnumber(lua, tic_api_vqtw(tic, bin));
+        return 1;
+    }
+
+    luaL_error(lua, "invalid params, vqtw(bin)\n");
+    return 0;
+}
+
+static s32 lua_vqtsw(lua_State* lua)
+{
+    tic_core* core = getLuaCore(lua);
+    tic_mem* tic = (tic_mem*)core;
+    s32 top = lua_gettop(lua);
+
+    if (top >= 1)
+    {
+        s32 bin = getLuaNumber(lua, 1);
+        extern double tic_api_vqtsw(tic_mem*, s32);
+        lua_pushnumber(lua, tic_api_vqtsw(tic, bin));
+        return 1;
+    }
+
+    luaL_error(lua, "invalid params, vqtsw(bin)\n");
+    return 0;
+}
+
+static s32 lua_vqtrw(lua_State* lua)
+{
+    tic_core* core = getLuaCore(lua);
+    tic_mem* tic = (tic_mem*)core;
+    s32 top = lua_gettop(lua);
+
+    if (top >= 1)
+    {
+        s32 bin = getLuaNumber(lua, 1);
+        extern double tic_api_vqtrw(tic_mem*, s32);
+        lua_pushnumber(lua, tic_api_vqtrw(tic, bin));
+        return 1;
+    }
+
+    luaL_error(lua, "invalid params, vqtrw(bin)\n");
+    return 0;
+}
+
+static s32 lua_vqtrsw(lua_State* lua)
+{
+    tic_core* core = getLuaCore(lua);
+    tic_mem* tic = (tic_mem*)core;
+    s32 top = lua_gettop(lua);
+
+    if (top >= 1)
+    {
+        s32 bin = getLuaNumber(lua, 1);
+        extern double tic_api_vqtrsw(tic_mem*, s32);
+        lua_pushnumber(lua, tic_api_vqtrsw(tic, bin));
+        return 1;
+    }
+
+    luaL_error(lua, "invalid params, vqtrsw(bin)\n");
+    return 0;
+}
+
 
 static int lua_dofile(lua_State *lua)
 {
@@ -1752,6 +1824,10 @@ void luaapi_init(tic_core* core)
 #if defined(BUILD_DEPRECATED)
         {(lua_CFunction)lua_textri, "textri"},
 #endif
+        {(lua_CFunction)lua_vqtw,   "vqtw"},
+        {(lua_CFunction)lua_vqtsw,  "vqtsw"},
+        {(lua_CFunction)lua_vqtrw,  "vqtrw"},
+        {(lua_CFunction)lua_vqtrsw, "vqtrsw"},
     };
 
     for (s32 i = 0; i < COUNT_OF(ApiItems); i++)
