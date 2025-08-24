@@ -19,6 +19,12 @@ bool vqtEnabled = false;
 // Array of kernels, one per VQT bin
 VqtKernel vqtKernels[VQT_BINS];
 
+// Whitened data arrays
+float vqtWhiteData[VQT_BINS];
+float vqtWhiteSmoothingData[VQT_BINS];
+float vqtWhiteNormalizedData[VQT_BINS];
+float vqtWhitePeakSmoothValue = 1.0f;
+
 
 void VQT_Init(void)
 {
@@ -26,9 +32,13 @@ void VQT_Init(void)
     memset(vqtData, 0, sizeof(vqtData));
     memset(vqtSmoothingData, 0, sizeof(vqtSmoothingData));
     memset(vqtNormalizedData, 0, sizeof(vqtNormalizedData));
+    memset(vqtWhiteData, 0, sizeof(vqtWhiteData));
+    memset(vqtWhiteSmoothingData, 0, sizeof(vqtWhiteSmoothingData));
+    memset(vqtWhiteNormalizedData, 0, sizeof(vqtWhiteNormalizedData));
     
     // Initialize peak value
     vqtPeakSmoothValue = 1.0f;
+    vqtWhitePeakSmoothValue = 1.0f;
     
     // Zero kernel pointers
     memset(vqtKernels, 0, sizeof(vqtKernels));

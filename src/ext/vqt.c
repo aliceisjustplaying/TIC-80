@@ -282,7 +282,7 @@ void VQT_ProcessAudio(void)
     VQT_ApplyKernels(fftReal, fftImag);
     clock_t kernelEnd = clock();
 
-    // Optional spectral whitening to flatten spectral envelope for clearer peaks
+    // Spectral whitening: produce whitened copy into vqtWhiteData (raw vqtData remains unmodified)
 #if VQT_SPECTRAL_WHITENING_ENABLED
     {
         const float eps = VQT_WHITENING_EPS;
@@ -295,7 +295,6 @@ void VQT_ProcessAudio(void)
         float logM[VQT_BINS];
         float env[VQT_BINS];
 
-        // Log domain magnitudes
         for (int i = 0; i < VQT_BINS; i++)
         {
             float m = vqtData[i];
@@ -303,7 +302,6 @@ void VQT_ProcessAudio(void)
             logM[i] = logf(m + eps);
         }
 
-        // Smooth spectral envelope with a simple box filter of width 'width'
         for (int i = 0; i < VQT_BINS; i++)
         {
             int start = i - half;
@@ -316,19 +314,21 @@ void VQT_ProcessAudio(void)
             env[i] = count > 0 ? sum / (float)count : logM[i];
         }
 
-        // Whiten: ratio in log domain, baseline to 0 (exp(w)-1), mix in amplitude domain
         for (int i = 0; i < VQT_BINS; i++)
         {
             float m = vqtData[i];
             if (!isfinite(m) || m < 0.0f) m = 0.0f;
-            float wLog = logM[i] - env[i];            // log(m+eps) - log(env)
-            float wAmp = expf(wLog) - 1.0f;           // = (m+eps)/env - 1 → 0 on flat
+            float wLog = logM[i] - env[i];
+            float wAmp = expf(wLog) - 1.0f;
             if (!isfinite(wAmp) || wAmp < 0.0f) wAmp = 0.0f;
             float mp = (1.0f - alpha) * m + alpha * wAmp;
             if (!isfinite(mp) || mp < 0.0f) mp = 0.0f;
-            vqtData[i] = mp;
+            vqtWhiteData[i] = mp;
         }
     }
+#else
+    // Whitening disabled: mirror raw into whitened buffers for A/B APIs
+    for (int i = 0; i < VQT_BINS; i++) vqtWhiteData[i] = vqtData[i];
 #endif
     
     // Calculate times in milliseconds
@@ -381,6 +381,13 @@ void VQT_ProcessAudio(void)
         vqtSmoothingData[i] = vqtSmoothingData[i] * VQT_SMOOTHING_FACTOR + 
                               vqtData[i] * (1.0f - VQT_SMOOTHING_FACTOR);
     }
+
+    // Apply smoothing to whitened data
+    for (int i = 0; i < VQT_BINS; i++)
+    {
+        vqtWhiteSmoothingData[i] = vqtWhiteSmoothingData[i] * VQT_SMOOTHING_FACTOR +
+                                   vqtWhiteData[i] * (1.0f - VQT_SMOOTHING_FACTOR);
+    }
     
     // Find peak for normalization
     float currentPeak = 0.0f;
@@ -404,7 +411,7 @@ void VQT_ProcessAudio(void)
     if (vqtPeakSmoothValue < 0.0001f)
         vqtPeakSmoothValue = 0.0001f;
     
-    // Normalize data
+    // Normalize raw data
     float normalizer = 1.0f / vqtPeakSmoothValue;
     for (int i = 0; i < VQT_BINS; i++)
     {
@@ -415,6 +422,33 @@ void VQT_ProcessAudio(void)
         // Final NaN check
         if (!isfinite(vqtNormalizedData[i]))
             vqtNormalizedData[i] = 0.0f;
+    }
+
+    // Peak for whitened normalization
+    float currentWhitePeak = 0.0f;
+    for (int i = 0; i < VQT_BINS; i++)
+    {
+        if (vqtWhiteSmoothingData[i] > currentWhitePeak)
+            currentWhitePeak = vqtWhiteSmoothingData[i];
+    }
+    if (vqtWhitePeakSmoothValue <= 0.0f)
+        vqtWhitePeakSmoothValue = 0.1f;
+    if (currentWhitePeak > vqtWhitePeakSmoothValue)
+        vqtWhitePeakSmoothValue = currentWhitePeak;
+    else
+        vqtWhitePeakSmoothValue = vqtWhitePeakSmoothValue * 0.99f + currentWhitePeak * 0.01f;
+    if (vqtWhitePeakSmoothValue < 0.0001f)
+        vqtWhitePeakSmoothValue = 0.0001f;
+
+    // Normalize whitened data
+    float normalizerW = 1.0f / vqtWhitePeakSmoothValue;
+    for (int i = 0; i < VQT_BINS; i++)
+    {
+        vqtWhiteNormalizedData[i] = vqtWhiteSmoothingData[i] * normalizerW;
+        if (vqtWhiteNormalizedData[i] > 1.0f)
+            vqtWhiteNormalizedData[i] = 1.0f;
+        if (!isfinite(vqtWhiteNormalizedData[i]))
+            vqtWhiteNormalizedData[i] = 0.0f;
     }
 }
 
@@ -484,6 +518,31 @@ double tic_api_vqtrs(tic_mem* memory, s32 bin)
     
     // Return raw smoothed VQT data (non-normalized)
     return vqtSmoothingData[bin];
+}
+
+// Whitened VQT API
+double tic_api_vqtw(tic_mem* memory, s32 bin)
+{
+    if (bin < 0 || bin >= VQT_BINS) return 0.0;
+    return vqtWhiteData[bin] / vqtWhitePeakSmoothValue;
+}
+
+double tic_api_vqtsw(tic_mem* memory, s32 bin)
+{
+    if (bin < 0 || bin >= VQT_BINS) return 0.0;
+    return vqtWhiteNormalizedData[bin];
+}
+
+double tic_api_vqtrw(tic_mem* memory, s32 bin)
+{
+    if (bin < 0 || bin >= VQT_BINS) return 0.0;
+    return vqtWhiteData[bin];
+}
+
+double tic_api_vqtrsw(tic_mem* memory, s32 bin)
+{
+    if (bin < 0 || bin >= VQT_BINS) return 0.0;
+    return vqtWhiteSmoothingData[bin];
 }
 
 #else // TIC80_FFT_UNSUPPORTED

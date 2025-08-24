@@ -910,7 +910,10 @@ enum
         1,                                                                                                              \
         0,                                                                                                              \
         double,                                                                                                         \
-        tic_mem*, s32 bin)
+        tic_mem*, s32 bin)                                                                                              \
+                                                                                                                       \
+                                                                                                                       \
+    
 
 #define TIC_API_DEF(name, _, __, ___, ____, _____, ret, ...) ret tic_api_##name(__VA_ARGS__);
 TIC_API_LIST(TIC_API_DEF)
