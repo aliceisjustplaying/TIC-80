@@ -1,24 +1,36 @@
+use std::cell::RefCell;
 use std::rc::Rc;
 use std::time::{Duration, Instant};
-use std::cell::RefCell;
 
+use mlua::{Function, Lua, MultiValue, RegistryKey, Result as LuaResult, Value};
 use pixels::{Error, Pixels, SurfaceTexture};
+use std::sync::OnceLock;
 use winit::dpi::LogicalSize;
 use winit::event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::WindowBuilder;
-use mlua::{Lua, Function, RegistryKey, Result as LuaResult, MultiValue, Value};
-use std::sync::OnceLock;
 
 const WIDTH: u32 = 240;
 const HEIGHT: u32 = 136;
 
 // Default 16-color TIC-80 palette (sRGB) as RGBA8
 const PALETTE: [(u8, u8, u8, u8); 16] = [
-    (0x00, 0x00, 0x00, 0xFF), (0x1D, 0x2B, 0x53, 0xFF), (0x7E, 0x25, 0x53, 0xFF), (0x00, 0x87, 0x51, 0xFF),
-    (0xAB, 0x52, 0x36, 0xFF), (0x5F, 0x57, 0x4F, 0xFF), (0xC2, 0xC3, 0xC7, 0xFF), (0xFF, 0xF1, 0xE8, 0xFF),
-    (0xFF, 0x00, 0x4D, 0xFF), (0xFF, 0xA3, 0x00, 0xFF), (0xFF, 0xEC, 0x27, 0xFF), (0x00, 0xE4, 0x36, 0xFF),
-    (0x29, 0xAD, 0xFF, 0xFF), (0x83, 0x76, 0x9C, 0xFF), (0xFF, 0x77, 0xA8, 0xFF), (0xFF, 0xCC, 0xAA, 0xFF),
+    (0x00, 0x00, 0x00, 0xFF),
+    (0x1D, 0x2B, 0x53, 0xFF),
+    (0x7E, 0x25, 0x53, 0xFF),
+    (0x00, 0x87, 0x51, 0xFF),
+    (0xAB, 0x52, 0x36, 0xFF),
+    (0x5F, 0x57, 0x4F, 0xFF),
+    (0xC2, 0xC3, 0xC7, 0xFF),
+    (0xFF, 0xF1, 0xE8, 0xFF),
+    (0xFF, 0x00, 0x4D, 0xFF),
+    (0xFF, 0xA3, 0x00, 0xFF),
+    (0xFF, 0xEC, 0x27, 0xFF),
+    (0x00, 0xE4, 0x36, 0xFF),
+    (0x29, 0xAD, 0xFF, 0xFF),
+    (0x83, 0x76, 0x9C, 0xFF),
+    (0xFF, 0x77, 0xA8, 0xFF),
+    (0xFF, 0xCC, 0xAA, 0xFF),
 ];
 
 // TIC-80 default 5x8 font as 8 rows per glyph, 5 bits per row (LSB masked with 0x1F), ASCII indexed.
@@ -30,7 +42,9 @@ fn font_bytes() -> &'static [u8] {
         // Parse C-style hex list into bytes
         let mut out = Vec::with_capacity(1024);
         for tok in FONT_TEXT.split(|c: char| c.is_whitespace() || c == ',') {
-            if tok.is_empty() { continue; }
+            if tok.is_empty() {
+                continue;
+            }
             let t = tok.trim();
             let val = if let Some(hex) = t.strip_prefix("0x").or_else(|| t.strip_prefix("0X")) {
                 u8::from_str_radix(hex, 16).ok()
@@ -38,7 +52,9 @@ fn font_bytes() -> &'static [u8] {
                 // fallback: decimal
                 t.parse::<u8>().ok()
             };
-            if let Some(b) = val { out.push(b); }
+            if let Some(b) = val {
+                out.push(b);
+            }
         }
         out
     })
@@ -51,7 +67,9 @@ struct Framebuffer {
 
 impl Framebuffer {
     fn new() -> Self {
-        Self { idx: vec![0; (WIDTH * HEIGHT) as usize] }
+        Self {
+            idx: vec![0; (WIDTH * HEIGHT) as usize],
+        }
     }
 
     // cls(color): fill framebuffer with palette index
@@ -98,26 +116,46 @@ impl Framebuffer {
         let c = color & 0x0F;
         loop {
             let _ = self.pix(x0, y0, Some(c));
-            if x0 == x1 && y0 == y1 { break; }
+            if x0 == x1 && y0 == y1 {
+                break;
+            }
             let e2 = 2 * err;
-            if e2 >= dy { err += dy; x0 += sx; }
-            if e2 <= dx { err += dx; y0 += sy; }
+            if e2 >= dy {
+                err += dy;
+                x0 += sx;
+            }
+            if e2 <= dx {
+                err += dx;
+                y0 += sy;
+            }
         }
     }
 
     // Filled rectangle
     fn rect(&mut self, x: i32, y: i32, w: i32, h: i32, color: u8) {
-        if w <= 0 || h <= 0 { return; }
+        if w <= 0 || h <= 0 {
+            return;
+        }
         let c = color & 0x0F;
-        for yy in y..y+h {
-            for xx in x..x+w {
+        for yy in y..y + h {
+            for xx in x..x + w {
                 let _ = self.pix(xx, yy, Some(c));
             }
         }
     }
 
     // Print text using TIC-80 default font (5x8 glyphs, 1px spacing)
-    fn print_text(&mut self, text: &str, x: i32, mut y: i32, color: u8, fixed: bool, scale: i32, _small: bool) -> i32 {
+    #[allow(clippy::too_many_arguments)]
+    fn print_text(
+        &mut self,
+        text: &str,
+        x: i32,
+        mut y: i32,
+        color: u8,
+        fixed: bool,
+        scale: i32,
+        _small: bool,
+    ) -> i32 {
         // Match TIC-80 print/drawText:
         // - draw from 8x8 tile
         // - fixed: draw full 8 columns, advance by TIC_FONT_WIDTH (6)
@@ -125,7 +163,9 @@ impl Framebuffer {
         const GLYPH_W: usize = 8;
         const GLYPH_H: usize = 8;
         const ADV: i32 = 6; // TIC_FONT_WIDTH
-        if scale <= 0 { return 0; }
+        if scale <= 0 {
+            return 0;
+        }
         let cidx = color & 0x0F;
         let font = font_bytes();
 
@@ -134,7 +174,9 @@ impl Framebuffer {
 
         for ch in text.chars() {
             if ch == '\n' {
-                if pos > max_pos { max_pos = pos; }
+                if pos > max_pos {
+                    max_pos = pos;
+                }
                 pos = x;
                 y += ADV * scale; // TIC uses TIC_FONT_HEIGHT (6); same as ADV here
                 continue;
@@ -154,11 +196,19 @@ impl Framebuffer {
                     let mask = font[base + row];
                     if mask != 0 {
                         let mut l = 0;
-                        while l < GLYPH_W && ((mask >> l) & 1) == 0 { l += 1; }
+                        while l < GLYPH_W && ((mask >> l) & 1) == 0 {
+                            l += 1;
+                        }
                         let mut r = GLYPH_W;
-                        while r > 0 && ((mask >> (r - 1)) & 1) == 0 { r -= 1; }
-                        if l < left { left = l; }
-                        if r > right { right = r; }
+                        while r > 0 && ((mask >> (r - 1)) & 1) == 0 {
+                            r -= 1;
+                        }
+                        if l < left {
+                            left = l;
+                        }
+                        if r > right {
+                            right = r;
+                        }
                     }
                 }
                 let width = right.saturating_sub(left);
@@ -196,7 +246,11 @@ impl Framebuffer {
             }
         }
 
-        if pos > max_pos { pos - x } else { max_pos - x }
+        if pos > max_pos {
+            pos - x
+        } else {
+            max_pos - x
+        }
     }
 }
 
@@ -208,7 +262,10 @@ struct Ticker {
 
 impl Ticker {
     fn new() -> Self {
-        Self { last: Instant::now(), step: Duration::from_micros(16_667) }
+        Self {
+            last: Instant::now(),
+            step: Duration::from_micros(16_667),
+        }
     }
     fn should_tick(&mut self) -> bool {
         let now = Instant::now();
@@ -268,18 +325,23 @@ impl LuaRunner {
 
             // line(x0,y0,x1,y1,color)
             let fb_line = fb.clone();
-            let line_fn = lua.create_function(move |_, (x0, y0, x1, y1, color): (f32, f32, f32, f32, u8)| {
-                fb_line.borrow_mut().line(x0 as i32, y0 as i32, x1 as i32, y1 as i32, color);
-                Ok(())
-            })?;
+            let line_fn = lua.create_function(
+                move |_, (x0, y0, x1, y1, color): (f32, f32, f32, f32, u8)| {
+                    fb_line
+                        .borrow_mut()
+                        .line(x0 as i32, y0 as i32, x1 as i32, y1 as i32, color);
+                    Ok(())
+                },
+            )?;
             globals.set("line", line_fn)?;
 
             // rect(x,y,w,h,color)
             let fb_rect = fb.clone();
-            let rect_fn = lua.create_function(move |_, (x, y, w, h, color): (i32, i32, i32, i32, u8)| {
-                fb_rect.borrow_mut().rect(x, y, w, h, color);
-                Ok(())
-            })?;
+            let rect_fn =
+                lua.create_function(move |_, (x, y, w, h, color): (i32, i32, i32, i32, u8)| {
+                    fb_rect.borrow_mut().rect(x, y, w, h, color);
+                    Ok(())
+                })?;
             globals.set("rect", rect_fn)?;
 
             // print(text, x=0, y=0, color=15, fixed=false, scale=1, small=false) -> width
@@ -297,18 +359,34 @@ impl LuaRunner {
                 // Parse arguments by position
                 for (i, v) in args.iter().enumerate() {
                     match (i, v) {
-                        (0, Value::String(s)) => { text = s.to_str()?.to_string(); }
-                        (1, Value::Integer(n)) => { x = *n as i32; }
-                        (2, Value::Integer(n)) => { y = *n as i32; }
-                        (3, Value::Integer(n)) => { color = (*n as i64).clamp(0, 255) as u8; }
-                        (4, Value::Boolean(b)) => { fixed = *b; }
-                        (5, Value::Integer(n)) => { scale = (*n as i32).max(1); }
-                        (6, Value::Boolean(b)) => { small = *b; }
+                        (0, Value::String(s)) => {
+                            text = s.to_str()?.to_string();
+                        }
+                        (1, Value::Integer(n)) => {
+                            x = *n as i32;
+                        }
+                        (2, Value::Integer(n)) => {
+                            y = *n as i32;
+                        }
+                        (3, Value::Integer(n)) => {
+                            color = (*n).clamp(0, 255) as u8;
+                        }
+                        (4, Value::Boolean(b)) => {
+                            fixed = *b;
+                        }
+                        (5, Value::Integer(n)) => {
+                            scale = (*n as i32).max(1);
+                        }
+                        (6, Value::Boolean(b)) => {
+                            small = *b;
+                        }
                         _ => {}
                     }
                 }
 
-                let width = fb_print.borrow_mut().print_text(&text, x, y, color, fixed, scale, small);
+                let width = fb_print
+                    .borrow_mut()
+                    .print_text(&text, x, y, color, fixed, scale, small);
                 Ok(width)
             })?;
             globals.set("print", print_fn)?;
@@ -342,8 +420,8 @@ impl LuaRunner {
 
 fn run() -> Result<(), Error> {
     let event_loop = EventLoop::new();
-    let scale = 3.0f64; // default integer scaling
-    let size = LogicalSize::new((WIDTH as f64) * scale, (HEIGHT as f64) * scale);
+    const SCALE: f64 = 3.0; // default integer scaling
+    let size = LogicalSize::new((WIDTH as f64) * SCALE, (HEIGHT as f64) * SCALE);
     let window = WindowBuilder::new()
         .with_title("tic80_rust – Milestone 1 (GUI + cls/pix)")
         .with_inner_size(size)
@@ -365,9 +443,15 @@ fn run() -> Result<(), Error> {
         match event {
             Event::WindowEvent { event, .. } => match event {
                 WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
-                WindowEvent::KeyboardInput { input: KeyboardInput { virtual_keycode: Some(VirtualKeyCode::Escape), state: ElementState::Pressed, .. }, .. } => {
-                    *control_flow = ControlFlow::Exit
-                }
+                WindowEvent::KeyboardInput {
+                    input:
+                        KeyboardInput {
+                            virtual_keycode: Some(VirtualKeyCode::Escape),
+                            state: ElementState::Pressed,
+                            ..
+                        },
+                    ..
+                } => *control_flow = ControlFlow::Exit,
                 WindowEvent::Resized(size) => {
                     let _ = pixels.resize_surface(size.width, size.height);
                 }
@@ -375,14 +459,19 @@ fn run() -> Result<(), Error> {
             },
             Event::MainEventsCleared => {
                 if ticker.should_tick() {
-                    if let Some(r) = &lua_runner { r.tick(); }
+                    if let Some(r) = &lua_runner {
+                        r.tick();
+                    }
                     window.request_redraw();
                 }
             }
             Event::RedrawRequested(_) => {
                 let frame = pixels.frame_mut();
                 fb.borrow().blit_to_rgba(frame);
-                let _ = pixels.render();
+                if let Err(err) = pixels.render() {
+                    eprintln!("Render error: {err}");
+                    *control_flow = ControlFlow::Exit;
+                }
             }
             _ => {}
         }
