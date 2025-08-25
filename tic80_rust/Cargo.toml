@@ -1,0 +1,8 @@
+[package]
+name = "tic80_rust"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+winit = "0.28"
+pixels = "0.14"
