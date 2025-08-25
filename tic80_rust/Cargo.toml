@@ -6,3 +6,4 @@ edition = "2021"
 [dependencies]
 winit = "0.28"
 pixels = "0.14"
+mlua = { version = "0.9", features = ["lua54", "vendored"] }

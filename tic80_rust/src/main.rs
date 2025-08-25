@@ -1,10 +1,13 @@
+use std::rc::Rc;
 use std::time::{Duration, Instant};
+use std::cell::RefCell;
 
 use pixels::{Error, Pixels, SurfaceTexture};
 use winit::dpi::LogicalSize;
 use winit::event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::WindowBuilder;
+use mlua::{Lua, Function, RegistryKey, Result as LuaResult};
 
 const WIDTH: u32 = 240;
 const HEIGHT: u32 = 136;
@@ -81,6 +84,75 @@ impl Ticker {
     }
 }
 
+const DEFAULT_LUA: &str = r#"
+-- Minimal demo using cls and pix
+local t = 0
+function BOOT()
+  cls(0)
+end
+function TIC()
+  if t % 30 == 0 then cls(((t // 30) % 16)) end
+  local cx, cy = 120, 68
+  for dx = -10, 10 do pix(cx + dx, cy, 15) end
+  for dy = -10, 10 do pix(cx, cy + dy, 15) end
+  t = t + 1
+end
+"#;
+
+struct LuaRunner {
+    lua: Lua,
+    tic_key: Option<RegistryKey>,
+}
+
+impl LuaRunner {
+    fn new(fb: Rc<RefCell<Framebuffer>>, script_src: &str) -> LuaResult<Self> {
+        let lua = Lua::new();
+        let tic_key = {
+            let globals = lua.globals();
+
+            // Bind cls(color)
+            let fb_cls = fb.clone();
+            let cls_fn = lua.create_function(move |_, color: Option<u8>| {
+                fb_cls.borrow_mut().cls(color.unwrap_or(0));
+                Ok(())
+            })?;
+            globals.set("cls", cls_fn)?;
+
+            // Bind pix(x,y[,color]) -> color or nil
+            let fb_pix = fb.clone();
+            let pix_fn = lua.create_function(move |_, (x, y, color): (i32, i32, Option<u8>)| {
+                let res = fb_pix.borrow_mut().pix(x, y, color);
+                Ok(res)
+            })?;
+            globals.set("pix", pix_fn)?;
+
+            // Load script
+            lua.load(script_src).set_name("cart").exec()?;
+
+            // Call BOOT() if present
+            if let Ok(boot) = globals.get::<_, Function>("BOOT") {
+                let _ = boot.call::<_, ()>(());
+            }
+
+            // Cache TIC if present
+            match globals.get::<_, Option<Function>>("TIC")? {
+                Some(f) => Some(lua.create_registry_value(f)?),
+                None => None,
+            }
+        };
+
+        Ok(Self { lua, tic_key })
+    }
+
+    fn tick(&self) {
+        if let Some(key) = &self.tic_key {
+            if let Ok(func) = self.lua.registry_value::<Function>(key) {
+                let _ = func.call::<_, ()>(());
+            }
+        }
+    }
+}
+
 fn run() -> Result<(), Error> {
     let event_loop = EventLoop::new();
     let scale = 3.0f64; // default integer scaling
@@ -95,12 +167,11 @@ fn run() -> Result<(), Error> {
     let window_size = window.inner_size();
     let surface_texture = SurfaceTexture::new(window_size.width, window_size.height, &window);
     let mut pixels = Pixels::new(WIDTH, HEIGHT, surface_texture)?;
-
-    let mut fb = Framebuffer::new();
+    let fb = Rc::new(RefCell::new(Framebuffer::new()));
     let mut ticker = Ticker::new();
 
-    // Micro-demo state
-    let mut frame_count: u64 = 0;
+    // Lua runner with default script
+    let lua_runner = LuaRunner::new(fb.clone(), DEFAULT_LUA).ok();
 
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Poll;
@@ -117,25 +188,13 @@ fn run() -> Result<(), Error> {
             },
             Event::MainEventsCleared => {
                 if ticker.should_tick() {
-                    if frame_count % 30 == 0 {
-                        let color_idx = ((frame_count / 30) % 16) as u8;
-                        fb.cls(color_idx);
-                    }
-                    let cx = (WIDTH / 2) as i32;
-                    let cy = (HEIGHT / 2) as i32;
-                    for dx in -10..=10 {
-                        let _ = fb.pix(cx + dx, cy, Some(15));
-                    }
-                    for dy in -10..=10 {
-                        let _ = fb.pix(cx, cy + dy, Some(15));
-                    }
-                    frame_count += 1;
+                    if let Some(r) = &lua_runner { r.tick(); }
                     window.request_redraw();
                 }
             }
             Event::RedrawRequested(_) => {
                 let frame = pixels.frame_mut();
-                fb.blit_to_rgba(frame);
+                fb.borrow().blit_to_rgba(frame);
                 let _ = pixels.render();
             }
             _ => {}
