@@ -141,3 +141,33 @@ fn blit_to_rgba_maps_palette() {
     assert_eq!(&rgba[idx(1, 0)..idx(1, 0) + 4], &[0xFF, 0xA3, 0x00, 0xFF]);
     assert_eq!(&rgba[idx(2, 0)..idx(2, 0) + 4], &[0xFF, 0xCC, 0xAA, 0xFF]);
 }
+
+#[test]
+fn rectb_draws_border() {
+    let mut fb = Framebuffer::new();
+    fb.cls(0);
+    fb.rectb(1, 1, 3, 3, 5);
+    // Expected 3x3 border has 8 pixels set
+    assert_eq!(count_color(&mut fb, 5), 8);
+    // Interior remains background
+    assert_eq!(fb.pix(2, 2, None), Some(0));
+}
+
+#[test]
+fn clip_limits_drawing_and_reset() {
+    let mut fb = Framebuffer::new();
+    fb.cls(1);
+    // Clip to a 1x1 at origin
+    fb.clip(0, 0, 1, 1);
+    fb.rect(0, 0, 10, 10, 7);
+    // Only (0,0) can be changed by rect under this clip
+    assert_eq!(fb.pix(0, 0, None), Some(7));
+    assert_eq!(fb.pix(1, 0, None), Some(1));
+    assert_eq!(fb.pix(0, 1, None), Some(1));
+
+    // Reset clip and draw a rect filling a small area
+    fb.clip_reset();
+    fb.rect(0, 0, 2, 2, 9);
+    assert_eq!(fb.pix(0, 0, None), Some(9));
+    assert_eq!(fb.pix(1, 1, None), Some(9));
+}

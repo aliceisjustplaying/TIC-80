@@ -28,3 +28,11 @@ Notes
 - `MEMORY_MAP.md` at repo root remains the canonical reference for layout. Specs here link to it rather than duplicating.
 - `CLAUDE.md` remains at repo root; the spec page links to it for detailed FFT/VQT behavior.
 
+## Run the Demo
+- Default cart:
+  - From crate dir: `cd tic80_rust && cargo run`
+  - From repo root: `cargo run --manifest-path tic80_rust/Cargo.toml`
+- Load a `.lua` file:
+  - `cargo run --manifest-path tic80_rust/Cargo.toml -- tic80_rust/assets/alt.lua`
+  - In crate dir: `cargo run -- assets/alt.lua`
+

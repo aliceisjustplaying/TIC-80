@@ -53,6 +53,11 @@ fn font_bytes() -> &'static [u8] {
 pub struct Framebuffer {
     // 240x136 palette indices (0..15)
     idx: Vec<u8>,
+    // Clipping rectangle in inclusive-exclusive coords [x0,x1), [y0,y1)
+    clip_x0: i32,
+    clip_y0: i32,
+    clip_x1: i32,
+    clip_y1: i32,
 }
 
 impl Framebuffer {
@@ -62,6 +67,10 @@ impl Framebuffer {
     pub fn new() -> Self {
         Self {
             idx: vec![0; (WIDTH * HEIGHT) as usize],
+            clip_x0: 0,
+            clip_y0: 0,
+            clip_x1: WIDTH as i32,
+            clip_y1: HEIGHT as i32,
         }
     }
 
@@ -90,12 +99,46 @@ impl Framebuffer {
 
     // Write a single pixel; returns true if in-bounds and written
     pub fn set_pixel(&mut self, x: i32, y: i32, color: u8) -> bool {
-        if x < 0 || y < 0 || x as u32 >= WIDTH || y as u32 >= HEIGHT {
+        if x < self.clip_x0
+            || y < self.clip_y0
+            || x >= self.clip_x1
+            || y >= self.clip_y1
+            || x < 0
+            || y < 0
+            || x as u32 >= WIDTH
+            || y as u32 >= HEIGHT
+        {
             return false;
         }
         let i = (y as u32 * WIDTH + x as u32) as usize;
         self.idx[i] = color & 0x0F;
         true
+    }
+
+    // Set clipping rectangle to intersection with framebuffer and provided rect
+    pub fn clip(&mut self, x: i32, y: i32, w: i32, h: i32) {
+        if w <= 0 || h <= 0 {
+            self.clip_x0 = 0;
+            self.clip_y0 = 0;
+            self.clip_x1 = 0;
+            self.clip_y1 = 0;
+            return;
+        }
+        let x0 = x.max(0);
+        let y0 = y.max(0);
+        let x1 = (x + w).min(WIDTH as i32);
+        let y1 = (y + h).min(HEIGHT as i32);
+        self.clip_x0 = x0.max(0);
+        self.clip_y0 = y0.max(0);
+        self.clip_x1 = x1.max(self.clip_x0);
+        self.clip_y1 = y1.max(self.clip_y0);
+    }
+
+    pub fn clip_reset(&mut self) {
+        self.clip_x0 = 0;
+        self.clip_y0 = 0;
+        self.clip_x1 = WIDTH as i32;
+        self.clip_y1 = HEIGHT as i32;
     }
 
     // Blit to RGBA buffer for pixels
@@ -142,10 +185,10 @@ impl Framebuffer {
             return;
         }
         let c = color & 0x0F;
-        let x0 = x.max(0);
-        let y0 = y.max(0);
-        let x1 = (x + w).min(WIDTH as i32);
-        let y1 = (y + h).min(HEIGHT as i32);
+        let x0 = x.max(self.clip_x0).max(0);
+        let y0 = y.max(self.clip_y0).max(0);
+        let x1 = (x + w).min(self.clip_x1).min(WIDTH as i32);
+        let y1 = (y + h).min(self.clip_y1).min(HEIGHT as i32);
         if x1 <= x0 || y1 <= y0 {
             return;
         }
@@ -155,6 +198,28 @@ impl Framebuffer {
             let start = base + x0 as usize;
             let end = base + x1 as usize;
             self.idx[start..end].fill(c);
+        }
+    }
+
+    // Rectangle border (one-pixel thick), obeys clipping
+    pub fn rectb(&mut self, x: i32, y: i32, w: i32, h: i32, color: u8) {
+        if w <= 0 || h <= 0 {
+            return;
+        }
+        let c = color & 0x0F;
+        let x0 = x;
+        let y0 = y;
+        let x1 = x + w - 1;
+        let y1 = y + h - 1;
+        // Top and bottom edges
+        for xx in x0..=x1 {
+            let _ = self.set_pixel(xx, y0, c);
+            let _ = self.set_pixel(xx, y1, c);
+        }
+        // Left and right edges
+        for yy in y0..=y1 {
+            let _ = self.set_pixel(x0, yy, c);
+            let _ = self.set_pixel(x1, yy, c);
         }
     }
 

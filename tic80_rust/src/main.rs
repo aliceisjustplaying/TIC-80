@@ -1,4 +1,6 @@
 use std::cell::RefCell;
+use std::fs;
+use std::path::Path;
 use std::rc::Rc;
 use std::time::{Duration, Instant};
 
@@ -35,23 +37,7 @@ impl Ticker {
     }
 }
 
-const DEFAULT_LUA: &str = r#"
--- Minimal demo using cls and pix
-local t = 0
-function BOOT()
-  cls(0)
-end
-function TIC()
-  if t % 30 == 0 then cls(((t // 30) % 16)) end
-  local cx, cy = 120, 68
-  for dx = -10, 10 do pix(cx + dx, cy, 15) end
-  for dy = -10, 10 do pix(cx, cy + dy, 15) end
-  print("Hello", 10, 10, 15)
-  line(0,0,239,135, 14)
-  rect(20, 20, 40, 20, 9)
-  t = t + 1
-end
-"#;
+const DEFAULT_LUA: &str = include_str!("../assets/default.lua");
 
 fn run() -> Result<(), Error> {
     let event_loop = EventLoop::new();
@@ -71,7 +57,24 @@ fn run() -> Result<(), Error> {
 
     let fb = Rc::new(RefCell::new(Framebuffer::new()));
     let mut ticker = Ticker::new();
-    let lua_runner = LuaRunner::new(fb.clone(), DEFAULT_LUA).ok();
+    // Program selection: first CLI arg as .lua script, else embedded default
+    let args: Vec<String> = std::env::args().skip(1).collect();
+    let script = if let Some(first) = args.get(0) {
+        if first.ends_with(".lua") && Path::new(first).is_file() {
+            match fs::read_to_string(first) {
+                Ok(s) => s,
+                Err(e) => {
+                    eprintln!("Failed to read {}: {}. Falling back to default cart.", first, e);
+                    DEFAULT_LUA.to_string()
+                }
+            }
+        } else {
+            DEFAULT_LUA.to_string()
+        }
+    } else {
+        DEFAULT_LUA.to_string()
+    };
+    let lua_runner = LuaRunner::new(fb.clone(), &script).ok();
 
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Poll;

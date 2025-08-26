@@ -1,5 +1,7 @@
 use std::cell::RefCell;
 use std::rc::Rc;
+use std::fs;
+use std::path::PathBuf;
 
 use tic80_rust::gfx::framebuffer::{dimensions, Framebuffer};
 use tic80_rust::script::lua_runner::LuaRunner;
@@ -128,4 +130,38 @@ fn lua_print_defaults_and_pix_read() {
         }
     }
     assert!(found, "expected a marker pixel with color 7 on row 0");
+}
+
+#[test]
+fn lua_runs_alt_cart_file() {
+    // Load the alternate cart file from assets and run one tick
+    let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    path.push("assets/alt.lua");
+    let script = fs::read_to_string(&path).expect("read alt.lua");
+    let fb = run_lua(&script, 1);
+    let mut fbm = fb.borrow_mut();
+    // Background set in BOOT
+    assert_eq!(fbm.pix(20, 20, None), Some(2));
+    // Marker at top-left and filled square
+    assert_eq!(fbm.pix(0, 0, None), Some(7));
+    assert_eq!(fbm.pix(9, 9, None), Some(5));
+}
+
+#[test]
+fn lua_clip_and_rectb() {
+    let script = r#"
+        function BOOT()
+            cls(1)
+            clip(0, 0, 1, 1)
+        end
+        function TIC()
+            rectb(0, 0, 3, 3, 7)
+        end
+    "#;
+    let fb = run_lua(script, 1);
+    let mut fbm = fb.borrow_mut();
+    // Only origin affected due to clipping; neighbors unchanged
+    assert_eq!(fbm.pix(0, 0, None), Some(7));
+    assert_eq!(fbm.pix(1, 0, None), Some(1));
+    assert_eq!(fbm.pix(0, 1, None), Some(1));
 }

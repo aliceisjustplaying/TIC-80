@@ -53,6 +53,32 @@ impl LuaRunner {
                 })?;
             globals.set("rect", rect_fn)?;
 
+            // rectb(x,y,w,h,color)
+            let fb_rectb = fb.clone();
+            let rectb_fn = lua.create_function(
+                move |_, (x, y, w, h, color): (i32, i32, i32, i32, u8)| {
+                    fb_rectb.borrow_mut().rectb(x, y, w, h, color);
+                    Ok(())
+                },
+            )?;
+            globals.set("rectb", rectb_fn)?;
+
+            // clip(x,y,w,h) or clip() to reset
+            let fb_clip = fb.clone();
+            let clip_fn = lua.create_function(move |_, args: MultiValue| {
+                if args.is_empty() {
+                    fb_clip.borrow_mut().clip_reset();
+                } else {
+                    let x = match args.get(0) { Some(Value::Integer(n)) => *n as i32, _ => 0 };
+                    let y = match args.get(1) { Some(Value::Integer(n)) => *n as i32, _ => 0 };
+                    let w = match args.get(2) { Some(Value::Integer(n)) => *n as i32, _ => 0 };
+                    let h = match args.get(3) { Some(Value::Integer(n)) => *n as i32, _ => 0 };
+                    fb_clip.borrow_mut().clip(x, y, w, h);
+                }
+                Ok(())
+            })?;
+            globals.set("clip", clip_fn)?;
+
             // print(text, x=0, y=0, color=15, fixed=false, scale=1, small=false) -> width
             #[derive(Default)]
             struct PrintArgs {
