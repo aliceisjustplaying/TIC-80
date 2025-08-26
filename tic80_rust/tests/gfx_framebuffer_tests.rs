@@ -83,6 +83,22 @@ fn count_color(fb: &mut Framebuffer, color: u8) -> usize {
     c
 }
 
+#[allow(dead_code)]
+fn fb_hash(fb: &mut Framebuffer) -> u64 {
+    // Simple FNV-1a over pixel indices via pix reads
+    let (w, h) = dimensions();
+    let mut hash: u64 = 0xcbf29ce484222325;
+    const FNV_PRIME: u64 = 0x00000100000001B3;
+    for y in 0..(h as i32) {
+        for x in 0..(w as i32) {
+            let b = fb.pix(x, y, None).unwrap_or(0);
+            hash ^= b as u64;
+            hash = hash.wrapping_mul(FNV_PRIME);
+        }
+    }
+    hash
+}
+
 #[test]
 fn line_basic_counts_and_endpoints() {
     // Horizontal line
@@ -170,4 +186,65 @@ fn clip_limits_drawing_and_reset() {
     fb.rect(0, 0, 2, 2, 9);
     assert_eq!(fb.pix(0, 0, None), Some(9));
     assert_eq!(fb.pix(1, 1, None), Some(9));
+}
+
+#[test]
+fn print_width_fixed_vs_variable_and_newline() {
+    let mut fb = Framebuffer::new();
+    fb.cls(0);
+    // Fixed width: width = len * 6 * scale
+    let w1 = fb.print_text("AB", 10, 10, 1, true, 1, false);
+    assert_eq!(w1, 2 * 6);
+    let w2 = fb.print_text("AB", 10, 10, 1, true, 2, false);
+    assert_eq!(w2, 2 * 6 * 2);
+    // Variable width should be <= fixed width for same string/scale
+    let v1 = fb.print_text("AB", 10, 10, 1, false, 1, false);
+    assert!(v1 <= w1);
+
+    // Newlines: expect drawing on initial row and on y+6 (scale=1)
+    let mut fb2 = Framebuffer::new();
+    fb2.cls(0);
+    let _ = fb2.print_text("A\nA", 0, 0, 15, true, 1, false);
+    // Something on row 0
+    let mut any_row0 = false;
+    for x in 0..8 {
+        if fb2.pix(x, 0, None) == Some(15) { any_row0 = true; break; }
+    }
+    assert!(any_row0);
+    // And something on row 6
+    let mut any_row6 = false;
+    for x in 0..8 {
+        if fb2.pix(x, 6, None) == Some(15) { any_row6 = true; break; }
+    }
+    assert!(any_row6);
+}
+
+#[test]
+fn clip_affects_pix_write() {
+    let mut fb = Framebuffer::new();
+    fb.cls(2);
+    fb.clip(1, 1, 1, 1); // only (1,1)
+    // Write outside clip
+    let _ = fb.pix(0, 0, Some(7));
+    // Write inside clip
+    let _ = fb.pix(1, 1, Some(7));
+    // Validate
+    assert_eq!(fb.pix(0, 0, None), Some(2));
+    assert_eq!(fb.pix(1, 1, None), Some(7));
+}
+
+#[test]
+fn robust_oob_line_and_rectb() {
+    let mut fb = Framebuffer::new();
+    fb.cls(0);
+    // Very long line across/outside bounds
+    fb.line(-100, -100, 1000, 2000, 9);
+    // Should produce some in-bounds pixels
+    assert!(count_color(&mut fb, 9) > 0);
+
+    // Rect border with negative origin that crosses viewport
+    fb.rectb(-5, -5, 12, 12, 4);
+    // Perimeter segments that lie in-bounds should be colored
+    assert_eq!(fb.pix(6, 0, None), Some(4)); // right edge
+    assert_eq!(fb.pix(0, 6, None), Some(4)); // bottom edge
 }

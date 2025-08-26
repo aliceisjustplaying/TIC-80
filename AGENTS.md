@@ -19,9 +19,15 @@
 - Validate with tests: `cd tic80_rust && cargo test` (and run the specific failing test during fixes).
 - Keep changes minimal and focused; don’t expand scope while tests are red.
 
+**Testing**
+- Strategy: see `docs/testing/strategy.md` for layers (framebuffer, Lua bridge, deterministic hashes) and future plans (audio, conformance, fuzzing).
+- Catalog: see `docs/testing/test_catalog.md` for a concise list of existing tests and their intent.
+- Run: `cd tic80_rust && cargo test` for unit + Lua tests; `cargo clippy --all-targets --all-features -D warnings` for linting.
+- Determinism: VRAM hashes use FNV-1a over 240×136 palette indices (see strategy doc for rationale and helper snippet).
+
 **Decisions (Locked for prototype)**
 - **Presentation:** `winit + pixels` with integer scaling (2x/3x/4x), RGBA palette conversion from 16-color default.
-- **Lua Engine:** `mlua` with vendored Lua 5.4, behavior aligned to 5.2 where needed (compat noted in docs).
+- **Lua Engine:** `mlua` with vendored Lua 5.3 (ADR 0003), targeting TIC-80 semantics; enable/replicate 5.1/5.2 compatibility where needed and cover with tests.
 - **Framebuffer:** Single VRAM bank, palette indices in CPU memory; palette map/border/vbank deferred.
 
 **Current Status**
@@ -70,6 +76,7 @@
     - Merged GUI-first docs into `docs/roadmap/gui_first.md`.
     - Renamed API parity to `docs/specs/lua_api_parity.md` and added specs stubs.
     - Added docs index at `docs/README.md`, architecture/testing pages, and ADRs.
+  - Added detailed testing docs (`docs/testing/strategy.md`) and a test catalog (`docs/testing/test_catalog.md`).
 
 **Docs Index**
 - Start here: `docs/README.md`
@@ -77,4 +84,4 @@
 - Specs: `docs/specs/memory_map.md`, `docs/specs/lua_api_parity.md`, `docs/specs/graphics.md`, `docs/specs/audio_fft_vqt.md`
 - Architecture: `docs/architecture/workspace.md`, `docs/architecture/runtime.md`
 - Testing: `docs/testing/strategy.md`, `docs/testing/frame_hashes.md`
-- ADRs: `docs/adr/0001-winit-pixels.md`, `docs/adr/0002-mlua-lua54-compat.md`
+- ADRs: `docs/adr/0001-winit-pixels.md`, `docs/adr/0002-mlua-lua54-compat.md` (superseded), `docs/adr/0003-lua53-with-compat.md`

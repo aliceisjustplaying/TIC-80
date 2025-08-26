@@ -45,7 +45,7 @@ fn run() -> Result<(), Error> {
     let (width, height) = dimensions();
     let size = LogicalSize::new((width as f64) * SCALE, (height as f64) * SCALE);
     let window = WindowBuilder::new()
-        .with_title("tic80_rust – Milestone 1 (GUI + cls/pix)")
+        .with_title("rustic")
         .with_inner_size(size)
         .with_min_inner_size(size)
         .build(&event_loop)

@@ -19,10 +19,12 @@ This folder organizes the rewrite plan, specs, architecture notes, testing strat
 ## Testing
 - `docs/testing/strategy.md`: Testing and validation strategy across API/VRAM/audio.
 - `docs/testing/frame_hashes.md`: Conventions for deterministic frame/audio hashing (stub).
+- `docs/testing/test_catalog.md`: Summary of current tests and their intent.
 
 ## Decisions (ADR)
 - `docs/adr/0001-winit-pixels.md`: Windowing/presentation stack decision.
-- `docs/adr/0002-mlua-lua54-compat.md`: Lua engine choice and compatibility stance.
+- `docs/adr/0002-mlua-lua54-compat.md`: Lua 5.4 choice (superseded).
+- `docs/adr/0003-lua53-with-compat.md`: Lua 5.3 with 5.1/5.2 compatibility.
 
 Notes
 - `MEMORY_MAP.md` at repo root remains the canonical reference for layout. Specs here link to it rather than duplicating.
@@ -35,4 +37,3 @@ Notes
 - Load a `.lua` file:
   - `cargo run --manifest-path tic80_rust/Cargo.toml -- tic80_rust/assets/alt.lua`
   - In crate dir: `cargo run -- assets/alt.lua`
-

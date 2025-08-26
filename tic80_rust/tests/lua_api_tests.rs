@@ -165,3 +165,62 @@ fn lua_clip_and_rectb() {
     assert_eq!(fbm.pix(1, 0, None), Some(1));
     assert_eq!(fbm.pix(0, 1, None), Some(1));
 }
+
+#[test]
+fn lua_pix_oob_read_returns_nil() {
+    let script = r#"
+        function BOOT() cls(0) end
+        function TIC()
+            local ok = true
+            if pix(-1, 0) ~= nil then ok = false end
+            if pix(0, -1) ~= nil then ok = false end
+            if pix(240, 0) ~= nil then ok = false end
+            if pix(0, 136) ~= nil then ok = false end
+            if ok then pix(0, 0, 5) end
+        end
+    "#;
+    let fb = run_lua(script, 1);
+    // Marker set only if nil checks passed
+    assert_eq!(fb.borrow_mut().pix(0, 0, None), Some(5));
+}
+
+fn fb_hash(fb: &mut Framebuffer) -> u64 {
+    let (w, h) = dimensions();
+    let mut hash: u64 = 0xcbf29ce484222325;
+    const FNV_PRIME: u64 = 0x00000100000001B3;
+    for y in 0..(h as i32) {
+        for x in 0..(w as i32) {
+            let b = fb.pix(x, y, None).unwrap_or(0);
+            hash ^= b as u64;
+            hash = hash.wrapping_mul(FNV_PRIME);
+        }
+    }
+    hash
+}
+
+#[test]
+fn lua_default_cart_deterministic_hash() {
+    // Load default cart and run N frames twice; hashes should match
+    let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    path.push("assets/default.lua");
+    let script = std::fs::read_to_string(&path).expect("read default.lua");
+
+    let run_hash = |ticks: usize| -> u64 {
+        let fb = Rc::new(RefCell::new(Framebuffer::new()));
+        let runner = LuaRunner::new(fb.clone(), &script).expect("lua init");
+        for _ in 0..ticks { runner.tick(); }
+        let mut borrowed = fb.borrow_mut();
+        fb_hash(&mut *borrowed)
+    };
+
+    let h1 = run_hash(1);
+    let h1_again = run_hash(1);
+    assert_eq!(h1, h1_again, "hash should be deterministic for 1 tick");
+
+    let h2 = run_hash(2);
+    let h2_again = run_hash(2);
+    assert_eq!(h2, h2_again, "hash should be deterministic for 2 ticks");
+
+    // Different frame counts should usually yield different hashes for this cart
+    assert_ne!(h1, h2, "different ticks should yield different frame hashes");
+}

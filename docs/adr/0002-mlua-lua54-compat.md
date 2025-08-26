@@ -1,6 +1,6 @@
 # ADR 0002: Lua Engine and Compatibility
 
-Status: Accepted
+Status: Superseded by ADR 0003
 Date: 2025-08-26
 
 Context
@@ -12,4 +12,3 @@ Decision
 Consequences
 - Portable across supported platforms; avoids LuaJIT portability trade-offs initially.
 - Add tests around numeric semantics and iteration order to guard against drift.
-
