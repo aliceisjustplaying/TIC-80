@@ -140,6 +140,38 @@ impl LuaRunner {
             })?;
             globals.set("print", print_fn)?;
 
+            // elli(x, y, a, b, color)
+            let fb_elli = fb.clone();
+            let elli_fn = lua.create_function(move |_, (x, y, a, b, color): (i32, i32, i32, i32, u8)| {
+                fb_elli.borrow_mut().elli(x, y, a, b, color);
+                Ok(())
+            })?;
+            globals.set("elli", elli_fn)?;
+
+            // ellib(x, y, a, b, color)
+            let fb_ellib = fb.clone();
+            let ellib_fn = lua.create_function(move |_, (x, y, a, b, color): (i32, i32, i32, i32, u8)| {
+                fb_ellib.borrow_mut().ellib(x, y, a, b, color);
+                Ok(())
+            })?;
+            globals.set("ellib", ellib_fn)?;
+
+            // tri(x1,y1,x2,y2,x3,y3,color)
+            let fb_tri = fb.clone();
+            let tri_fn = lua.create_function(move |_, (x1,y1,x2,y2,x3,y3,color): (i32,i32,i32,i32,i32,i32,u8)| {
+                fb_tri.borrow_mut().tri(x1,y1,x2,y2,x3,y3,color);
+                Ok(())
+            })?;
+            globals.set("tri", tri_fn)?;
+
+            // trib(x1,y1,x2,y2,x3,y3,color)
+            let fb_trib = fb.clone();
+            let trib_fn = lua.create_function(move |_, (x1,y1,x2,y2,x3,y3,color): (i32,i32,i32,i32,i32,i32,u8)| {
+                fb_trib.borrow_mut().trib(x1,y1,x2,y2,x3,y3,color);
+                Ok(())
+            })?;
+            globals.set("trib", trib_fn)?;
+
             // Load script
             lua.load(script_src).set_name("cart").exec()?;
 

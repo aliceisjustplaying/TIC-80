@@ -302,3 +302,44 @@ fn circ_zero_radius_draws_center() {
     fb2.circb(10, 10, 0, 4);
     assert_eq!(fb2.pix(10, 10, None), Some(4));
 }
+
+#[test]
+fn ellib_cardinals_and_fill_center_row() {
+    let mut fb = Framebuffer::new();
+    fb.cls(0);
+    let (cx, cy, a, b) = (40, 30, 6, 4);
+    fb.ellib(cx, cy, a, b, 12);
+    // Cardinal border points
+    assert_eq!(fb.pix(cx + a, cy, None), Some(12));
+    assert_eq!(fb.pix(cx - a, cy, None), Some(12));
+    assert_eq!(fb.pix(cx, cy + b, None), Some(12));
+    assert_eq!(fb.pix(cx, cy - b, None), Some(12));
+
+    // Filled ellipse center row spans fully
+    let mut fb2 = Framebuffer::new();
+    fb2.cls(0);
+    fb2.elli(cx, cy, a, b, 5);
+    for x in (cx - a)..=(cx + a) {
+        assert_eq!(fb2.pix(x, cy, None), Some(5));
+    }
+    assert_eq!(fb2.pix(cx - a - 1, cy, None), Some(0));
+    assert_eq!(fb2.pix(cx + a + 1, cy, None), Some(0));
+}
+
+#[test]
+fn tri_fill_and_border() {
+    let mut fb = Framebuffer::new();
+    fb.cls(0);
+    // Simple triangle
+    fb.tri(10, 10, 20, 10, 15, 15, 3);
+    // Interior pixel
+    assert_eq!(fb.pix(15, 12, None), Some(3));
+    // Outside pixel
+    assert_eq!(fb.pix(9, 9, None), Some(0));
+
+    // Border triangle over it
+    fb.trib(10, 10, 20, 10, 15, 15, 7);
+    assert_eq!(fb.pix(10, 10, None), Some(7));
+    assert_eq!(fb.pix(20, 10, None), Some(7));
+    assert_eq!(fb.pix(15, 15, None), Some(7));
+}

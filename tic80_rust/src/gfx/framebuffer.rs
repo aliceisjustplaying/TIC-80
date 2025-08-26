@@ -292,6 +292,135 @@ impl Framebuffer {
         }
     }
 
+    // Ellipse border using midpoint algorithm
+    pub fn ellib(&mut self, cx: i32, cy: i32, a: i32, b: i32, color: u8) {
+        if a < 0 || b < 0 { return; }
+        let c = color & 0x0F;
+        if a == 0 && b == 0 { let _ = self.set_pixel(cx, cy, c); return; }
+
+        let a2 = (a as i64) * (a as i64);
+        let b2 = (b as i64) * (b as i64);
+
+        let mut x: i64 = 0;
+        let mut y: i64 = b as i64;
+        let mut d = b2 - a2 * (b as i64) + a2 / 4;
+        while b2 * x <= a2 * y {
+            let xx = x as i32; let yy = y as i32;
+            let _ = self.set_pixel(cx + xx, cy + yy, c);
+            let _ = self.set_pixel(cx - xx, cy + yy, c);
+            let _ = self.set_pixel(cx + xx, cy - yy, c);
+            let _ = self.set_pixel(cx - xx, cy - yy, c);
+            if d < 0 {
+                d += b2 * (2 * x + 3);
+            } else {
+                d += b2 * (2 * x + 3) + a2 * (-2 * y + 2);
+                y -= 1;
+            }
+            x += 1;
+        }
+
+        x = a as i64; y = 0; d = a2 - b2 * (a as i64) + b2 / 4;
+        while a2 * y <= b2 * x {
+            let xx = x as i32; let yy = y as i32;
+            let _ = self.set_pixel(cx + xx, cy + yy, c);
+            let _ = self.set_pixel(cx - xx, cy + yy, c);
+            let _ = self.set_pixel(cx + xx, cy - yy, c);
+            let _ = self.set_pixel(cx - xx, cy - yy, c);
+            if d < 0 {
+                d += a2 * (2 * y + 3);
+            } else {
+                d += a2 * (2 * y + 3) + b2 * (-2 * x + 2);
+                x -= 1;
+            }
+            y += 1;
+        }
+    }
+
+    // Filled ellipse using horizontal spans
+    pub fn elli(&mut self, cx: i32, cy: i32, a: i32, b: i32, color: u8) {
+        if a < 0 || b < 0 { return; }
+        let c = color & 0x0F;
+        if a == 0 && b == 0 { let _ = self.set_pixel(cx, cy, c); return; }
+        if a == 0 { for yy in (cy - b)..=(cy + b) { let _ = self.set_pixel(cx, yy, c); } return; }
+        if b == 0 { for xx in (cx - a)..=(cx + a) { let _ = self.set_pixel(xx, cy, c); } return; }
+        let af = a as f32; let bf = b as f32; let bf2 = bf * bf;
+        for dy in -b..=b {
+            let yf = dy as f32;
+            let t = 1.0 - (yf * yf) / bf2;
+            if t < 0.0 { continue; }
+            let xf = af * t.sqrt();
+            let x = xf.floor() as i32;
+            self.hspan(cx - x, cx + x, cy + dy, c);
+        }
+    }
+
+    // Triangle border via lines
+    #[allow(clippy::too_many_arguments)]
+    pub fn trib(&mut self, x1: i32, y1: i32, x2: i32, y2: i32, x3: i32, y3: i32, color: u8) {
+        let c = color & 0x0F;
+        self.line(x1, y1, x2, y2, c);
+        self.line(x2, y2, x3, y3, c);
+        self.line(x3, y3, x1, y1, c);
+    }
+
+    // Filled triangle using scanline rasterization
+    #[allow(clippy::too_many_arguments)]
+    pub fn tri(&mut self, mut x1: i32, mut y1: i32, mut x2: i32, mut y2: i32, mut x3: i32, mut y3: i32, color: u8) {
+        let c = color & 0x0F;
+        // Sort by y, then x
+        if y2 < y1 || (y2 == y1 && x2 < x1) { std::mem::swap(&mut x1, &mut x2); std::mem::swap(&mut y1, &mut y2); }
+        if y3 < y1 || (y3 == y1 && x3 < x1) { std::mem::swap(&mut x1, &mut x3); std::mem::swap(&mut y1, &mut y3); }
+        if y3 < y2 || (y3 == y2 && x3 < x2) { std::mem::swap(&mut x2, &mut x3); std::mem::swap(&mut y2, &mut y3); }
+        if y1 == y3 { return; }
+
+        if y2 == y3 {
+            // flat-bottom
+            let inv1 = (x2 - x1) as f32 / (y2 - y1) as f32;
+            let inv2 = (x3 - x1) as f32 / (y2 - y1) as f32;
+            let mut cx1 = x1 as f32;
+            let mut cx2 = x1 as f32;
+            for y in y1..=y2 {
+                self.hspan(cx1.floor() as i32, cx2.floor() as i32, y, c);
+                cx1 += inv1;
+                cx2 += inv2;
+            }
+        } else if y1 == y2 {
+            // flat-top
+            let inv1 = (x3 - x1) as f32 / (y3 - y1) as f32;
+            let inv2 = (x3 - x2) as f32 / (y3 - y2) as f32;
+            let mut cx1 = x1 as f32;
+            let mut cx2 = x2 as f32;
+            for y in y1..=y3 {
+                self.hspan(cx1.floor() as i32, cx2.floor() as i32, y, c);
+                cx1 += inv1;
+                cx2 += inv2;
+            }
+        } else {
+            // general: split at y2
+            let x4 = x1 + (((y2 - y1) as f32) * ((x3 - x1) as f32) / ((y3 - y1) as f32)).floor() as i32;
+            // flat-bottom part
+            let inv1 = (x2 - x1) as f32 / (y2 - y1) as f32;
+            let inv2 = (x4 - x1) as f32 / (y2 - y1) as f32;
+            let mut cx1 = x1 as f32;
+            let mut cx2 = x1 as f32;
+            for y in y1..=y2 {
+                self.hspan(cx1.floor() as i32, cx2.floor() as i32, y, c);
+                cx1 += inv1;
+                cx2 += inv2;
+            }
+            // flat-top part
+            let inv1b = (x3 - x2) as f32 / (y3 - y2) as f32;
+            let inv2b = (x3 - x4) as f32 / (y3 - y2) as f32;
+            let mut cx1b = x2 as f32;
+            let mut cx2b = x4 as f32;
+            for y in y2..=y3 {
+                self.hspan(cx1b.floor() as i32, cx2b.floor() as i32, y, c);
+                cx1b += inv1b;
+                cx2b += inv2b;
+            }
+        }
+    }
+
     // Print text using TIC-80 default font (5x8 glyphs, 1px spacing)
     #[allow(clippy::too_many_arguments)]
     pub fn print_text(

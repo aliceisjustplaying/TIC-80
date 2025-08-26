@@ -244,3 +244,31 @@ fn lua_circ_and_circb() {
     assert_eq!(fbm.pix(30, 23, None), Some(9));
     assert_eq!(fbm.pix(30, 17, None), Some(9));
 }
+
+#[test]
+fn lua_elli_ellib_and_tri_trib() {
+    let script = r#"
+        function BOOT() cls(0) end
+        function TIC()
+            elli(60, 20, 5, 3, 4)
+            ellib(60, 20, 5, 3, 12)
+            tri(80, 10, 90, 20, 70, 20, 6)
+            trib(100, 10, 110, 20, 90, 20, 9)
+        end
+    "#;
+    let fb = run_lua(script, 1);
+    let mut fbm = fb.borrow_mut();
+    // Ellipse border cardinals
+    assert_eq!(fbm.pix(65, 20, None), Some(12));
+    assert_eq!(fbm.pix(55, 20, None), Some(12));
+    assert_eq!(fbm.pix(60, 23, None), Some(12));
+    assert_eq!(fbm.pix(60, 17, None), Some(12));
+    // Filled ellipse center row (interior only; endpoints are border color)
+    for x in 56..=64 { assert_eq!(fbm.pix(x, 20, None), Some(4)); }
+    // Triangle interior
+    assert_eq!(fbm.pix(80, 18, None), Some(6));
+    // Border triangle vertices
+    assert_eq!(fbm.pix(100, 10, None), Some(9));
+    assert_eq!(fbm.pix(110, 20, None), Some(9));
+    assert_eq!(fbm.pix(90, 20, None), Some(9));
+}

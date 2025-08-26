@@ -29,7 +29,7 @@ function TIC()
 
   -- Title and legend
   print("TIC-80 Rust Demo", 8, 6, 15)
-  print("cls pix line rect rectb circ circb clip print", 8, 16, 14)
+  print("cls pix line rect rectb circ circb elli ellib tri trib clip print", 8, 16, 14)
 
   -- Static card: rect + rectb
   rectb(20, 28, 48, 22, 12) -- border
@@ -44,6 +44,14 @@ function TIC()
   local rc = 12 + ((t // 60) % 4) -- slow pulse 12..15
   circb(180, 56, 14, 14)
   circ(180, 56, rc, 10)
+
+  -- Ellipse: border + filled
+  ellib(200, 92, 10, 6, 12)
+  elli(200, 92, 8, 4, 11)
+
+  -- Triangles: filled + border
+  tri(40, 90, 55, 110, 25, 110, 8)
+  trib(70, 90, 85, 110, 55, 110, 2)
 
   -- Clip demo toggles every ~2.5 seconds (150 frames @60 FPS)
   local clipped = (t // 150) % 2 == 0
