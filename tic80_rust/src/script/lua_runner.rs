@@ -54,32 +54,46 @@ impl LuaRunner {
             globals.set("rect", rect_fn)?;
 
             // print(text, x=0, y=0, color=15, fixed=false, scale=1, small=false) -> width
+            #[derive(Default)]
+            struct PrintArgs {
+                text: String,
+                x: i32,
+                y: i32,
+                color: u8,
+                fixed: bool,
+                scale: i32,
+                small: bool,
+            }
+
+            impl PrintArgs {
+                fn from_lua(args: &MultiValue) -> LuaResult<Self> {
+                    let mut out = PrintArgs {
+                        color: 15,
+                        scale: 1,
+                        ..Default::default()
+                    };
+                    for (i, v) in args.iter().enumerate() {
+                        match (i, v) {
+                            (0, Value::String(s)) => out.text = s.to_str()?.to_string(),
+                            (1, Value::Integer(n)) => out.x = *n as i32,
+                            (2, Value::Integer(n)) => out.y = *n as i32,
+                            (3, Value::Integer(n)) => out.color = (*n).clamp(0, 255) as u8,
+                            (4, Value::Boolean(b)) => out.fixed = *b,
+                            (5, Value::Integer(n)) => out.scale = (*n as i32).max(1),
+                            (6, Value::Boolean(b)) => out.small = *b,
+                            _ => {}
+                        }
+                    }
+                    Ok(out)
+                }
+            }
+
             let fb_print = fb.clone();
             let print_fn = lua.create_function(move |_, args: MultiValue| {
-                let mut text = String::new();
-                let mut x: i32 = 0;
-                let mut y: i32 = 0;
-                let mut color: u8 = 15;
-                let mut fixed = false;
-                let mut scale: i32 = 1;
-                let mut small = false;
-
-                for (i, v) in args.iter().enumerate() {
-                    match (i, v) {
-                        (0, Value::String(s)) => text = s.to_str()?.to_string(),
-                        (1, Value::Integer(n)) => x = *n as i32,
-                        (2, Value::Integer(n)) => y = *n as i32,
-                        (3, Value::Integer(n)) => color = (*n).clamp(0, 255) as u8,
-                        (4, Value::Boolean(b)) => fixed = *b,
-                        (5, Value::Integer(n)) => scale = (*n as i32).max(1),
-                        (6, Value::Boolean(b)) => small = *b,
-                        _ => {}
-                    }
-                }
-
+                let p = PrintArgs::from_lua(&args)?;
                 let width = fb_print
                     .borrow_mut()
-                    .print_text(&text, x, y, color, fixed, scale, small);
+                    .print_text(&p.text, p.x, p.y, p.color, p.fixed, p.scale, p.small);
                 Ok(width)
             })?;
             globals.set("print", print_fn)?;

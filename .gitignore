@@ -190,3 +190,5 @@ build/mruby_vendor-prefix/
 /*.png
 
 _references
+
+tic80_rust/target/

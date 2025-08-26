@@ -8,14 +8,8 @@ use winit::event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEve
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::WindowBuilder;
 
-mod gfx {
-    pub mod framebuffer;
-}
-mod script {
-    pub mod lua_runner;
-}
-use gfx::framebuffer::{dimensions, Framebuffer};
-use script::lua_runner::LuaRunner;
+use tic80_rust::gfx::framebuffer::{dimensions, Framebuffer};
+use tic80_rust::script::lua_runner::LuaRunner;
 
 // Simple fixed-step ticker at ~60 FPS
 struct Ticker {
