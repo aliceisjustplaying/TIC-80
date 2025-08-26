@@ -224,3 +224,23 @@ fn lua_default_cart_deterministic_hash() {
     // Different frame counts should usually yield different hashes for this cart
     assert_ne!(h1, h2, "different ticks should yield different frame hashes");
 }
+
+#[test]
+fn lua_circ_and_circb() {
+    let script = r#"
+        function BOOT() cls(0) end
+        function TIC()
+            circ(20, 20, 4, 6)
+            circb(30, 20, 3, 9)
+        end
+    "#;
+    let fb = run_lua(script, 1);
+    let mut fbm = fb.borrow_mut();
+    // Filled circle: center row span for r=4
+    for x in 16..=24 { assert_eq!(fbm.pix(x, 20, None), Some(6)); }
+    // Border circle: cardinal points for r=3
+    assert_eq!(fbm.pix(33, 20, None), Some(9));
+    assert_eq!(fbm.pix(27, 20, None), Some(9));
+    assert_eq!(fbm.pix(30, 23, None), Some(9));
+    assert_eq!(fbm.pix(30, 17, None), Some(9));
+}

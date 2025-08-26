@@ -59,7 +59,7 @@ fn run() -> Result<(), Error> {
     let mut ticker = Ticker::new();
     // Program selection: first CLI arg as .lua script, else embedded default
     let args: Vec<String> = std::env::args().skip(1).collect();
-    let script = if let Some(first) = args.get(0) {
+    let script = if let Some(first) = args.first() {
         if first.ends_with(".lua") && Path::new(first).is_file() {
             match fs::read_to_string(first) {
                 Ok(s) => s,

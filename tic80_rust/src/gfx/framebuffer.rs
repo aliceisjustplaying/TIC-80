@@ -223,6 +223,75 @@ impl Framebuffer {
         }
     }
 
+    // Circle border using 8-way symmetry (integer midpoint algorithm)
+    pub fn circb(&mut self, cx: i32, cy: i32, r: i32, color: u8) {
+        if r < 0 { return; }
+        let c = color & 0x0F;
+        if r == 0 {
+            let _ = self.set_pixel(cx, cy, c);
+            return;
+        }
+        let mut x = r;
+        let mut y = 0;
+        let mut err = 1 - r;
+        while x >= y {
+            // 8 symmetric points
+            let _ = self.set_pixel(cx + x, cy + y, c);
+            let _ = self.set_pixel(cx + y, cy + x, c);
+            let _ = self.set_pixel(cx - y, cy + x, c);
+            let _ = self.set_pixel(cx - x, cy + y, c);
+            let _ = self.set_pixel(cx - x, cy - y, c);
+            let _ = self.set_pixel(cx - y, cy - x, c);
+            let _ = self.set_pixel(cx + y, cy - x, c);
+            let _ = self.set_pixel(cx + x, cy - y, c);
+
+            y += 1;
+            if err < 0 {
+                err += 2 * y + 1;
+            } else {
+                x -= 1;
+                err += 2 * (y - x) + 1;
+            }
+        }
+    }
+
+    // Filled circle via horizontal spans using symmetry
+    pub fn circ(&mut self, cx: i32, cy: i32, r: i32, color: u8) {
+        if r < 0 { return; }
+        let c = color & 0x0F;
+        if r == 0 {
+            let _ = self.set_pixel(cx, cy, c);
+            return;
+        }
+        let mut x = r;
+        let mut y = 0;
+        let mut err = 1 - r;
+        while x >= y {
+            // Draw horizontal spans for the current y and x offsets
+            self.hspan(cx - x, cx + x, cy + y, c);
+            self.hspan(cx - x, cx + x, cy - y, c);
+            self.hspan(cx - y, cx + y, cy + x, c);
+            self.hspan(cx - y, cx + y, cy - x, c);
+
+            y += 1;
+            if err < 0 {
+                err += 2 * y + 1;
+            } else {
+                x -= 1;
+                err += 2 * (y - x) + 1;
+            }
+        }
+    }
+
+    fn hspan(&mut self, x0: i32, x1: i32, y: i32, color: u8) {
+        if y < 0 || y as u32 >= HEIGHT { return; }
+        let start = x0.min(x1);
+        let end = x0.max(x1);
+        for x in start..=end {
+            let _ = self.set_pixel(x, y, color);
+        }
+    }
+
     // Print text using TIC-80 default font (5x8 glyphs, 1px spacing)
     #[allow(clippy::too_many_arguments)]
     pub fn print_text(
@@ -327,4 +396,10 @@ impl Framebuffer {
 
 pub fn dimensions() -> (u32, u32) {
     (Framebuffer::WIDTH, Framebuffer::HEIGHT)
+}
+
+impl Default for Framebuffer {
+    fn default() -> Self {
+        Self::new()
+    }
 }

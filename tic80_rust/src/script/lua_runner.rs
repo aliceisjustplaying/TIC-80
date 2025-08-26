@@ -63,6 +63,22 @@ impl LuaRunner {
             )?;
             globals.set("rectb", rectb_fn)?;
 
+            // circ(x, y, r, color)
+            let fb_circ = fb.clone();
+            let circ_fn = lua.create_function(move |_, (x, y, r, color): (i32, i32, i32, u8)| {
+                fb_circ.borrow_mut().circ(x, y, r, color);
+                Ok(())
+            })?;
+            globals.set("circ", circ_fn)?;
+
+            // circb(x, y, r, color)
+            let fb_circb = fb.clone();
+            let circb_fn = lua.create_function(move |_, (x, y, r, color): (i32, i32, i32, u8)| {
+                fb_circb.borrow_mut().circb(x, y, r, color);
+                Ok(())
+            })?;
+            globals.set("circb", circb_fn)?;
+
             // clip(x,y,w,h) or clip() to reset
             let fb_clip = fb.clone();
             let clip_fn = lua.create_function(move |_, args: MultiValue| {

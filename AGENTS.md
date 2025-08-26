@@ -15,14 +15,14 @@
 
 **Build Hygiene (always do this)**
 - Fix all compiler warnings before landing changes (treat warnings as errors).
-- Run clippy on the crate and keep zero warnings: `cd tic80_rust && cargo clippy --all-targets --all-features -D warnings`.
+- Run clippy and keep zero warnings: `cd tic80_rust && cargo clippy -- -D warnings`.
 - Validate with tests: `cd tic80_rust && cargo test` (and run the specific failing test during fixes).
 - Keep changes minimal and focused; don’t expand scope while tests are red.
 
 **Testing**
 - Strategy: see `docs/testing/strategy.md` for layers (framebuffer, Lua bridge, deterministic hashes) and future plans (audio, conformance, fuzzing).
 - Catalog: see `docs/testing/test_catalog.md` for a concise list of existing tests and their intent.
-- Run: `cd tic80_rust && cargo test` for unit + Lua tests; `cargo clippy --all-targets --all-features -D warnings` for linting.
+- Run: `cd tic80_rust && cargo test` for unit + Lua tests; `cargo clippy -- -D warnings` for linting.
 - Determinism: VRAM hashes use FNV-1a over 240×136 palette indices (see strategy doc for rationale and helper snippet).
 
 **Decisions (Locked for prototype)**

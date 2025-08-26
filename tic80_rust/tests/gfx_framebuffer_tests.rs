@@ -248,3 +248,57 @@ fn robust_oob_line_and_rectb() {
     assert_eq!(fb.pix(6, 0, None), Some(4)); // right edge
     assert_eq!(fb.pix(0, 6, None), Some(4)); // bottom edge
 }
+
+#[test]
+fn circb_cardinals_and_oob() {
+    let mut fb = Framebuffer::new();
+    fb.cls(0);
+    let cx = 20;
+    let cy = 20;
+    let r = 5;
+    fb.circb(cx, cy, r, 7);
+    // cardinal points
+    assert_eq!(fb.pix(cx + r, cy, None), Some(7));
+    assert_eq!(fb.pix(cx - r, cy, None), Some(7));
+    assert_eq!(fb.pix(cx, cy + r, None), Some(7));
+    assert_eq!(fb.pix(cx, cy - r, None), Some(7));
+    // just outside should remain background
+    assert_eq!(fb.pix(cx + r + 1, cy, None), Some(0));
+}
+
+#[test]
+fn circ_fill_center_row_and_clip() {
+    let mut fb = Framebuffer::new();
+    fb.cls(0);
+    let cx = 30;
+    let cy = 30;
+    let r = 4;
+    fb.circ(cx, cy, r, 5);
+    // center row should be filled from cx-r .. cx+r
+    for x in (cx - r)..=(cx + r) {
+        assert_eq!(fb.pix(x, cy, None), Some(5));
+    }
+    assert_eq!(fb.pix(cx - r - 1, cy, None), Some(0));
+    assert_eq!(fb.pix(cx + r + 1, cy, None), Some(0));
+
+    // clipping restricts drawing to 1x1
+    let mut fb2 = Framebuffer::new();
+    fb2.cls(2);
+    fb2.clip(0, 0, 1, 1);
+    fb2.circ(0, 0, 5, 9);
+    assert_eq!(fb2.pix(0, 0, None), Some(9));
+    assert_eq!(fb2.pix(1, 0, None), Some(2));
+    assert_eq!(fb2.pix(0, 1, None), Some(2));
+}
+
+#[test]
+fn circ_zero_radius_draws_center() {
+    let mut fb = Framebuffer::new();
+    fb.cls(0);
+    fb.circ(10, 10, 0, 3);
+    assert_eq!(fb.pix(10, 10, None), Some(3));
+    let mut fb2 = Framebuffer::new();
+    fb2.cls(0);
+    fb2.circb(10, 10, 0, 4);
+    assert_eq!(fb2.pix(10, 10, None), Some(4));
+}
