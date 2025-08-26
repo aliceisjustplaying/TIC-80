@@ -48,8 +48,8 @@ fn rect_fill_and_clipping() {
     fb.rect(-5, -3, 10, 8, 9);
     // Count colored pixels; expected area is clipped to [0,w) x [0,h)
     let (w, h) = dimensions();
-    let x0 = 0i32.max(-5);
-    let y0 = 0i32.max(-3);
+    let x0 = 0i32;
+    let y0 = 0i32;
     let x1 = ( -5 + 10).min(w as i32);
     let y1 = ( -3 + 8).min(h as i32);
     let expected = (x1 - x0).max(0) as usize * (y1 - y0).max(0) as usize;
@@ -342,4 +342,52 @@ fn tri_fill_and_border() {
     assert_eq!(fb.pix(10, 10, None), Some(7));
     assert_eq!(fb.pix(20, 10, None), Some(7));
     assert_eq!(fb.pix(15, 15, None), Some(7));
+}
+
+#[test]
+fn tri_top_left_flat_top_inclusion() {
+    let mut fb = Framebuffer::new();
+    fb.cls(0);
+    // Flat-top triangle: top edge y=10 should be included; rightmost x excluded
+    fb.tri(10, 10, 20, 10, 15, 15, 6);
+    // Top scanline: interior x in (10,20) filled; endpoints excluded by top-left rule
+    assert_eq!(fb.pix(10, 10, None), Some(0));
+    for x in 11..20 { assert_eq!(fb.pix(x, 10, None), Some(6)); }
+    assert_eq!(fb.pix(20, 10, None), Some(0));
+    // Bottom row excluded
+    for x in 10..=20 { assert_eq!(fb.pix(x, 15, None), Some(0)); }
+}
+
+#[test]
+fn tri_top_left_flat_bottom_exclusion() {
+    let mut fb = Framebuffer::new();
+    fb.cls(0);
+    // Flat-bottom triangle: bottom edge y=20 excluded
+    fb.tri(10, 10, 5, 20, 15, 20, 7);
+    for x in 5..=15 { assert_eq!(fb.pix(x, 20, None), Some(0)); }
+    // No assumption on apex inclusion; key check is base exclusion
+}
+
+#[test]
+fn tri_adjacent_rect_no_gaps() {
+    let mut fb = Framebuffer::new();
+    fb.cls(0);
+    // Two right triangles that should fully cover a 10x10 square [0,10) x [0,10)
+    fb.tri(0, 0, 10, 0, 0, 10, 3);
+    fb.tri(10, 10, 10, 0, 0, 10, 3);
+    let mut count = 0usize;
+    for y in 0..10 { for x in 0..10 { if fb.pix(x, y, None) == Some(3) { count += 1; } } }
+    assert_eq!(count, 100, "expected full 10x10 coverage without gaps");
+}
+
+#[test]
+fn tri_degenerate_zero_area_draws_nothing() {
+    let mut fb = Framebuffer::new();
+    fb.cls(2);
+    // Collinear points -> zero area
+    fb.tri(10, 10, 10, 15, 10, 20, 9);
+    // No pixels should be colored with 9
+    let mut any = false;
+    for y in 10..=20 { if fb.pix(10, y, None) == Some(9) { any = true; break; } }
+    assert!(!any, "degenerate triangle should not draw");
 }

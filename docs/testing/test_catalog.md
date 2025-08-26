@@ -14,6 +14,15 @@ This document summarizes the current test coverage with file paths and intent.
   - `print_width_fixed_vs_variable_and_newline`: `print_text` width (fixed vs variable), newline row advance, and scale behavior.
   - `clip_affects_pix_write`: `pix(x,y,color)` respects the active clip.
   - `robust_oob_line_and_rectb`: OOB line still draws in-bounds; border rect crossing viewport produces in-bounds edges.
+  - `circb_cardinals_and_oob`: Circle border’s cardinal points lit; just outside remains background.
+  - `circ_fill_center_row_and_clip`: Filled center row span and clip restriction.
+  - `circ_zero_radius_draws_center`: r=0 draws a point for circ/circb.
+  - `ellib_cardinals_and_fill_center_row`: Ellipse border cardinals; filled center row interior.
+  - `tri_fill_and_border`: Basic filled triangle and border overlay.
+  - `tri_top_left_flat_top_inclusion`: Top-left rule on flat-top triangles (endpoints excluded on top edge).
+  - `tri_top_left_flat_bottom_exclusion`: Bottom edge excluded on flat-bottom triangles.
+  - `tri_adjacent_rect_no_gaps`: Two triangles tile a rectangle without gaps.
+  - `tri_degenerate_zero_area_draws_nothing`: Collinear triangles draw nothing.
 
 ## Lua Bridge Tests
 - `tic80_rust/tests/lua_api_tests.rs`
@@ -25,8 +34,16 @@ This document summarizes the current test coverage with file paths and intent.
   - `lua_runs_alt_cart_file`: Loads `assets/alt.lua`, checks background/marker/square.
   - `lua_pix_oob_read_returns_nil`: OOB `pix` read returns `nil` in Lua.
   - `lua_default_cart_deterministic_hash`: Default cart produces deterministic frame hashes for fixed tick counts.
+  - `lua_circ_and_circb`: Circle fill and border via Lua.
+  - `lua_elli_ellib_and_tri_trib`: Ellipse and triangle APIs via Lua.
+
+## Memory Tests
+- `tic80_rust/tests/memory_tests.rs`
+  - `poke4_sets_framebuffer_pixel`: 4-bit writes update screen pixels.
+  - `peek4_reads_back_nibble`: 4-bit reads reflect framebuffer.
+  - `memcpy_and_memset_affect_vram`: VRAM writes via memcpy/memset reach the screen.
+  - `peek_poke_bits_general_ram`: 1/4-bit addressing in general RAM behaves correctly.
 
 Notes
 - Tests prefer headless framebuffer inspection over image baselines.
 - Hashing uses FNV‑1a over VRAM palette indices for portability and stability.
-

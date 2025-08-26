@@ -12,6 +12,7 @@ use winit::window::WindowBuilder;
 
 use tic80_rust::gfx::framebuffer::{dimensions, Framebuffer};
 use tic80_rust::script::lua_runner::LuaRunner;
+use tic80_rust::core::memory::Memory;
 
 // Simple fixed-step ticker at ~60 FPS
 struct Ticker {
@@ -56,6 +57,7 @@ fn run() -> Result<(), Error> {
     let mut pixels = Pixels::new(width, height, surface_texture)?;
 
     let fb = Rc::new(RefCell::new(Framebuffer::new()));
+    let mem = Rc::new(RefCell::new(Memory::new(fb.clone())));
     let mut ticker = Ticker::new();
     // Program selection: first CLI arg as .lua script, else embedded default
     let args: Vec<String> = std::env::args().skip(1).collect();
@@ -74,7 +76,7 @@ fn run() -> Result<(), Error> {
     } else {
         DEFAULT_LUA.to_string()
     };
-    let lua_runner = LuaRunner::new(fb.clone(), &script).ok();
+    let lua_runner = LuaRunner::new(fb.clone(), mem.clone(), &script).ok();
 
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Poll;

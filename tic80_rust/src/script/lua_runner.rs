@@ -4,6 +4,7 @@ use std::rc::Rc;
 use mlua::{Function, Lua, MultiValue, RegistryKey, Result as LuaResult, Value};
 
 use crate::gfx::framebuffer::Framebuffer;
+use crate::core::memory::Memory;
 
 pub struct LuaRunner {
     lua: Lua,
@@ -11,7 +12,7 @@ pub struct LuaRunner {
 }
 
 impl LuaRunner {
-    pub fn new(fb: Rc<RefCell<Framebuffer>>, script_src: &str) -> LuaResult<Self> {
+    pub fn new(fb: Rc<RefCell<Framebuffer>>, mem: Rc<RefCell<Memory>>, script_src: &str) -> LuaResult<Self> {
         let lua = Lua::new();
         let tic_key = {
             let globals = lua.globals();
@@ -139,6 +140,45 @@ impl LuaRunner {
                 Ok(width)
             })?;
             globals.set("print", print_fn)?;
+
+            // memory: peek/poke + bit variants + memcpy/memset
+            let mem_peek = mem.clone();
+            let peek_fn = lua.create_function(move |_, (addr, bits): (u32, Option<u8>)| {
+                let a = addr as usize;
+                let b = bits.unwrap_or(8);
+                let v = if b == 8 { mem_peek.borrow().peek(a) } else { mem_peek.borrow().peek_bits(a, b) };
+                Ok(v as u32)
+            })?;
+            globals.set("peek", peek_fn)?;
+
+            let mem_poke = mem.clone();
+            let poke_fn = lua.create_function(move |_, (addr, val, bits): (u32, u32, Option<u8>)| {
+                let a = addr as usize;
+                let v = val as u8;
+                let b = bits.unwrap_or(8);
+                if b == 8 { mem_poke.borrow_mut().poke(a, v); } else { mem_poke.borrow_mut().poke_bits(a, b, v); }
+                Ok(())
+            })?;
+            globals.set("poke", poke_fn)?;
+
+            let mem_peek1 = mem.clone();
+            globals.set("peek1", lua.create_function(move |_, addr: u32| Ok(mem_peek1.borrow().peek_bits(addr as usize, 1) as u32))?)?;
+            let mem_peek2 = mem.clone();
+            globals.set("peek2", lua.create_function(move |_, addr: u32| Ok(mem_peek2.borrow().peek_bits(addr as usize, 2) as u32))?)?;
+            let mem_peek4 = mem.clone();
+            globals.set("peek4", lua.create_function(move |_, addr: u32| Ok(mem_peek4.borrow().peek_bits(addr as usize, 4) as u32))?)?;
+
+            let mem_poke1 = mem.clone();
+            globals.set("poke1", lua.create_function(move |_, (addr, val): (u32, u32)| { mem_poke1.borrow_mut().poke_bits(addr as usize, 1, val as u8); Ok(()) })?)?;
+            let mem_poke2 = mem.clone();
+            globals.set("poke2", lua.create_function(move |_, (addr, val): (u32, u32)| { mem_poke2.borrow_mut().poke_bits(addr as usize, 2, val as u8); Ok(()) })?)?;
+            let mem_poke4 = mem.clone();
+            globals.set("poke4", lua.create_function(move |_, (addr, val): (u32, u32)| { mem_poke4.borrow_mut().poke_bits(addr as usize, 4, val as u8); Ok(()) })?)?;
+
+            let mem_memcpy = mem.clone();
+            globals.set("memcpy", lua.create_function(move |_, (dst, src, size): (u32, u32, u32)| { mem_memcpy.borrow_mut().memcpy(dst as usize, src as usize, size as usize); Ok(()) })?)?;
+            let mem_memset = mem.clone();
+            globals.set("memset", lua.create_function(move |_, (dst, val, size): (u32, u32, u32)| { mem_memset.borrow_mut().memset(dst as usize, val as u8, size as usize); Ok(()) })?)?;
 
             // elli(x, y, a, b, color)
             let fb_elli = fb.clone();

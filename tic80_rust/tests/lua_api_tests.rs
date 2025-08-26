@@ -5,13 +5,13 @@ use std::path::PathBuf;
 
 use tic80_rust::gfx::framebuffer::{dimensions, Framebuffer};
 use tic80_rust::script::lua_runner::LuaRunner;
+use tic80_rust::core::memory::Memory;
 
 fn run_lua(script: &str, ticks: usize) -> Rc<RefCell<Framebuffer>> {
     let fb = Rc::new(RefCell::new(Framebuffer::new()));
-    let runner = LuaRunner::new(fb.clone(), script).expect("lua init");
-    for _ in 0..ticks {
-        runner.tick();
-    }
+    let mem = Rc::new(RefCell::new(Memory::new(fb.clone())));
+    let runner = LuaRunner::new(fb.clone(), mem, script).expect("lua init");
+    for _ in 0..ticks { runner.tick(); }
     fb
 }
 
@@ -207,10 +207,11 @@ fn lua_default_cart_deterministic_hash() {
 
     let run_hash = |ticks: usize| -> u64 {
         let fb = Rc::new(RefCell::new(Framebuffer::new()));
-        let runner = LuaRunner::new(fb.clone(), &script).expect("lua init");
+        let mem = Rc::new(RefCell::new(Memory::new(fb.clone())));
+        let runner = LuaRunner::new(fb.clone(), mem, &script).expect("lua init");
         for _ in 0..ticks { runner.tick(); }
         let mut borrowed = fb.borrow_mut();
-        fb_hash(&mut *borrowed)
+        fb_hash(&mut borrowed)
     };
 
     let h1 = run_hash(1);
