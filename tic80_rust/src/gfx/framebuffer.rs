@@ -365,58 +365,54 @@ impl Framebuffer {
 
     // Filled triangle using scanline rasterization
     #[allow(clippy::too_many_arguments)]
-    pub fn tri(&mut self, mut x1: i32, mut y1: i32, mut x2: i32, mut y2: i32, mut x3: i32, mut y3: i32, color: u8) {
+    pub fn tri(&mut self, x0: i32, y0: i32, x1: i32, y1: i32, x2: i32, y2: i32, color: u8) {
         let c = color & 0x0F;
-        // Sort by y, then x
-        if y2 < y1 || (y2 == y1 && x2 < x1) { std::mem::swap(&mut x1, &mut x2); std::mem::swap(&mut y1, &mut y2); }
-        if y3 < y1 || (y3 == y1 && x3 < x1) { std::mem::swap(&mut x1, &mut x3); std::mem::swap(&mut y1, &mut y3); }
-        if y3 < y2 || (y3 == y2 && x3 < x2) { std::mem::swap(&mut x2, &mut x3); std::mem::swap(&mut y2, &mut y3); }
-        if y1 == y3 { return; }
-
-        if y2 == y3 {
-            // flat-bottom
-            let inv1 = (x2 - x1) as f32 / (y2 - y1) as f32;
-            let inv2 = (x3 - x1) as f32 / (y2 - y1) as f32;
-            let mut cx1 = x1 as f32;
-            let mut cx2 = x1 as f32;
-            for y in y1..=y2 {
-                self.hspan(cx1.floor() as i32, cx2.floor() as i32, y, c);
-                cx1 += inv1;
-                cx2 += inv2;
-            }
-        } else if y1 == y2 {
-            // flat-top
-            let inv1 = (x3 - x1) as f32 / (y3 - y1) as f32;
-            let inv2 = (x3 - x2) as f32 / (y3 - y2) as f32;
-            let mut cx1 = x1 as f32;
-            let mut cx2 = x2 as f32;
-            for y in y1..=y3 {
-                self.hspan(cx1.floor() as i32, cx2.floor() as i32, y, c);
-                cx1 += inv1;
-                cx2 += inv2;
-            }
+        // Convert to CCW orientation for consistent edge tests
+        let area = (x1 - x0) as i64 * (y2 - y0) as i64 - (x2 - x0) as i64 * (y1 - y0) as i64;
+        let (v0x, v0y, v1x, v1y, v2x, v2y) = if area < 0 {
+            (x0, y0, x2, y2, x1, y1)
         } else {
-            // general: split at y2
-            let x4 = x1 + (((y2 - y1) as f32) * ((x3 - x1) as f32) / ((y3 - y1) as f32)).floor() as i32;
-            // flat-bottom part
-            let inv1 = (x2 - x1) as f32 / (y2 - y1) as f32;
-            let inv2 = (x4 - x1) as f32 / (y2 - y1) as f32;
-            let mut cx1 = x1 as f32;
-            let mut cx2 = x1 as f32;
-            for y in y1..=y2 {
-                self.hspan(cx1.floor() as i32, cx2.floor() as i32, y, c);
-                cx1 += inv1;
-                cx2 += inv2;
-            }
-            // flat-top part
-            let inv1b = (x3 - x2) as f32 / (y3 - y2) as f32;
-            let inv2b = (x3 - x4) as f32 / (y3 - y2) as f32;
-            let mut cx1b = x2 as f32;
-            let mut cx2b = x4 as f32;
-            for y in y2..=y3 {
-                self.hspan(cx1b.floor() as i32, cx2b.floor() as i32, y, c);
-                cx1b += inv1b;
-                cx2b += inv2b;
+            (x0, y0, x1, y1, x2, y2)
+        };
+
+        // Bounding box (exclusive max per top-left rule)
+        let min_x = v0x.min(v1x).min(v2x);
+        let min_y = v0y.min(v1y).min(v2y);
+        let max_x = v0x.max(v1x).max(v2x);
+        let max_y = v0y.max(v1y).max(v2y);
+
+        // Doubling coordinates to evaluate edge functions at pixel centers (x+0.5, y+0.5)
+        let (ax2, ay2) = ((v0x as i64) * 2, (v0y as i64) * 2);
+        let (bx2, by2) = ((v1x as i64) * 2, (v1y as i64) * 2);
+        let (cx2, cy2) = ((v2x as i64) * 2, (v2y as i64) * 2);
+
+        // Edge deltas
+        let e0_dx = bx2 - ax2; let e0_dy = by2 - ay2; // v0->v1
+        let e1_dx = cx2 - bx2; let e1_dy = cy2 - by2; // v1->v2
+        let e2_dx = ax2 - cx2; let e2_dy = ay2 - cy2; // v2->v0
+
+        // Top-left classification
+        let e0_top_left = e0_dy > 0 || (e0_dy == 0 && e0_dx < 0);
+        let e1_top_left = e1_dy > 0 || (e1_dy == 0 && e1_dx < 0);
+        let e2_top_left = e2_dy > 0 || (e2_dy == 0 && e2_dx < 0);
+
+        // Iterate over pixels in bounding box with top-left rule: y in [min_y, max_y), x in [min_x, max_x)
+        for y in min_y..max_y {
+            for x in min_x..max_x {
+                let px = (x as i64) * 2 + 1;
+                let py = (y as i64) * 2 + 1;
+                // Edge functions
+                let e0 = (py - ay2) * e0_dx - (px - ax2) * e0_dy;
+                let e1 = (py - by2) * e1_dx - (px - bx2) * e1_dy;
+                let e2 = (py - cy2) * e2_dx - (px - cx2) * e2_dy;
+
+                // Apply top-left inclusion rules
+                if (e0 > 0 || (e0 == 0 && e0_top_left))
+                    && (e1 > 0 || (e1 == 0 && e1_top_left))
+                    && (e2 > 0 || (e2 == 0 && e2_top_left))
+                {
+                    let _ = self.set_pixel(x, y, c);
+                }
             }
         }
     }
