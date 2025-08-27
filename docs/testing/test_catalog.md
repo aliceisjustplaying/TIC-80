@@ -22,7 +22,10 @@ This document summarizes the current test coverage with file paths and intent.
   - `tri_top_left_flat_top_inclusion`: Top-left rule on flat-top triangles (endpoints excluded on top edge).
   - `tri_top_left_flat_bottom_exclusion`: Bottom edge excluded on flat-bottom triangles.
   - `tri_adjacent_rect_no_gaps`: Two triangles tile a rectangle without gaps.
+  - `tri_shared_edge_shallow_slope_tiles_rect`: Shallow-slope shared-edge tiling covers rectangle area exactly.
   - `tri_degenerate_zero_area_draws_nothing`: Collinear triangles draw nothing.
+  - `ellib_cardinals_and_fill_center_row`: Ellipse border cardinals; filled center row interior.
+  - `ellib_cardinal_points_aspect_wide`: Wide-aspect ellipse draws expected cardinals; neighbors remain background.
 
 ## Lua Bridge Tests
 - `tic80_rust/tests/lua_api_tests.rs`
@@ -36,6 +39,7 @@ This document summarizes the current test coverage with file paths and intent.
   - `lua_default_cart_deterministic_hash`: Default cart produces deterministic frame hashes for fixed tick counts.
   - `lua_circ_and_circb`: Circle fill and border via Lua.
   - `lua_elli_ellib_and_tri_trib`: Ellipse and triangle APIs via Lua.
+  - `lua_line_float_truncates_to_integer_pixels`: Float coordinates truncate to integer pixels identically to TIC-80.
 
 ## Memory Tests
 - `tic80_rust/tests/memory_tests.rs`
@@ -43,6 +47,9 @@ This document summarizes the current test coverage with file paths and intent.
   - `peek4_reads_back_nibble`: 4-bit reads reflect framebuffer.
   - `memcpy_and_memset_affect_vram`: VRAM writes via memcpy/memset reach the screen.
   - `peek_poke_bits_general_ram`: 1/4-bit addressing in general RAM behaves correctly.
+  - `vram_writes_ignore_clip`: VRAM screen mapping writes ignore clip and update pixels directly.
+  - `two_bit_cross_byte_alignment`: 2-bit writes at end of a byte and start of next do not bleed.
+  - `four_bit_unaligned_nibbles`: 4-bit nibble writes across/within bytes pack correctly.
 - `tic80_rust/tests/memory_bits_roundtrip.rs`
   - `roundtrip_peek_poke_bits_general_ram`: Round-trip property-like checks for 1/2/4/8-bit peek/poke across a RAM window.
   - `vram_screen_boundary_write_does_not_bleed`: Last screen byte maps to the last two pixels; next byte (non-screen VRAM) does not affect framebuffer.
@@ -55,6 +62,8 @@ This document summarizes the current test coverage with file paths and intent.
   - `fft_query_peak_at_bin`: Bin-aligned sine produces a distinct raw peak at the expected bin versus neighbors.
   - `lua_fft_returns_normalized_bin`: Verifies Lua `fft(k)` returns normalized magnitude by gating a pixel.
   - `fft_query_range_clamps_and_sums`: Clamping and inclusive sum behavior matches C (OOB handling and range sums).
+  - `fft_single_bin_peak_and_normalization`: Single-bin sine produces clear raw peak and normalized near-1.0 at bin.
+  - `vqt_bin_has_higher_energy_than_neighbors`: Sine at a center frequency yields higher raw energy at the target bin than neighbors.
 
 Notes
 - Tests prefer headless framebuffer inspection over image baselines.

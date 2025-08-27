@@ -5,6 +5,7 @@ Scope
 - Palette: 16 sRGB entries; index→RGBA conversion for presentation; no color-space transforms.
 - Text: Default font; 6 px advance within an 8×8 glyph box; variable-width by trimming empty columns when `fixed=false`.
 - Clip: Active clip rectangle constrains all drawing writes; reads are unaffected.
+ - VRAM mapping: Screen region writes via memory (`poke`/`memcpy`/`memset`) are not affected by `clip` and update pixels directly.
 
 Implemented Semantics
 - `cls(color=0)`: Fills framebuffer with palette index (masked to 0..15). Honors clip by design via `set_pixel` usage in higher-level draws; `cls` itself fills full screen (like TIC-80).
@@ -28,6 +29,7 @@ Implemented Semantics
   - Origin: top-left of first drawn column is `(x,y)`.
   - Scaling: draws scaled glyphs; returned width includes scaling.
   - Newlines: advances by 6 px per line (scale applied); `smallfont` currently unused.
+  - Width: returns the width of the longest line (after trimming when `fixed=false`). A one-pixel spacing is applied between variable-width glyphs.
 
 Clip Behavior
 - `clip(x,y,w,h)`: Sets active clip rectangle; `clip()` resets to full screen.

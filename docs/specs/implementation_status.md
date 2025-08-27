@@ -18,10 +18,11 @@ Implemented (Lua + Core)
   - `print(text,x,y,color=15,fixed=false,scale=1,small=false) -> width`: Default font, variable-width trim, scale applied to return width; newlines advance by 6 px (times scale).
 - Clip
   - `clip(x,y,w,h)` and `clip()`: Set/reset clip rectangle affecting all draw writes; reads are unaffected.
+  - VRAM screen mapping (via memory) ignores `clip` and updates pixels directly.
  - Memory
   - `peek(addr[,bits=8])`, `poke(addr, value[,bits=8])`: 8/4/2/1-bit addressing across full 96 KB; VRAM screen region mapped to live framebuffer (nibble-packed 2 px/byte).
   - `peek1/peek2/peek4`, `poke1/poke2/poke4`: Bit-specific helpers.
- - `memcpy(dst, src, size)`, `memset(dst, value, size)`: Byte-wise operations; overlap-safe memcpy; VRAM ops update on-screen pixels immediately.
+- `memcpy(dst, src, size)`, `memset(dst, value, size)`: Byte-wise operations; overlap-safe memcpy; VRAM ops update on-screen pixels immediately.
 
 Implemented (System)
 - `trace(message, color=15)`: Prints to console (color informational only in CLI); tests verify trace messages via an internal buffer used only in tests.
@@ -54,6 +55,7 @@ Behavioral Notes
 - Triangles: top-left inclusion; CCW orientation enforced internally; half-open bounding box prevents shared-edge double draws.
 - Ellipses vs circles: fill then border may overdraw endpoints; order-dependent at axis rows (parity with TIC-80).
 - Font: Default TIC-80 bitmap included; LSB-left bits; 6 px advance; trimming for variable width.
+ - VRAM writes: VRAM screen nibble pairs update framebuffer ignoring `clip` (matches TIC-80 behavior).
 
 Pending APIs (not implemented yet)
 - Texturing/tiles
