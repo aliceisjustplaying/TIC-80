@@ -79,9 +79,12 @@ Notes
 ## Editor (Livecoding)
 - Launch with `--editor` to open the framebuffer UI with CODE/CONSOLE tabs.
 - CODE view:
-  - Rope-backed text buffer for the loaded cart code (read-only viewport initially).
+  - Rope-backed text buffer for the loaded cart code; editable.
   - Monospace grid 6×8 per cell (fixed-width glyphs render left 6 columns and advance 6 px).
-  - Gutter with 1-based line numbers; arrow keys move the caret; viewport auto-scrolls.
+  - Gutter with 1-based line numbers; viewport auto-scroll keeps caret visible.
+  - Selection highlight with Shift+Arrows; clipboard via Cmd/Ctrl+C/V/X; Select All Cmd/Ctrl+A.
+  - Undo/Redo: Cmd/Ctrl+Z (undo), Shift+Z or Y (redo).
+  - Keys: Left/Right/Up/Down move the caret; Home/End jump to line bounds; Tab inserts a single space; Enter inserts newline; Backspace/Delete remove characters (joining lines at SOL/EOL).
   - Caret matches TIC‑80 style: red box slightly larger than the glyph, with 1 px drop shadow; underlying glyph drawn dark to simulate inversion.
 - Roadmap: see `docs/roadmap/editor_livecoding.md` for phases (editing, undo/redo, colorizer, find, console, hot reload).
 

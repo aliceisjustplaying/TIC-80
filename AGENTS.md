@@ -56,7 +56,8 @@
 - CLI loads bundled default cart or a provided `.lua` path.
 - Audio capture foundation: `cpal` input stream with mono downmix into a lock‑free ring buffer (8192 samples); CLI flags `--list-audio`, `--audio-device`, `--audio-vu`, `--audio-disable`; simple VU feedback prints peak dBFS once per second.
  - FFT: 2k R2C (`realfft`) on tick thread; maintains raw/smoothed/normalized buffers with peak tracking; `--debug-fft` throttled print; Lua `fft/ffts/fftr/fftrs` wired with C-identical clamping/sum semantics; headless tests added; simple cart at `assets/fft_test.lua`.
- - Screenshots: CLI supports `--screenshot <path> [--screenshot-scale N] [--screenshot-frame N]` and `--headless` offscreen capture. In windowed mode, F12 saves to `./screenshots/scr-YYYYmmdd-HHMMSS.png` without exiting.
+- Screenshots: CLI supports `--screenshot <path> [--screenshot-scale N] [--screenshot-frame N]` and `--headless` offscreen capture. In windowed mode, F12 saves to `./screenshots/scr-YYYYmmdd-HHMMSS.png` without exiting.
+ - Editor: CODE view supports basic editing (insert chars/newline/tab, backspace/delete, Home/End), selection (Shift+arrows), clipboard (Ctrl/Cmd+C/V/X), undo/redo (Ctrl/Cmd+Z / Shift+Z or Y). Caret + auto-scroll; gutter and rendering intact; tests added.
 
 **Near-Term Backlog**
 - FFT implementation (cpal + realfft) per `docs/specs/audio_fft_vqt.md` (see Implementation TODOs section); add headless tests and Lua `fft/ffts/fftr/fftrs`.
@@ -140,6 +141,17 @@
    - Ran `cargo fmt`, `cargo clippy --all-targets --all-features -D warnings`, and `cargo test`: all green.
  - Conducted a full code review of the `tic80_rust` crate. Findings are positive; suggestions for minor refactorings have been logged in `docs/roadmap/todos_code_review.md` and a summary added to `docs/adr/codereviews/001.md`.
  - Performed a second code review. The summary is located at `docs/adr/codereviews/002_ai_review.md` and actionable suggestions are in `docs/roadmap/todos_from_ai_review.md`.
+- 2025-08-27 (cont.):
+   - Editor basic editing implemented and tested:
+     - Text input (ReceivedCharacter), Enter newline, Tab → one space; Backspace/Delete; Home/End.
+     - Selection with Shift+arrows; clipboard shortcuts (copy/cut/paste) using OS clipboard; select-all.
+     - Undo/redo stacks with batching for replace; redo semantics fixed and tested.
+     - Key handling wired in windowed path; caret and auto-scroll preserved.
+     - Tests: `tic80_rust/tests/editor_editing_tests.rs`, `tic80_rust/tests/editor_selection_undo_tests.rs`.
+     - Hygiene verified: `cargo fmt`, `cargo clippy --all-targets --all-features -- -D warnings`, and `cargo test` all green.
+   - Editor polish and bugfixes:
+     - macOS Cmd shortcuts fixed by using per-event modifiers (`KeyboardInput.modifiers`) for Cmd/Ctrl detection.
+     - Selection highlight aligned with caret box (vertical off-by-one vs clip corrected); added unit test for alignment.
 
 **Docs Index**
 - Start here: `docs/README.md`

@@ -73,6 +73,8 @@ Notes
 ## Editor Tests
 - `tic80_rust/tests/editor_smoke.rs`: UI shell draws and tabs switch on click; verifies top-bar pixels.
 - `tic80_rust/tests/editor_code_view_tests.rs`: CODE viewport renders gutter digits and text cells.
+- `tic80_rust/tests/editor_editing_tests.rs`: basic editing behavior for insert/newline, backspace (join-prev), delete (join-next), Home/End, and Tab-as-spaces.
+- `tic80_rust/tests/editor_selection_undo_tests.rs`: selection replace/cut/paste and undo/redo cycles; select-all.
 
 ## Screenshot Tests
 - `tic80_rust/tests/screenshot_smoke.rs`

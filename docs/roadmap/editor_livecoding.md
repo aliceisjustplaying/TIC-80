@@ -34,8 +34,8 @@ Phase 0 — Shell + Layout
 Phase 1 — Text Engine + Editor Basics
 - [x] Integrate a rope‑backed buffer (ropey) and load cart code into it.
 - [x] Caret movement (arrows) and auto-scroll; Home/End pending.
-- [ ] Insert/delete/backspace, newlines.
-- [ ] Selection (shift+arrows), clipboard (Ctrl/Cmd+C/V/X), undo/redo (local stack for code buffer).
+- [x] Insert/delete/backspace, newlines.
+- [x] Selection (shift+arrows), clipboard (Ctrl/Cmd+C/V/X), undo/redo (local stack for code buffer).
 - [x] Horizontal/vertical scrolling; viewport mapping from text rows to framebuffer pixels.
 - [x] Draw gutter (line numbers).
 
@@ -43,6 +43,10 @@ Phase 2 — Syntax + UX polish (minimal)
 - [ ] Lightweight Lua colorizer (keywords, comments, strings, numbers) with palette colors.
 - [ ] Find/replace panel (Ctrl/Cmd+F) with next/prev navigation.
 - [ ] Adjustable font scale within 8×8 multiples (e.g., 1×/2×) while preserving 240×136 layout.
+
+Notes
+- Home/End implemented for quick navigation to line bounds.
+- Tab inserts a single space by default (compact layout).
 
 Phase 3 — Console Pane (may be reduced)
 - [ ] Console ring buffer model with timestamps and color tags.

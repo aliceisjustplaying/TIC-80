@@ -33,7 +33,7 @@ use std::time::{Duration, Instant};
 
 use pixels::{Pixels, SurfaceTexture};
 use winit::dpi::LogicalSize;
-use winit::event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent};
+use winit::event::{ElementState, Event, KeyboardInput, ModifiersState, VirtualKeyCode, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::{Window, WindowBuilder};
 
@@ -351,6 +351,7 @@ fn run() -> anyhow::Result<()> {
     let mut last_cursor_fb: Option<(i32, i32)> = None;
     let mut frame_counter: u32 = 0;
     let mut one_off_saved = false;
+    let mut modifiers = ModifiersState::empty();
 
     #[allow(clippy::cognitive_complexity)]
     event_loop.run(move |event, _, control_flow| {
@@ -395,17 +396,80 @@ fn run() -> anyhow::Result<()> {
                         eprintln!("Screenshot error: {e}");
                     }
                 }
+                WindowEvent::ReceivedCharacter(ch) => {
+                    if let (Some(ui), Some(cb)) = (editor_ui.as_ref(), code_buf.as_mut()) {
+                        if ui.active == tic80_rust::editor::ui::Tab::Code {
+                            // Ignore character input when Cmd/Ctrl is held (shortcut) to avoid inserting letters
+                            if modifiers.ctrl() || modifiers.logo() {
+                                return;
+                            }
+                            if ch == '\n' {
+                                cb.insert_newline();
+                            } else if ch == '\t' {
+                                cb.insert_tab();
+                            } else if !ch.is_control() {
+                                cb.insert_char(ch);
+                            }
+                        }
+                    }
+                }
+                WindowEvent::ModifiersChanged(m) => {
+                    modifiers = m;
+                }
                 WindowEvent::KeyboardInput { input, .. } => {
                     if let (Some(ui), Some(cb)) = (editor_ui.as_ref(), code_buf.as_mut()) {
                         if ui.active == tic80_rust::editor::ui::Tab::Code
                             && input.state == ElementState::Pressed
                         {
                             if let Some(key) = input.virtual_keycode {
+                                // Prefer latest modifiers from event loop; fall back to key-based detection
+                                #[allow(deprecated)]
+                                let m = input.modifiers;
+                                let shift = m.shift();
+                                let ctrl = m.ctrl();
+                                let cmd = m.logo();
+                                // Shortcuts (cmd/ctrl)
+                                if ctrl || cmd {
+                                    match key {
+                                        VirtualKeyCode::C => {
+                                            if let Some(text) = cb.copy_selection_text() {
+                                                let _ = set_clipboard_text(&text);
+                                            }
+                                            return;
+                                        }
+                                        VirtualKeyCode::X => {
+                                            if let Some(text) = cb.cut_selection_text() {
+                                                let _ = set_clipboard_text(&text);
+                                            }
+                                            return;
+                                        }
+                                        VirtualKeyCode::V => {
+                                            if let Ok(text) = get_clipboard_text() {
+                                                cb.paste_text(&text);
+                                            }
+                                            return;
+                                        }
+                                        VirtualKeyCode::Z => {
+                                            if shift { cb.redo(); } else { cb.undo(); }
+                                            return;
+                                        }
+                                        VirtualKeyCode::Y => { cb.redo(); return; }
+                                        VirtualKeyCode::A => { cb.select_all(); return; }
+                                        _ => {}
+                                    }
+                                }
+                                // Navigation and editing
                                 match key {
-                                    VirtualKeyCode::Left => cb.move_left(),
-                                    VirtualKeyCode::Right => cb.move_right(),
-                                    VirtualKeyCode::Up => cb.move_up(),
-                                    VirtualKeyCode::Down => cb.move_down(),
+                                    VirtualKeyCode::Left => { if shift { cb.ensure_selection_anchor(); } else { cb.clear_selection(); } cb.move_left(); },
+                                    VirtualKeyCode::Right => { if shift { cb.ensure_selection_anchor(); } else { cb.clear_selection(); } cb.move_right(); },
+                                    VirtualKeyCode::Up => { if shift { cb.ensure_selection_anchor(); } else { cb.clear_selection(); } cb.move_up(); },
+                                    VirtualKeyCode::Down => { if shift { cb.ensure_selection_anchor(); } else { cb.clear_selection(); } cb.move_down(); },
+                                    VirtualKeyCode::Back => { cb.backspace(); },
+                                    VirtualKeyCode::Delete => { cb.delete_forward(); },
+                                    VirtualKeyCode::Return => { cb.insert_newline(); },
+                                    VirtualKeyCode::Tab => { cb.insert_tab(); },
+                                    VirtualKeyCode::Home => { if shift { cb.ensure_selection_anchor(); } else { cb.clear_selection(); } cb.home(); },
+                                    VirtualKeyCode::End => { if shift { cb.ensure_selection_anchor(); } else { cb.clear_selection(); } cb.end(); },
                                     _ => {}
                                 }
                             }
@@ -663,4 +727,18 @@ fn run_headless(args: &Args) -> anyhow::Result<()> {
     fb.borrow().blit_to_rgba(&mut rgba);
     save_screenshot_from_rgba(args, &rgba)?;
     Ok(())
+}
+
+// -- Clipboard helpers -------------------------------------------------------------------------
+
+fn set_clipboard_text(text: &str) -> anyhow::Result<()> {
+    let mut cb = arboard::Clipboard::new()?;
+    cb.set_text(text.to_string())?;
+    Ok(())
+}
+
+fn get_clipboard_text() -> anyhow::Result<String> {
+    let mut cb = arboard::Clipboard::new()?;
+    let t = cb.get_text()?;
+    Ok(t)
 }

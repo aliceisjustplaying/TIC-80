@@ -47,4 +47,3 @@ fn e2e_headless_editor_screenshot() {
     run_and_capture(&args, &p);
     let _ = std::fs::remove_file(&p);
 }
-

@@ -76,9 +76,13 @@ Pending APIs (not implemented yet)
 - Sprite flags
   - `fget`, `fset`.
 
-Implemented (Editor — initial)
+Implemented (Editor)
 - UI shell: top bar (tabs + buttons) rendered in framebuffer; integer-scaling window.
-- CODE view: rope‑backed buffer; read‑only viewport rendering; gutter; caret navigation (arrows) with auto‑scroll; TIC‑style caret (red box + shadow with inverted glyph); 6×8 cell grid.
+- CODE view: rope‑backed buffer; editable; gutter; selection highlight; TIC‑style caret (red box + shadow with inverted glyph); 6×8 cell grid.
+- Navigation: arrows, Home/End; auto‑scroll keeps caret visible.
+- Editing: insert chars/newline/tab (1 space), backspace/delete with line joins at SOL/EOL.
+- Selection/Clipboard: Shift+arrows; Select All (Cmd/Ctrl+A); copy/cut/paste via OS clipboard (Cmd/Ctrl+C/V/X).
+- Undo/Redo: Cmd/Ctrl+Z undo; Shift+Z or Y redo; batched operations for replace.
 - CLI: `--editor` launches the editor.
 
 Test Coverage (summary)
