@@ -43,6 +43,12 @@ This document summarizes the current test coverage with file paths and intent.
   - `peek4_reads_back_nibble`: 4-bit reads reflect framebuffer.
   - `memcpy_and_memset_affect_vram`: VRAM writes via memcpy/memset reach the screen.
   - `peek_poke_bits_general_ram`: 1/4-bit addressing in general RAM behaves correctly.
+- `tic80_rust/tests/memory_bits_roundtrip.rs`
+  - `roundtrip_peek_poke_bits_general_ram`: Round-trip property-like checks for 1/2/4/8-bit peek/poke across a RAM window.
+  - `vram_screen_boundary_write_does_not_bleed`: Last screen byte maps to the last two pixels; next byte (non-screen VRAM) does not affect framebuffer.
+- `tic80_rust/tests/memory_bits_alignment.rs`
+  - `two_bit_cross_byte_alignment`: 2‑bit writes at end of one byte and start of next do not bleed.
+  - `four_bit_unaligned_nibbles`: Odd/even nibble writes across bytes and within a byte pack correctly.
 
 ## FFT Tests
 - `tic80_rust/tests/fft_tests.rs`

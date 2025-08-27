@@ -79,3 +79,4 @@ See also
 - Graphics semantics: `docs/specs/graphics.md`.
 - API parity checklist: `docs/specs/lua_api_parity.md`.
 - Testing strategy and catalog: `docs/testing/strategy.md`, `docs/testing/test_catalog.md`.
+ - Hygiene: clippy pedantic baseline enforced with curated allows for DSP and TIC-style APIs; see `AGENTS.md` for current lint policy and status.

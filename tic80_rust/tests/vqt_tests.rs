@@ -116,3 +116,33 @@ fn vqt_whitened_arrays_are_finite() {
         assert!(vqt.vqt_w_norm[i].is_finite());
     }
 }
+
+#[test]
+fn vqt_whitening_scratch_not_reallocated() {
+    let cap = 8192;
+    let sr = 44_100;
+    let mut vqt = VQTState::new(sr, cap);
+    let (p_logm, p_env) = vqt.scratch_ptrs();
+    let (c_logm, c_env) = vqt.scratch_caps();
+    // Run multiple updates to exercise whitening path
+    for _ in 0..10 {
+        for i in 0..9000 {
+            let t = i as f32 / (sr as f32);
+            let s = (2.0 * std::f32::consts::PI * 440.0 * t).sin();
+            vqt.ingest(s);
+        }
+        vqt.update();
+    }
+    let (p_logm2, p_env2) = vqt.scratch_ptrs();
+    let (c_logm2, c_env2) = vqt.scratch_caps();
+    assert_eq!(
+        p_logm, p_logm2,
+        "logm pointer changed (allocation likely occurred)"
+    );
+    assert_eq!(
+        p_env, p_env2,
+        "env pointer changed (allocation likely occurred)"
+    );
+    assert_eq!(c_logm, c_logm2, "logm capacity changed (reallocation)");
+    assert_eq!(c_env, c_env2, "env capacity changed (reallocation)");
+}

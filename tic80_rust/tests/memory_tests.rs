@@ -62,3 +62,15 @@ fn peek_poke_bits_general_ram() {
     mem.poke_bits(base * 8 + 7, 1, 1); // set MSB of first byte
     assert_eq!(mem.peek(base), 0x8F);
 }
+
+#[test]
+fn vram_writes_ignore_clip() {
+    let fb = Rc::new(RefCell::new(Framebuffer::new()));
+    let mut mem = Memory::new(fb.clone());
+    // Set a clip that excludes the first pixel (0,0)
+    fb.borrow_mut().clip(10, 10, 10, 10);
+    // Write to VRAM screen first byte low nibble -> pixel (0,0)
+    mem.poke_bits(0, 4, 0xC);
+    // Despite clip, the pixel must update
+    assert_eq!(fb.borrow_mut().pix(0, 0, None), Some(0xC));
+}

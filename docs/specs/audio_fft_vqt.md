@@ -72,6 +72,10 @@ This page captures the runtime behavior and the implementation plan for FFT/VQT 
   - Single‑tone hits expected semitone bin; whitened vs unwhitened differ predictably on broadband inputs.
   - Normalization clamps to [0,1]; whitened/unwhitened use independent peak trackers.
 
+## Debugging & Telemetry
+- `--debug-fft`: Prints the first 16 FFT bins (smoothed normalized) periodically (~500 ms) for sanity checks.
+- `--debug-fx`: Prints average processing time per tick (milliseconds) for FFT and VQT once per second (uses tick-thread timings). Useful to monitor headroom and spot regressions.
+
 ## Integration Plan (Milestones)
 1) FFT foundation: ring buffer, 2k R2C planner, raw/normalized/smoothed buffers, Lua `fft/ffts/fftr/fftrs`.
 2) VQT kernels: generation + storage; 8k R2C planner; unwhitened path with `vqt/vqts/vqtr/vqtrs`.

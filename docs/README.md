@@ -5,6 +5,8 @@ This folder organizes the rewrite plan, specs, architecture notes, testing strat
 ## Roadmap
 - `docs/roadmap/overview.md`: High-level phased roadmap and goals (moved from RUST_REWRITE.md).
 - `docs/roadmap/gui_first.md`: Combined GUI-first kickoff + milestones for `winit + pixels` and `cls/pix`.
+- `docs/roadmap/editor_livecoding.md`: Livecoding editor plan (TIC‑80 UI vibes): CODE + CONSOLE only.
+ - `docs/roadmap/todos_code_review.md`: Rolling TODOs from code review (high/medium/low priority) with checkboxes.
 
 ## Specs
 - `docs/specs/memory_map.md`: Canonical pointer to the root `MEMORY_MAP.md` and usage notes.
@@ -16,6 +18,7 @@ This folder organizes the rewrite plan, specs, architecture notes, testing strat
 ## Architecture
 - `docs/architecture/workspace.md`: Crate layout and module boundaries.
 - `docs/architecture/runtime.md`: Fixed-step loop, callbacks, and presentation responsibilities.
+- `docs/architecture/clippy_policy.md`: Lint policy (pedantic baseline + curated allows).
 
 ## Testing
 - `docs/testing/strategy.md`: Testing and validation strategy across API/VRAM/audio.
@@ -45,6 +48,26 @@ Notes
 - Time/Trace test cart:
   - `cargo run --manifest-path tic80_rust/Cargo.toml -- tic80_rust/assets/time_trace_test.lua`
   - Shows elapsed ms and emits a trace once per second to the console.
- - VQT test cart:
+- VQT test cart:
   - `cargo run --manifest-path tic80_rust/Cargo.toml -- tic80_rust/assets/vqt_test.lua --audio-device "<name-substr>"`
   - Visualizes 120 bins (12 octaves) with a 2px per-bin bar chart; auto-toggles between raw and whitened views every ~3 seconds.
+
+## CLI
+- Usage: `tic80_rust [OPTIONS] [CART.lua]`
+- Options:
+  - `-h, --help`: Show help and exit.
+  - `--quiet`: Suppress once-only warnings and Lua BOOT()/TIC() error prints (useful for headless runs).
+  - `--list-audio`: List input audio devices and exit.
+  - `--audio-device <SUBSTR>`: Select input device by substring match (case-insensitive).
+  - `--audio-disable`: Disable audio capture and analysis.
+  - `--audio-vu`: Print VU peak dBFS once per second.
+  - `--debug-fft`: Print the first 16 FFT bins (smoothed, normalized) roughly every 500 ms.
+  - `--debug-fx`: Print per-second FX timings and ring stats: pushed delta (dp), overflow delta/total (ovf), underrun delta/total, consumed delta (cons), EMA samples/tick, and estimated ring occupancy.
+- Notes:
+  - CART.lua is optional; defaults to the bundled cart if omitted.
+  - Audio capture picks the nearest supported sample rate to 44100 Hz and logs the selection.
+  - Window is fixed 240×136 internal res with integer scaling.
+
+## Debug Flags (Audio Analysis)
+- `--debug-fft`: First 16 FFT bins (smoothed normalized).
+- `--debug-fx`: FX timings plus ring stats (dp/ovf/underrun/cons), EMA samples/tick, estimated occupancy.

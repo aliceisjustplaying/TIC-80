@@ -15,4 +15,4 @@ Data Flow
 - Lua (`tic-lua`) calls into `tic-api` → forwards to `tic-core/gfx/audio/io`.
 - `tic-gfx` writes to VRAM page(s); presenter converts palette indices to RGBA for display.
 - `tic-audio` produces sample blocks; optional capture ring shared with `tic-fx`.
-
+- `tic-studio` (planned): A framebuffer‑rendered TIC‑80‑style UI. We will deliver CODE first, then CONSOLE (console scope may be reduced). Integrates with `tic-runner`/`tic-core` for hot reload and .tic code‑only round‑trip. See `docs/roadmap/editor_livecoding.md`.

@@ -1,6 +1,13 @@
+#![allow(
+    clippy::cast_sign_loss,
+    clippy::cast_possible_wrap,
+    clippy::cast_possible_truncation,
+    clippy::cast_precision_loss
+)]
 use std::sync::OnceLock;
 
 // Default 16-color TIC-80 palette (sRGB) as RGBA8
+const COLOR_MASK: u8 = 0x0F;
 const PALETTE: [[u8; 4]; 16] = [
     [0x00, 0x00, 0x00, 0xFF],
     [0x1D, 0x2B, 0x53, 0xFF],
@@ -37,11 +44,13 @@ fn font_bytes() -> &'static [u8] {
                 continue;
             }
             let t = tok.trim();
-            let val = if let Some(hex) = t.strip_prefix("0x").or_else(|| t.strip_prefix("0X")) {
-                u8::from_str_radix(hex, 16).ok()
-            } else {
-                t.parse::<u8>().ok()
-            };
+            let val = t
+                .strip_prefix("0x")
+                .or_else(|| t.strip_prefix("0X"))
+                .map_or_else(
+                    || t.parse::<u8>().ok(),
+                    |hex| u8::from_str_radix(hex, 16).ok(),
+                );
             if let Some(b) = val {
                 out.push(b);
             }
@@ -64,6 +73,7 @@ impl Framebuffer {
     pub const WIDTH: u32 = WIDTH;
     pub const HEIGHT: u32 = HEIGHT;
 
+    #[must_use]
     pub fn new() -> Self {
         Self {
             idx: vec![0; (WIDTH * HEIGHT) as usize],
@@ -76,7 +86,7 @@ impl Framebuffer {
 
     // cls(color): fill framebuffer with palette index
     pub fn cls(&mut self, color: u8) {
-        self.idx.fill(color & 0x0F);
+        self.idx.fill(color & COLOR_MASK);
     }
 
     // pix(x,y[,color]): if Some(color) -> write; else -> read
@@ -91,7 +101,7 @@ impl Framebuffer {
                     None
                 } else {
                     let i = (y as u32 * WIDTH + x as u32) as usize;
-                    Some(self.idx[i] & 0x0F)
+                    Some(self.idx[i] & COLOR_MASK)
                 }
             }
         }
@@ -111,7 +121,17 @@ impl Framebuffer {
             return false;
         }
         let i = (y as u32 * WIDTH + x as u32) as usize;
-        self.idx[i] = color & 0x0F;
+        self.idx[i] = color & COLOR_MASK;
+        true
+    }
+
+    // Unclipped pixel write for memory-to-VRAM mapping; only bounds-checked.
+    pub fn set_pixel_unclipped(&mut self, x: i32, y: i32, color: u8) -> bool {
+        if x < 0 || y < 0 || x as u32 >= WIDTH || y as u32 >= HEIGHT {
+            return false;
+        }
+        let i = (y as u32 * WIDTH + x as u32) as usize;
+        self.idx[i] = color & COLOR_MASK;
         true
     }
 
@@ -134,6 +154,7 @@ impl Framebuffer {
         self.clip_y1 = y1.max(self.clip_y0);
     }
 
+    #[allow(clippy::missing_const_for_fn)]
     pub fn clip_reset(&mut self) {
         self.clip_x0 = 0;
         self.clip_y0 = 0;
@@ -144,7 +165,7 @@ impl Framebuffer {
     // Blit to RGBA buffer for pixels
     pub fn blit_to_rgba(&self, rgba: &mut [u8]) {
         for (px, idx) in rgba.chunks_exact_mut(4).zip(self.idx.iter().copied()) {
-            let pal = &PALETTE[(idx & 0x0F) as usize];
+            let pal = &PALETTE[(idx & COLOR_MASK) as usize];
             px.copy_from_slice(pal);
         }
     }
@@ -158,7 +179,7 @@ impl Framebuffer {
         let dy = -(y1 - y0).abs();
         let sy = if y0 < y1 { 1 } else { -1 };
         let mut err = dx + dy;
-        let c = color & 0x0F;
+        let c = color & COLOR_MASK;
         loop {
             let _ = self.set_pixel(x0, y0, c);
             if x0 == x1 && y0 == y1 {
@@ -181,7 +202,7 @@ impl Framebuffer {
         if w <= 0 || h <= 0 {
             return;
         }
-        let c = color & 0x0F;
+        let c = color & COLOR_MASK;
         let x0 = x.max(self.clip_x0).max(0);
         let y0 = y.max(self.clip_y0).max(0);
         let x1 = (x + w).min(self.clip_x1).min(WIDTH as i32);
@@ -203,7 +224,7 @@ impl Framebuffer {
         if w <= 0 || h <= 0 {
             return;
         }
-        let c = color & 0x0F;
+        let c = color & COLOR_MASK;
         let x0 = x;
         let y0 = y;
         let x1 = x + w - 1;
@@ -225,7 +246,7 @@ impl Framebuffer {
         if r < 0 {
             return;
         }
-        let c = color & 0x0F;
+        let c = color & COLOR_MASK;
         if r == 0 {
             let _ = self.set_pixel(cx, cy, c);
             return;
@@ -259,7 +280,7 @@ impl Framebuffer {
         if r < 0 {
             return;
         }
-        let c = color & 0x0F;
+        let c = color & COLOR_MASK;
         if r == 0 {
             let _ = self.set_pixel(cx, cy, c);
             return;
@@ -296,22 +317,23 @@ impl Framebuffer {
     }
 
     // Ellipse border using midpoint algorithm
+    #[allow(clippy::cast_possible_truncation)]
     pub fn ellib(&mut self, cx: i32, cy: i32, a: i32, b: i32, color: u8) {
         if a < 0 || b < 0 {
             return;
         }
-        let c = color & 0x0F;
+        let c = color & COLOR_MASK;
         if a == 0 && b == 0 {
             let _ = self.set_pixel(cx, cy, c);
             return;
         }
 
-        let a2 = (a as i64) * (a as i64);
-        let b2 = (b as i64) * (b as i64);
+        let a2 = i64::from(a) * i64::from(a);
+        let b2 = i64::from(b) * i64::from(b);
 
         let mut x: i64 = 0;
-        let mut y: i64 = b as i64;
-        let mut d = b2 - a2 * (b as i64) + a2 / 4;
+        let mut y: i64 = i64::from(b);
+        let mut d = b2 - a2 * i64::from(b) + a2 / 4;
         while b2 * x <= a2 * y {
             let xx = x as i32;
             let yy = y as i32;
@@ -328,9 +350,9 @@ impl Framebuffer {
             x += 1;
         }
 
-        x = a as i64;
+        x = i64::from(a);
         y = 0;
-        d = a2 - b2 * (a as i64) + b2 / 4;
+        d = a2 - b2 * i64::from(a) + b2 / 4;
         while a2 * y <= b2 * x {
             let xx = x as i32;
             let yy = y as i32;
@@ -353,7 +375,7 @@ impl Framebuffer {
         if a < 0 || b < 0 {
             return;
         }
-        let c = color & 0x0F;
+        let c = color & COLOR_MASK;
         if a == 0 && b == 0 {
             let _ = self.set_pixel(cx, cy, c);
             return;
@@ -399,7 +421,8 @@ impl Framebuffer {
     pub fn tri(&mut self, x0: i32, y0: i32, x1: i32, y1: i32, x2: i32, y2: i32, color: u8) {
         let c = color & 0x0F;
         // Convert to CCW orientation for consistent edge tests
-        let area = (x1 - x0) as i64 * (y2 - y0) as i64 - (x2 - x0) as i64 * (y1 - y0) as i64;
+        let area =
+            i64::from(x1 - x0) * i64::from(y2 - y0) - i64::from(x2 - x0) * i64::from(y1 - y0);
         let (v0x, v0y, v1x, v1y, v2x, v2y) = if area < 0 {
             (x0, y0, x2, y2, x1, y1)
         } else {
@@ -413,9 +436,9 @@ impl Framebuffer {
         let max_y = v0y.max(v1y).max(v2y);
 
         // Doubling coordinates to evaluate edge functions at pixel centers (x+0.5, y+0.5)
-        let (ax2, ay2) = ((v0x as i64) * 2, (v0y as i64) * 2);
-        let (bx2, by2) = ((v1x as i64) * 2, (v1y as i64) * 2);
-        let (cx2, cy2) = ((v2x as i64) * 2, (v2y as i64) * 2);
+        let (ax2, ay2) = (i64::from(v0x) * 2, i64::from(v0y) * 2);
+        let (bx2, by2) = (i64::from(v1x) * 2, i64::from(v1y) * 2);
+        let (cx2, cy2) = (i64::from(v2x) * 2, i64::from(v2y) * 2);
 
         // Edge deltas
         let e0_dx = bx2 - ax2;
@@ -433,8 +456,8 @@ impl Framebuffer {
         // Iterate over pixels in bounding box with top-left rule: y in [min_y, max_y), x in [min_x, max_x)
         for y in min_y..max_y {
             for x in min_x..max_x {
-                let px = (x as i64) * 2 + 1;
-                let py = (y as i64) * 2 + 1;
+                let px = i64::from(x) * 2 + 1;
+                let py = i64::from(y) * 2 + 1;
                 // Edge functions
                 let e0 = (py - ay2) * e0_dx - (px - ax2) * e0_dy;
                 let e1 = (py - by2) * e1_dx - (px - bx2) * e1_dy;
@@ -470,7 +493,7 @@ impl Framebuffer {
         if scale <= 0 {
             return 0;
         }
-        let cidx = color & 0x0F;
+        let cidx = color & COLOR_MASK;
         let font = font_bytes();
 
         let mut pos = x;
@@ -493,7 +516,9 @@ impl Framebuffer {
                 continue;
             }
 
-            let (start_col, width_cols) = if !fixed {
+            let (start_col, width_cols) = if fixed {
+                (0, GLYPH_W)
+            } else {
                 // Variable-width: trim empty columns using LSB-left orientation
                 let mut left = GLYPH_W;
                 let mut right = 0;
@@ -520,8 +545,6 @@ impl Framebuffer {
                 }
                 let width = right.saturating_sub(left);
                 (left, width)
-            } else {
-                (0, GLYPH_W)
             };
 
             // Draw glyph
@@ -542,12 +565,10 @@ impl Framebuffer {
             }
 
             // Advance
-            if !fixed {
-                if width_cols > 0 {
-                    pos += ((width_cols as i32) + 1) * scale;
-                } else {
-                    pos += ADV * scale;
-                }
+            if fixed {
+                pos += ADV * scale;
+            } else if width_cols > 0 {
+                pos += ((width_cols as i32) + 1) * scale;
             } else {
                 pos += ADV * scale;
             }
@@ -561,7 +582,8 @@ impl Framebuffer {
     }
 }
 
-pub fn dimensions() -> (u32, u32) {
+#[must_use]
+pub const fn dimensions() -> (u32, u32) {
     (Framebuffer::WIDTH, Framebuffer::HEIGHT)
 }
 

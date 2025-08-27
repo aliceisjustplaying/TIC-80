@@ -1,6 +1,9 @@
 use std::cell::RefCell;
 use std::rc::Rc;
-use std::sync::{Mutex, OnceLock};
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Mutex, OnceLock,
+};
 use std::time::Instant;
 
 use mlua::{Function, Lua, MultiValue, RegistryKey, Result as LuaResult, Value};
@@ -17,13 +20,77 @@ pub struct LuaRunner {
 
 // Optional trace buffer (used by tests); if present, trace() will also append messages here.
 static TRACE_BUFFER: OnceLock<Mutex<Vec<String>>> = OnceLock::new();
+static QUIET: AtomicBool = AtomicBool::new(false);
+
+pub fn set_quiet(v: bool) {
+    QUIET.store(v, Ordering::Relaxed);
+}
 
 impl LuaRunner {
+    /// Construct a Lua runtime, install TIC-80 APIs, and load the cart script.
+    ///
+    /// Errors
+    /// Returns an `mlua::Error` if Lua fails to initialize or the provided script
+    /// fails to load/execute (including errors thrown by `BOOT()` if present).
+    #[allow(
+        clippy::too_many_lines,
+        clippy::needless_pass_by_value,
+        clippy::missing_errors_doc,
+        clippy::cast_possible_truncation,
+        clippy::redundant_clone
+    )]
     pub fn new(
         fb: Rc<RefCell<Framebuffer>>,
         mem: Rc<RefCell<Memory>>,
         script_src: &str,
     ) -> LuaResult<Self> {
+        // Arguments structure for print(); define before statements to satisfy clippy.
+        #[derive(Default)]
+        struct PrintArgs {
+            text: String,
+            x: i32,
+            y: i32,
+            color: u8,
+            fixed: bool,
+            scale: i32,
+            small: bool,
+        }
+        impl PrintArgs {
+            fn from_lua(args: &MultiValue<'_>) -> LuaResult<Self> {
+                let mut out = Self {
+                    color: 15,
+                    scale: 1,
+                    ..Default::default()
+                };
+                for (i, v) in args.iter().enumerate() {
+                    match (i, v) {
+                        (0, Value::String(s)) => out.text = s.to_str()?.to_string(),
+                        (1, Value::Integer(n)) => out.x = *n as i32,
+                        (2, Value::Integer(n)) => out.y = *n as i32,
+                        (3, Value::Integer(n)) => out.color = (*n).clamp(0, 255) as u8,
+                        (4, Value::Boolean(b)) => out.fixed = *b,
+                        (5, Value::Integer(n)) => out.scale = (*n as i32).max(1),
+                        (6, Value::Boolean(b)) => out.small = *b,
+                        _ => {}
+                    }
+                }
+                Ok(out)
+            }
+        }
+
+        // Small helper for FFT arg parsing.
+        fn parse_fft_args(args: &MultiValue<'_>) -> (i32, i32) {
+            let start = match args.get(0) {
+                Some(Value::Integer(n)) => *n as i32,
+                _ => -1,
+            };
+            let end = match args.get(1) {
+                Some(Value::Integer(n)) => *n as i32,
+                _ => -1,
+            };
+            (start, end)
+        }
+
         let lua = Lua::new();
         let start_time = Instant::now();
         let tic_key = {
@@ -95,7 +162,7 @@ impl LuaRunner {
 
             // clip(x,y,w,h) or clip() to reset
             let fb_clip = fb.clone();
-            let clip_fn = lua.create_function(move |_, args: MultiValue| {
+            let clip_fn = lua.create_function(move |_, args: MultiValue<'_>| {
                 if args.is_empty() {
                     fb_clip.borrow_mut().clip_reset();
                 } else {
@@ -122,42 +189,9 @@ impl LuaRunner {
             globals.set("clip", clip_fn)?;
 
             // print(text, x=0, y=0, color=15, fixed=false, scale=1, small=false) -> width
-            #[derive(Default)]
-            struct PrintArgs {
-                text: String,
-                x: i32,
-                y: i32,
-                color: u8,
-                fixed: bool,
-                scale: i32,
-                small: bool,
-            }
-
-            impl PrintArgs {
-                fn from_lua(args: &MultiValue) -> LuaResult<Self> {
-                    let mut out = PrintArgs {
-                        color: 15,
-                        scale: 1,
-                        ..Default::default()
-                    };
-                    for (i, v) in args.iter().enumerate() {
-                        match (i, v) {
-                            (0, Value::String(s)) => out.text = s.to_str()?.to_string(),
-                            (1, Value::Integer(n)) => out.x = *n as i32,
-                            (2, Value::Integer(n)) => out.y = *n as i32,
-                            (3, Value::Integer(n)) => out.color = (*n).clamp(0, 255) as u8,
-                            (4, Value::Boolean(b)) => out.fixed = *b,
-                            (5, Value::Integer(n)) => out.scale = (*n as i32).max(1),
-                            (6, Value::Boolean(b)) => out.small = *b,
-                            _ => {}
-                        }
-                    }
-                    Ok(out)
-                }
-            }
 
             let fb_print = fb.clone();
-            let print_fn = lua.create_function(move |_, args: MultiValue| {
+            let print_fn = lua.create_function(move |_, args: MultiValue<'_>| {
                 let p = PrintArgs::from_lua(&args)?;
                 let width = fb_print
                     .borrow_mut()
@@ -167,196 +201,158 @@ impl LuaRunner {
             globals.set("print", print_fn)?;
 
             // FFT APIs: fft/ffts/fftr/fftrs
-            fn parse_fft_args(args: &MultiValue) -> (i32, i32) {
-                let start = match args.get(0) {
-                    Some(Value::Integer(n)) => *n as i32,
-                    _ => -1,
-                };
-                let end = match args.get(1) {
-                    Some(Value::Integer(n)) => *n as i32,
-                    _ => -1,
-                };
-                (start, end)
-            }
-
-            let fft_fn = lua.create_function(move |_, args: MultiValue| {
+            let fft_fn = lua.create_function(move |_, args: MultiValue<'_>| {
                 let (start, end) = parse_fft_args(&args);
-                let val = if let Some(arc) = get_global_fft() {
+                let val = get_global_fft().map_or(0.0, |arc| {
                     let guard = arc.read();
                     query_fft(&guard, start, end, false, false)
-                } else {
-                    0.0
-                };
+                });
                 Ok(val)
             })?;
             globals.set("fft", fft_fn)?;
 
-            let ffts_fn = lua.create_function(move |_, args: MultiValue| {
+            let ffts_fn = lua.create_function(move |_, args: MultiValue<'_>| {
                 let (start, end) = parse_fft_args(&args);
-                let val = if let Some(arc) = get_global_fft() {
+                let val = get_global_fft().map_or(0.0, |arc| {
                     let guard = arc.read();
                     query_fft(&guard, start, end, true, false)
-                } else {
-                    0.0
-                };
+                });
                 Ok(val)
             })?;
             globals.set("ffts", ffts_fn)?;
 
-            let fftr_fn = lua.create_function(move |_, args: MultiValue| {
+            let fftr_fn = lua.create_function(move |_, args: MultiValue<'_>| {
                 let (start, end) = parse_fft_args(&args);
-                let val = if let Some(arc) = get_global_fft() {
+                let val = get_global_fft().map_or(0.0, |arc| {
                     let guard = arc.read();
                     query_fft(&guard, start, end, false, true)
-                } else {
-                    0.0
-                };
+                });
                 Ok(val)
             })?;
             globals.set("fftr", fftr_fn)?;
 
-            let fftrs_fn = lua.create_function(move |_, args: MultiValue| {
+            let fftrs_fn = lua.create_function(move |_, args: MultiValue<'_>| {
                 let (start, end) = parse_fft_args(&args);
-                let val = if let Some(arc) = get_global_fft() {
+                let val = get_global_fft().map_or(0.0, |arc| {
                     let guard = arc.read();
                     query_fft(&guard, start, end, true, true)
-                } else {
-                    0.0
-                };
+                });
                 Ok(val)
             })?;
             globals.set("fftrs", fftrs_fn)?;
 
             // VQT APIs: vqt/vqts/vqtr/vqtrs and whitened variants vqtw/vqtsw/vqtrw/vqtrsw
             let vqt_fn = lua.create_function(move |_, bin: i32| {
-                let val = if let Some(arc) = get_global_vqt() {
+                let val = get_global_vqt().map_or(0.0, |arc| {
                     let guard = arc.read();
-                    // normalized instantaneous (may exceed 1.0)
                     if bin >= 0 && (bin as usize) < guard.bins_count() {
-                        (guard.vqt_raw[bin as usize] / guard.vqt_peak) as f64
+                        f64::from(guard.vqt_raw[bin as usize] / guard.vqt_peak)
                     } else {
                         0.0
                     }
-                } else {
-                    0.0
-                };
+                });
                 Ok(val)
             })?;
             globals.set("vqt", vqt_fn)?;
 
             let vqts_fn = lua.create_function(move |_, bin: i32| {
-                let val = if let Some(arc) = get_global_vqt() {
+                let val = get_global_vqt().map_or(0.0, |arc| {
                     let guard = arc.read();
                     if bin >= 0 && (bin as usize) < guard.bins_count() {
-                        guard.vqt_norm[bin as usize] as f64
+                        f64::from(guard.vqt_norm[bin as usize])
                     } else {
                         0.0
                     }
-                } else {
-                    0.0
-                };
+                });
                 Ok(val)
             })?;
             globals.set("vqts", vqts_fn)?;
 
             let vqtr_fn = lua.create_function(move |_, bin: i32| {
-                let val = if let Some(arc) = get_global_vqt() {
+                let val = get_global_vqt().map_or(0.0, |arc| {
                     let guard = arc.read();
                     if bin >= 0 && (bin as usize) < guard.bins_count() {
-                        guard.vqt_raw[bin as usize] as f64
+                        f64::from(guard.vqt_raw[bin as usize])
                     } else {
                         0.0
                     }
-                } else {
-                    0.0
-                };
+                });
                 Ok(val)
             })?;
             globals.set("vqtr", vqtr_fn)?;
 
             let vqtrs_fn = lua.create_function(move |_, bin: i32| {
-                let val = if let Some(arc) = get_global_vqt() {
+                let val = get_global_vqt().map_or(0.0, |arc| {
                     let guard = arc.read();
                     if bin >= 0 && (bin as usize) < guard.bins_count() {
-                        guard.vqt_sm[bin as usize] as f64
+                        f64::from(guard.vqt_sm[bin as usize])
                     } else {
                         0.0
                     }
-                } else {
-                    0.0
-                };
+                });
                 Ok(val)
             })?;
             globals.set("vqtrs", vqtrs_fn)?;
 
             let vqtw_fn = lua.create_function(move |_, bin: i32| {
-                let val = if let Some(arc) = get_global_vqt() {
+                let val = get_global_vqt().map_or(0.0, |arc| {
                     let guard = arc.read();
                     if bin >= 0 && (bin as usize) < guard.bins_count() {
-                        (guard.vqt_w_raw[bin as usize] / guard.vqt_w_peak) as f64
+                        f64::from(guard.vqt_w_raw[bin as usize] / guard.vqt_w_peak)
                     } else {
                         0.0
                     }
-                } else {
-                    0.0
-                };
+                });
                 Ok(val)
             })?;
             globals.set("vqtw", vqtw_fn)?;
 
             let vqtsw_fn = lua.create_function(move |_, bin: i32| {
-                let val = if let Some(arc) = get_global_vqt() {
+                let val = get_global_vqt().map_or(0.0, |arc| {
                     let guard = arc.read();
                     if bin >= 0 && (bin as usize) < guard.bins_count() {
-                        guard.vqt_w_norm[bin as usize] as f64
+                        f64::from(guard.vqt_w_norm[bin as usize])
                     } else {
                         0.0
                     }
-                } else {
-                    0.0
-                };
+                });
                 Ok(val)
             })?;
             globals.set("vqtsw", vqtsw_fn)?;
 
             let vqtrw_fn = lua.create_function(move |_, bin: i32| {
-                let val = if let Some(arc) = get_global_vqt() {
+                let val = get_global_vqt().map_or(0.0, |arc| {
                     let guard = arc.read();
                     if bin >= 0 && (bin as usize) < guard.bins_count() {
-                        guard.vqt_w_raw[bin as usize] as f64
+                        f64::from(guard.vqt_w_raw[bin as usize])
                     } else {
                         0.0
                     }
-                } else {
-                    0.0
-                };
+                });
                 Ok(val)
             })?;
             globals.set("vqtrw", vqtrw_fn)?;
 
             let vqtrsw_fn = lua.create_function(move |_, bin: i32| {
-                let val = if let Some(arc) = get_global_vqt() {
+                let val = get_global_vqt().map_or(0.0, |arc| {
                     let guard = arc.read();
                     if bin >= 0 && (bin as usize) < guard.bins_count() {
-                        guard.vqt_w_sm[bin as usize] as f64
+                        f64::from(guard.vqt_w_sm[bin as usize])
                     } else {
                         0.0
                     }
-                } else {
-                    0.0
-                };
+                });
                 Ok(val)
             })?;
             globals.set("vqtrsw", vqtrsw_fn)?;
 
             // trace(message, color=15)
-            let trace_fn = lua.create_function(move |_, args: MultiValue| {
+            let trace_fn = lua.create_function(move |_, args: MultiValue<'_>| {
                 let msg = match args.get(0) {
                     Some(Value::String(s)) => s.to_str()?.to_string(),
                     Some(Value::Number(n)) => n.to_string(),
                     Some(Value::Integer(i)) => i.to_string(),
                     Some(Value::Boolean(b)) => b.to_string(),
-                    Some(Value::Nil) | None => String::new(),
                     _ => String::new(),
                 };
                 let color = match args.get(1) {
@@ -365,7 +361,7 @@ impl LuaRunner {
                     _ => 15,
                 };
                 // Print to console; color is informational only here.
-                println!("[trace:{}] {}", color, msg);
+                println!("[trace:{color}] {msg}");
                 if let Some(buf) = TRACE_BUFFER.get() {
                     if let Ok(mut b) = buf.lock() {
                         b.push(msg);
@@ -393,7 +389,7 @@ impl LuaRunner {
                 } else {
                     mem_peek.borrow().peek_bits(a, b)
                 };
-                Ok(v as u32)
+                Ok(u32::from(v))
             })?;
             globals.set("peek", peek_fn)?;
 
@@ -416,21 +412,21 @@ impl LuaRunner {
             globals.set(
                 "peek1",
                 lua.create_function(move |_, addr: u32| {
-                    Ok(mem_peek1.borrow().peek_bits(addr as usize, 1) as u32)
+                    Ok(u32::from(mem_peek1.borrow().peek_bits(addr as usize, 1)))
                 })?,
             )?;
             let mem_peek2 = mem.clone();
             globals.set(
                 "peek2",
                 lua.create_function(move |_, addr: u32| {
-                    Ok(mem_peek2.borrow().peek_bits(addr as usize, 2) as u32)
+                    Ok(u32::from(mem_peek2.borrow().peek_bits(addr as usize, 2)))
                 })?,
             )?;
             let mem_peek4 = mem.clone();
             globals.set(
                 "peek4",
                 lua.create_function(move |_, addr: u32| {
-                    Ok(mem_peek4.borrow().peek_bits(addr as usize, 4) as u32)
+                    Ok(u32::from(mem_peek4.borrow().peek_bits(addr as usize, 4)))
                 })?,
             )?;
 
@@ -528,14 +524,22 @@ impl LuaRunner {
             lua.load(script_src).set_name("cart").exec()?;
 
             // Call BOOT() if present
-            if let Ok(boot) = globals.get::<_, Function>("BOOT") {
-                let _ = boot.call::<_, ()>(());
+            if let Ok(boot) = globals.get::<_, Function<'_>>("BOOT") {
+                if let Err(e) = boot.call::<_, ()>(()) {
+                    if !QUIET.load(Ordering::Relaxed) {
+                        eprintln!("Lua BOOT() error: {e}");
+                    }
+                }
             }
 
             // Cache TIC if present
-            match globals.get::<_, Option<Function>>("TIC")? {
-                Some(f) => Some(lua.create_registry_value(f)?),
-                None => None,
+            if let Some(f) = globals.get::<_, Option<Function<'_>>>("TIC")? {
+                Some(lua.create_registry_value(f)?)
+            } else {
+                if !QUIET.load(Ordering::Relaxed) {
+                    eprintln!("Cart defines no TIC() function; nothing to tick");
+                }
+                None
             }
         };
 
@@ -544,8 +548,19 @@ impl LuaRunner {
 
     pub fn tick(&self) {
         if let Some(key) = &self.tic_key {
-            if let Ok(func) = self.lua.registry_value::<Function>(key) {
-                let _ = func.call::<_, ()>(());
+            match self.lua.registry_value::<Function<'_>>(key) {
+                Ok(func) => {
+                    if let Err(e) = func.call::<_, ()>(()) {
+                        if !QUIET.load(Ordering::Relaxed) {
+                            eprintln!("Lua TIC() error: {e}");
+                        }
+                    }
+                }
+                Err(e) => {
+                    if !QUIET.load(Ordering::Relaxed) {
+                        eprintln!("Lua error resolving TIC(): {e}");
+                    }
+                }
             }
         }
     }

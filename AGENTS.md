@@ -18,6 +18,7 @@
 - ALWAYS update the test carts catalog when adding a new cart:
   - Add the cart to `docs/testing/test_carts.md` with purpose, run instructions, and expected behavior.
   - If needed, add a short run snippet to `docs/README.md`.
+- Maintain a rolling TODO list from reviews in `docs/roadmap/todos_code_review.md` and tick items as they’re completed.
 
 **Context**
 - **Rewrite code location:** All Rust rewrite code lives under `tic80_rust/` (crate root). Tests live in `tic80_rust/tests/`. The windowed demo binary is `tic80_rust/src/main.rs`.
@@ -58,6 +59,7 @@
 
 **Near-Term Backlog**
 - FFT implementation (cpal + realfft) per `docs/specs/audio_fft_vqt.md` (see Implementation TODOs section); add headless tests and Lua `fft/ffts/fftr/fftrs`.
+- Livecoding editor (UI plan): Implement `tic-studio` per `docs/roadmap/editor_livecoding.md` — deliver CODE first, then CONSOLE (console scope may be reduced); TIC‑80 skin in framebuffer; hot reload; .tic code‑only round‑trip.
 - Print edge cases: tests for scale>1 baseline/advance and multi‑line width parity.
 - Small font: decide semantics and implement `smallfont=true` in `print` with tests.
 - Lua error paths: add type/arity mismatch tests for core APIs (`pix/line/rect/print`).
@@ -102,6 +104,26 @@
    - Integrated a 1s VU peak readout for manual verification.
    - Implemented 2k FFT analysis (realfft) with normalized/smoothed buffers and debug print flag; wired Lua FFT APIs; added headless tests and an FFT test cart.
    - Kept clippy/tests green; documented the FFT/VQT plan and linked TODOs.
+   - Added clippy policy doc (docs/architecture/clippy_policy.md) and linked in docs index.
+   - Refactored `main.rs` into helpers: args parsing, window/pixels init, audio init, device listing, script load. Behavior unchanged; code easier to lint/extend.
+   - Error handling improvements:
+     - Lua init errors now print once; warn once when cart defines no TIC().
+     - BOOT() and TIC() call errors are logged to console instead of being dropped.
+     - FFT/VQT update now warns once if realfft processing fails.
+   - Audio capture robustness:
+     - Selects nearest supported sample rate to requested (default 44100 Hz) and logs the choice.
+     - Added ring buffer counters (pushes/overflows) and consumer underrun + consumed counters; `--debug-fx` prints per‑second deltas and totals with avg samples/tick and estimated occupancy.
+   - Memory map clarity: replaced magic numbers with named constants; documented screen nibble packing.
+   - Bit manipulation tests: added round-trip tests for 1/2/4/8‑bit ops, VRAM screen boundary, and unaligned 4‑bit sequences (nibble order).
+   - Lua runner quiet mode: added `--quiet` flag and a global switch; suppresses once-only init/missing TIC and TIC/BOOT error prints for headless runs.
+   - Verified hygiene: `cargo clippy --all-targets --all-features -D warnings` is clean; `cargo test` all green; ran `cargo fmt`.
+   - Tightened clippy setup (pedantic/nursery/cargo) with pragmatic allows:
+     - Crate-level allows for TIC-style APIs and numeric DSP: `many_single_char_names`, `too_many_arguments`, `similar_names`, selected numeric cast lints, and multiple crate versions.
+     - Module/function allows where appropriate: `too_many_lines`, `items_after_statements`, `missing_errors_doc`, `needless_pass_by_value`, `redundant_clone`, `option_if_let_else` refactors or allows where needed.
+     - Fixed numerous lints in code (lossless casts via `From`, `mul_add`/`hypot`, `map_or(_else)`, format arg inlining, moved inner items to top of scopes).
+     - Added small docs and `#[must_use]` on relevant fns; marked a few helpers `const` where safe.
+     - Cargo metadata filled in to silence cargo_common_metadata; clippy now passes with `-D warnings` across all targets.
+   - Ran `cargo fmt`, `cargo clippy --all-targets --all-features -D warnings`, and `cargo test`: all green.
 
 **Docs Index**
 - Start here: `docs/README.md`

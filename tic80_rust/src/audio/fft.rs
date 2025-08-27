@@ -31,9 +31,13 @@ pub struct FFTState {
 
     // Smoothing factor for displayed series
     f_smooth_factor: f32, // 0.6
+
+    // Error visibility (warn once if FFT processing fails)
+    warned_fft_error: bool,
 }
 
 impl FFTState {
+    #[must_use]
     pub fn new(rolling_capacity: usize) -> Self {
         let n = 2048usize;
         let half = n / 2;
@@ -61,6 +65,7 @@ impl FFTState {
             f_peak_value: 0.01,
             f_amplification: 1.0,
             f_smooth_factor: 0.6,
+            warned_fft_error: false,
         }
     }
 
@@ -96,15 +101,22 @@ impl FFTState {
         }
         self.copy_latest_window();
         // Forward R2C
-        self.r2c
-            .process_with_scratch(&mut self.input, &mut self.spectrum, &mut self.scratch)
-            .ok();
+        if let Err(e) =
+            self.r2c
+                .process_with_scratch(&mut self.input, &mut self.spectrum, &mut self.scratch)
+        {
+            if !self.warned_fft_error {
+                eprintln!("FFT update error: {e}");
+                self.warned_fft_error = true;
+            }
+            return;
+        }
 
         // Magnitudes for 0..half-1 (drop Nyquist at index half)
         let mut peak_raw = self.f_peak_min;
         for k in 0..self.half {
             let c = self.spectrum[k];
-            let mag = (c.re * c.re + c.im * c.im).sqrt() * 2.0;
+            let mag = c.re.hypot(c.im) * 2.0;
             self.fft_raw[k] = mag;
             if mag > peak_raw {
                 peak_raw = mag;
@@ -115,8 +127,10 @@ impl FFTState {
         if peak_raw > self.f_peak_value {
             self.f_peak_value = peak_raw;
         } else {
-            self.f_peak_value = self.f_peak_value * self.f_peak_smoothing
-                + peak_raw * (1.0 - self.f_peak_smoothing);
+            self.f_peak_value = self.f_peak_value.mul_add(
+                self.f_peak_smoothing,
+                peak_raw * (1.0 - self.f_peak_smoothing),
+            );
         }
         if self.f_peak_value < self.f_peak_min {
             self.f_peak_value = self.f_peak_min;
@@ -127,17 +141,18 @@ impl FFTState {
         let a = self.f_smooth_factor; // 0.6
         for k in 0..self.half {
             let raw = self.fft_raw[k];
-            let raw_sm = self.fft_raw_sm[k] * a + raw * (1.0 - a);
+            let raw_sm = self.fft_raw_sm[k].mul_add(a, raw * (1.0 - a));
             self.fft_raw_sm[k] = raw_sm;
 
             let norm = raw * self.f_amplification;
-            let norm_sm = self.fft_sm[k] * a + norm * (1.0 - a);
+            let norm_sm = self.fft_sm[k].mul_add(a, norm * (1.0 - a));
             self.fft_data[k] = norm;
             self.fft_sm[k] = norm_sm;
         }
     }
 
-    pub fn bins(&self) -> usize {
+    #[must_use]
+    pub const fn bins(&self) -> usize {
         self.half
     }
 }
@@ -156,8 +171,9 @@ pub fn get_global_fft() -> Option<&'static Arc<RwLock<FFTState>>> {
 // Helper function to query FFT arrays with C-like clamping semantics.
 // smoothing=false => normalized (fft_data) or raw (fft_raw);
 // smoothing=true  => normalized-smoothed (fft_sm) or raw-smoothed (fft_raw_sm).
+#[must_use]
 pub fn query_fft(state: &FFTState, start: i32, end: i32, smoothing: bool, raw: bool) -> f64 {
-    let size = state.half as i32; // 1024
+    let size = i32::try_from(state.half).unwrap_or(i32::MAX); // 1024
     if end == -1 {
         if start < 0 || start >= size {
             return 0.0;
@@ -174,7 +190,7 @@ pub fn query_fft(state: &FFTState, start: i32, end: i32, smoothing: bool, raw: b
         } else {
             state.fft_data[idx]
         };
-        return v as f64;
+        return f64::from(v);
     }
     // both out-of-bounds on same side => 0
     if (start < 0 && end < 0) || (start >= size && end >= size) {
@@ -197,7 +213,7 @@ pub fn query_fft(state: &FFTState, start: i32, end: i32, smoothing: bool, raw: b
     let mut sum = 0.0f64;
     for i in s..=e {
         let u = i as usize;
-        let v = if raw {
+        let v_f32 = if raw {
             if smoothing {
                 state.fft_raw_sm[u]
             } else {
@@ -207,8 +223,8 @@ pub fn query_fft(state: &FFTState, start: i32, end: i32, smoothing: bool, raw: b
             state.fft_sm[u]
         } else {
             state.fft_data[u]
-        } as f64;
-        sum += v;
+        };
+        sum += f64::from(v_f32);
     }
     sum
 }

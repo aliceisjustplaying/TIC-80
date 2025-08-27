@@ -1,3 +1,11 @@
+#![allow(
+    clippy::cognitive_complexity,
+    clippy::too_many_lines,
+    clippy::suboptimal_flops,
+    clippy::imprecise_flops,
+    clippy::cast_possible_truncation,
+    clippy::cast_precision_loss
+)]
 use realfft::{num_complex::Complex, RealFftPlanner, RealToComplex};
 
 pub struct VqtKernel {
@@ -40,6 +48,13 @@ pub struct VQTState {
     pub vqt_w_norm: Vec<f32>,
     // Peak normalization for whitened path
     pub vqt_w_peak: f32,
+
+    // Scratch buffers (pre-allocated to avoid per-update allocations)
+    logm: Vec<f32>,
+    env: Vec<f32>,
+
+    // Error visibility (warn once if FFT processing fails)
+    warned_fft_error: bool,
 }
 
 const VQT_BINS: usize = 120;
@@ -54,6 +69,7 @@ const VQT_WHITEN_ALPHA: f32 = 0.95;
 const VQT_WHITEN_EPS: f32 = 1e-6;
 
 impl VQTState {
+    #[must_use]
     pub fn new(sample_rate: u32, rolling_capacity: usize) -> Self {
         let n = 8192usize;
         let half = n / 2;
@@ -84,6 +100,9 @@ impl VQTState {
             vqt_w_sm: vec![0.0; VQT_BINS],
             vqt_w_norm: vec![0.0; VQT_BINS],
             vqt_w_peak: VQT_PEAK_MIN,
+            logm: vec![0.0; VQT_BINS],
+            env: vec![0.0; VQT_BINS],
+            warned_fft_error: false,
         };
         s.generate_kernels();
         s
@@ -165,9 +184,16 @@ impl VQTState {
             // reuse input buffer
             self.input[..self.n].copy_from_slice(&time);
             let mut scratch = self.r2c.make_scratch_vec();
-            let _ = self
+            if let Err(e) = self
                 .r2c
-                .process_with_scratch(&mut self.input, &mut spec, &mut scratch);
+                .process_with_scratch(&mut self.input, &mut spec, &mut scratch)
+            {
+                if !self.warned_fft_error {
+                    eprintln!("VQT kernel FFT error: {e}");
+                    self.warned_fft_error = true;
+                }
+                continue;
+            }
 
             // Build sparse kernel by thresholding magnitude
             let thr = Self::adaptive_threshold(f0);
@@ -218,9 +244,16 @@ impl VQTState {
             return;
         }
         self.copy_latest_window();
-        let _ =
+        if let Err(e) =
             self.r2c
-                .process_with_scratch(&mut self.input, &mut self.spectrum, &mut self.scratch);
+                .process_with_scratch(&mut self.input, &mut self.spectrum, &mut self.scratch)
+        {
+            if !self.warned_fft_error {
+                eprintln!("VQT update FFT error: {e}");
+                self.warned_fft_error = true;
+            }
+            return;
+        }
 
         // Apply kernels
         for (i, ker) in self.kernels.iter().enumerate() {
@@ -248,7 +281,7 @@ impl VQTState {
         let a = VQT_SMOOTHING_FACTOR;
         let mut peak = 0.0f32;
         for i in 0..self.bins {
-            self.vqt_sm[i] = self.vqt_sm[i] * a + self.vqt_raw[i] * (1.0 - a);
+            self.vqt_sm[i] = self.vqt_sm[i].mul_add(a, self.vqt_raw[i] * (1.0 - a));
             if self.vqt_sm[i] > peak {
                 peak = self.vqt_sm[i];
             }
@@ -259,7 +292,9 @@ impl VQTState {
         if peak > self.vqt_peak {
             self.vqt_peak = peak;
         } else {
-            self.vqt_peak = self.vqt_peak * VQT_PEAK_SMOOTH + peak * (1.0 - VQT_PEAK_SMOOTH);
+            self.vqt_peak = self
+                .vqt_peak
+                .mul_add(VQT_PEAK_SMOOTH, peak * (1.0 - VQT_PEAK_SMOOTH));
         }
         if self.vqt_peak < VQT_PEAK_MIN {
             self.vqt_peak = VQT_PEAK_MIN;
@@ -277,9 +312,8 @@ impl VQTState {
         }
 
         // Whitening path
-        // log domain
-        let mut logm = vec![0.0f32; self.bins];
-        for (i, mslot) in logm.iter_mut().enumerate().take(self.bins) {
+        // log domain (reuse pre-allocated scratch)
+        for (i, mslot) in self.logm.iter_mut().enumerate().take(self.bins) {
             let m = if self.vqt_raw[i].is_finite() && self.vqt_raw[i] >= 0.0 {
                 self.vqt_raw[i]
             } else {
@@ -289,31 +323,30 @@ impl VQTState {
         }
         // moving average envelope
         let halfw = VQT_WHITEN_WIDTH / 2;
-        let mut env = vec![0.0f32; self.bins];
         for i in 0..self.bins {
             let start = i.saturating_sub(halfw);
             let end = (i + halfw).min(self.bins - 1);
             let mut sum = 0.0f32;
             let mut count = 0;
-            for val in logm.iter().take(end + 1).skip(start) {
+            for val in self.logm.iter().take(end + 1).skip(start) {
                 sum += *val;
                 count += 1;
             }
-            env[i] = if count > 0 {
+            self.env[i] = if count > 0 {
                 sum / count as f32
             } else {
-                logm[i]
+                self.logm[i]
             };
         }
         // whiten and mix
         for i in 0..self.bins {
-            let wlog = logm[i] - env[i];
-            let mut wamp = wlog.exp() - 1.0;
+            let wlog = self.logm[i] - self.env[i];
+            let mut wamp = wlog.exp_m1();
             if !wamp.is_finite() || wamp < 0.0 {
                 wamp = 0.0;
             }
             let raw = self.vqt_raw[i];
-            let mut mixed = (1.0 - VQT_WHITEN_ALPHA) * raw + VQT_WHITEN_ALPHA * wamp;
+            let mut mixed = (1.0 - VQT_WHITEN_ALPHA).mul_add(raw, VQT_WHITEN_ALPHA * wamp);
             if !mixed.is_finite() || mixed < 0.0 {
                 mixed = 0.0;
             }
@@ -322,7 +355,7 @@ impl VQTState {
         // Smooth and normalize whitened
         let mut wpeak = 0.0f32;
         for i in 0..self.bins {
-            self.vqt_w_sm[i] = self.vqt_w_sm[i] * a + self.vqt_w_raw[i] * (1.0 - a);
+            self.vqt_w_sm[i] = self.vqt_w_sm[i].mul_add(a, self.vqt_w_raw[i] * (1.0 - a));
             if self.vqt_w_sm[i] > wpeak {
                 wpeak = self.vqt_w_sm[i];
             }
@@ -333,7 +366,9 @@ impl VQTState {
         if wpeak > self.vqt_w_peak {
             self.vqt_w_peak = wpeak;
         } else {
-            self.vqt_w_peak = self.vqt_w_peak * VQT_PEAK_SMOOTH + wpeak * (1.0 - VQT_PEAK_SMOOTH);
+            self.vqt_w_peak = self
+                .vqt_w_peak
+                .mul_add(VQT_PEAK_SMOOTH, wpeak * (1.0 - VQT_PEAK_SMOOTH));
         }
         if self.vqt_w_peak < VQT_PEAK_MIN {
             self.vqt_w_peak = VQT_PEAK_MIN;
@@ -351,8 +386,23 @@ impl VQTState {
         }
     }
 
+    #[must_use]
+    #[allow(clippy::missing_const_for_fn)]
     pub fn bins_count(&self) -> usize {
         self.bins
+    }
+
+    // Expose scratch buffer addresses/capacity (useful for tests and diagnostics).
+    #[must_use]
+    #[allow(clippy::missing_const_for_fn)]
+    pub fn scratch_ptrs(&self) -> (*const f32, *const f32) {
+        (self.logm.as_ptr(), self.env.as_ptr())
+    }
+
+    #[must_use]
+    #[allow(clippy::missing_const_for_fn)]
+    pub fn scratch_caps(&self) -> (usize, usize) {
+        (self.logm.capacity(), self.env.capacity())
     }
 }
 
@@ -368,21 +418,24 @@ pub fn get_global_vqt() -> Option<&'static Arc<RwLock<VQTState>>> {
     VQT_SHARED.get()
 }
 
+#[must_use]
 pub fn query_vqt(state: &VQTState, bin: i32, smoothing: bool, whitened: bool) -> f64 {
-    if bin < 0 || (bin as usize) >= state.bins_count() {
+    let Ok(i) = usize::try_from(bin) else {
+        return 0.0;
+    };
+    if i >= state.bins_count() {
         return 0.0;
     }
-    let i = bin as usize;
     if !whitened {
         if smoothing {
-            state.vqt_norm[i] as f64
+            f64::from(state.vqt_norm[i])
         } else {
             // instantaneous normalized (raw divided by peak)
-            (state.vqt_raw[i] / state.vqt_peak) as f64
+            f64::from(state.vqt_raw[i] / state.vqt_peak)
         }
     } else if smoothing {
-        state.vqt_w_norm[i] as f64
+        f64::from(state.vqt_w_norm[i])
     } else {
-        (state.vqt_w_raw[i] / state.vqt_w_peak) as f64
+        f64::from(state.vqt_w_raw[i] / state.vqt_w_peak)
     }
 }
