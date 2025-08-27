@@ -7,6 +7,7 @@ This folder organizes the rewrite plan, specs, architecture notes, testing strat
 - `docs/roadmap/gui_first.md`: Combined GUI-first kickoff + milestones for `winit + pixels` and `cls/pix`.
 - `docs/roadmap/editor_livecoding.md`: Livecoding editor plan (TIC‑80 UI vibes): CODE + CONSOLE only.
  - `docs/roadmap/todos_code_review.md`: Rolling TODOs from code review (high/medium/low priority) with checkboxes.
+ - `docs/roadmap/todos_from_ai_review.md`: Rolling TODOs from AI code review (2025-08-27).
 
 ## Specs
 - `docs/specs/memory_map.md`: Canonical pointer to the root `MEMORY_MAP.md` and usage notes.
@@ -30,6 +31,8 @@ This folder organizes the rewrite plan, specs, architecture notes, testing strat
 - `docs/adr/0001-winit-pixels.md`: Windowing/presentation stack decision.
 - `docs/adr/0002-mlua-lua54-compat.md`: Lua 5.4 choice (superseded).
 - `docs/adr/0003-lua53-with-compat.md`: Lua 5.3 with 5.1/5.2 compatibility.
+- `docs/adr/codereviews/001.md`: Code review summary (2025-08-27).
+- `docs/adr/codereviews/002_ai_review.md`: AI-generated code review summary (2025-08-27).
 
 Notes
 - `MEMORY_MAP.md` at repo root remains the canonical reference for layout. Specs here link to it rather than duplicating.

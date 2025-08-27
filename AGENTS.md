@@ -124,6 +124,8 @@
      - Added small docs and `#[must_use]` on relevant fns; marked a few helpers `const` where safe.
      - Cargo metadata filled in to silence cargo_common_metadata; clippy now passes with `-D warnings` across all targets.
    - Ran `cargo fmt`, `cargo clippy --all-targets --all-features -D warnings`, and `cargo test`: all green.
+ - Conducted a full code review of the `tic80_rust` crate. Findings are positive; suggestions for minor refactorings have been logged in `docs/roadmap/todos_code_review.md` and a summary added to `docs/adr/codereviews/001.md`.
+ - Performed a second code review. The summary is located at `docs/adr/codereviews/002_ai_review.md` and actionable suggestions are in `docs/roadmap/todos_from_ai_review.md`.
 
 **Docs Index**
 - Start here: `docs/README.md`

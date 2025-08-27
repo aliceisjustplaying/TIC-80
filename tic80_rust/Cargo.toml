@@ -2,9 +2,9 @@
 name = "tic80_rust"
 version = "0.1.0"
 edition = "2021"
-description = "Rust rewrite subset of TIC-80: framebuffer, Lua bridge, memory, audio capture + FFT/VQT"
+description = "Rust rewrite subset of TIC-80, optimized for performance and livecoding"
 license = "MIT"
-repository = "https://github.com/nesbox/TIC-80"
+repository = "https://github.com/aliceisjustplaying/rustic"
 readme = "../README.md"
 keywords = ["tic-80", "fantasy-console", "game", "graphics", "audio"]
 categories = ["game-engines", "graphics", "multimedia::audio"]
