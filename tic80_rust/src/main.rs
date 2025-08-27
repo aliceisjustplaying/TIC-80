@@ -70,11 +70,13 @@ fn run() -> Result<(), Error> {
     let mut audio_disable = false;
     let mut audio_device: Option<String> = None;
     let mut audio_vu = false;
+    let mut debug_fft = false;
     while let Some(arg) = args_iter.next() {
         match arg.as_str() {
             "--list-audio" => list_audio = true,
             "--audio-disable" => audio_disable = true,
             "--audio-vu" => audio_vu = true,
+            "--debug-fft" => debug_fft = true,
             "--audio-device" => {
                 if let Some(val) = args_iter.next() {
                     audio_device = Some(val);
@@ -124,11 +126,9 @@ fn run() -> Result<(), Error> {
         peak_acc: f32,
         fft: Arc<RwLock<FFTState>>,
         debug_fft: bool,
+        last_fft_dbg: Instant,
     }
     let mut audio_state: Option<AudioState> = None;
-    // Optional debug flag for FFT bins
-    let debug_fft = std::env::args().any(|a| a == "--debug-fft");
-
     if !audio_disable {
         let cap_cfg = audio_cap::AudioCaptureConfig {
             device_substr: audio_device.clone(),
@@ -156,6 +156,7 @@ fn run() -> Result<(), Error> {
                     peak_acc: 0.0,
                     fft: fft_arc,
                     debug_fft,
+                    last_fft_dbg: Instant::now(),
                 });
             }
             Err(e) => {
@@ -193,29 +194,30 @@ fn run() -> Result<(), Error> {
                     }
                     // Simple VU meter from audio ring
                     if let Some(a) = audio_state.as_mut() {
-                        // Drain available samples, feed analyzer, track peak
-                        while let Ok(s) = a.cons.pop() {
-                            a.peak_acc = a.peak_acc.max(s.abs());
-                            if let Some(mut w) = a.fft.try_write() {
+                        // Drain available samples, feed analyzer with a single write lock, track peak
+                        {
+                            let mut w = a.fft.write();
+                            while let Ok(s) = a.cons.pop() {
+                                a.peak_acc = a.peak_acc.max(s.abs());
                                 w.ingest(s);
                             }
-                        }
-                        if let Some(mut w) = a.fft.try_write() {
                             w.update();
                         }
-                        if a.debug_fft {
+                        if a.debug_fft && a.last_fft_dbg.elapsed() >= Duration::from_millis(500) {
                             // Print a small subset of normalized bins
                             let bins = {
                                 let r = a.fft.read();
                                 r.bins().min(16)
                             };
                             let mut line = String::from("FFT[0..16]: ");
-                            if let Some(r) = a.fft.try_read() {
+                            {
+                                let r = a.fft.read();
                                 for i in 0..bins {
                                     line.push_str(&format!("{:.2} ", r.fft_sm[i]));
                                 }
                             }
                             println!("{}", line);
+                            a.last_fft_dbg = Instant::now();
                         }
                         if a.vu_enabled && a.last_print.elapsed() >= Duration::from_millis(1000) {
                             let peak = a.peak_acc.max(1e-9);

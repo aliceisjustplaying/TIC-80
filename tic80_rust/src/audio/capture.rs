@@ -77,13 +77,20 @@ pub fn start_capture(
             break;
         }
     }
-    // Fallback to default config
+    // Fallback to default config, with a notice
     let stream_cfg = if let Some(ch) = chosen {
         ch
     } else {
-        device
+        let def = device
             .default_input_config()
-            .map_err(|e| anyhow::anyhow!("No default input config: {e}"))?
+            .map_err(|e| anyhow::anyhow!("No default input config: {e}"))?;
+        println!(
+            "Audio: requested 44100 Hz not supported; using device default: {} Hz, {:?} format, {} ch",
+            def.sample_rate().0,
+            def.sample_format(),
+            def.channels()
+        );
+        def
     };
 
     let sample_format = stream_cfg.sample_format();
@@ -102,7 +109,10 @@ pub fn start_capture(
 
     let stream = match sample_format {
         SampleFormat::F32 => build_stream::<f32>(&device, &cfg_fixed, channels, prod.clone())?,
+        SampleFormat::F64 => build_stream::<f64>(&device, &cfg_fixed, channels, prod.clone())?,
         SampleFormat::I16 => build_stream::<i16>(&device, &cfg_fixed, channels, prod.clone())?,
+        SampleFormat::I32 => build_stream::<i32>(&device, &cfg_fixed, channels, prod.clone())?,
+        SampleFormat::U8 => build_stream::<u8>(&device, &cfg_fixed, channels, prod.clone())?,
         SampleFormat::U16 => build_stream::<u16>(&device, &cfg_fixed, channels, prod.clone())?,
         other => return Err(anyhow::anyhow!("Unsupported sample format: {other:?}")),
     };

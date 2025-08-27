@@ -74,3 +74,35 @@ fn lua_fft_returns_normalized_bin() {
 
     assert_eq!(fb.borrow_mut().pix(0, 0, None), Some(7));
 }
+
+#[test]
+fn fft_query_range_clamps_and_sums() {
+    // Build an FFT state and fill normalized data with 1.0 for easy sums
+    let mut fft = FFTState::new(8192);
+    let size = fft.bins(); // 1024
+    for k in 0..size {
+        fft.fft_data[k] = 1.0;
+        fft.fft_sm[k] = 1.0;
+        fft.fft_raw[k] = 1.0;
+        fft.fft_raw_sm[k] = 1.0;
+    }
+
+    // both below zero -> 0
+    assert_eq!(query_fft(&fft, -10, -1, false, false), 0.0);
+    // both above size -> 0
+    assert_eq!(
+        query_fft(&fft, size as i32, (size as i32) + 10, false, false),
+        0.0
+    );
+    // start < 0 clamps to 0; end 5 => 6 bins
+    assert_eq!(query_fft(&fft, -5, 5, false, false), 6.0);
+    // start >= size clamps to 0; end 10 => 11 bins
+    assert_eq!(query_fft(&fft, size as i32, 10, false, false), 11.0);
+    // end >= size clamps to size-1; start 1020 => (1020..1023) length 4
+    assert_eq!(
+        query_fft(&fft, (size as i32) - 4, (size as i32) + 99, false, false),
+        4.0
+    );
+    // start > end becomes start=end; single bin
+    assert_eq!(query_fft(&fft, 10, 2, false, false), 1.0);
+}
