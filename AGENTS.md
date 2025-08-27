@@ -2,7 +2,18 @@
 
 - **Owner:** AI Coding Agent (Codex CLI)
 - **Scope:** Help drive the Rust rewrite forward with tests-first changes, targeted features, and tight parity with TIC-80 behavior.
-- **Last Updated:** 2025-08-26
+- **Last Updated:** 2025-08-27
+
+**Documentation Discipline — Agent Reminder (PROMINENT)**
+- ALWAYS document code changes immediately after writing code:
+  - Update this file’s Current Status and Worklog (with date + concise bullets).
+  - Update relevant docs (specs/architecture/testing) and cross-link from here.
+  - Update `docs/specs/implementation_status.md` to reflect new capabilities.
+  - If the plan changed, update the plan doc(s) and link them (Roadmap/Spec).
+- ALWAYS document plans as first-class docs:
+  - Add a plan/Implementation TODOs section under the relevant spec (e.g., audio FFT/VQT) or create a new spec.
+  - Reference new/updated plans from AGENTS.md and the docs index.
+- Keep hygiene visible: mention clippy/test status with each change.
 
 **Context**
 - **Rewrite code location:** All Rust rewrite code lives under `tic80_rust/` (crate root). Tests live in `tic80_rust/tests/`. The windowed demo binary is `tic80_rust/src/main.rs`.
@@ -38,8 +49,10 @@
 - `print` implemented with default font (variable/fixed width, scale, newline advance) and returns width.
 - Memory ops (`peek/poke` 1/2/4/8‑bit, `memcpy`, `memset`) implemented; VRAM updates reflect on screen.
 - CLI loads bundled default cart or a provided `.lua` path.
+- Audio capture foundation: `cpal` input stream with mono downmix into a lock‑free ring buffer (8192 samples); CLI flags `--list-audio`, `--audio-device`, `--audio-vu`, `--audio-disable`; simple VU feedback prints peak dBFS once per second.
 
 **Near-Term Backlog**
+- FFT implementation (cpal + realfft) per `docs/specs/audio_fft_vqt.md` (see Implementation TODOs section); add headless tests and Lua `fft/ffts/fftr/fftrs`.
 - Print edge cases: tests for scale>1 baseline/advance and multi‑line width parity.
 - Small font: decide semantics and implement `smallfont=true` in `print` with tests.
 - Lua error paths: add type/arity mismatch tests for core APIs (`pix/line/rect/print`).
@@ -51,7 +64,7 @@
 - Banks/persistence: `vbank`, `sync`, `pmem`; palette map/border color.
 - Input/system: `btn/btnp`, `key/keyp`, `mouse`, `time`, `tstamp`, `trace`, `exit`, `reset` (fixed‑step repeat timing).
 - Audio: `sfx`, `music` synth/mixer; capture ring for analysis.
-- Analysis: `fft/ffts/fftr/fftrs`, `vqt` variants; conformance carts + numeric tolerances.
+- Analysis (VQT): implement kernels + unwhitened/whitened paths per `docs/specs/audio_fft_vqt.md` (see Implementation TODOs) and expose `vqt*`/`vqt*w` APIs; conformance carts + numeric tolerances.
 - Platform: WASM build path; window scaling and UX polish.
 
 **Open Questions**
@@ -78,6 +91,11 @@
     - Renamed API parity to `docs/specs/lua_api_parity.md` and added specs stubs.
     - Added docs index at `docs/README.md`, architecture/testing pages, and ADRs.
   - Added detailed testing docs (`docs/testing/strategy.md`) and a test catalog (`docs/testing/test_catalog.md`).
+ - 2025-08-27:
+   - Implemented audio capture with `cpal`: device selection/listing, mono downmix, ring buffer.
+   - Added CLI: `--list-audio`, `--audio-device`, `--audio-vu`, `--audio-disable`.
+   - Integrated a 1s VU peak readout for manual verification.
+   - Kept clippy/tests green; documented the FFT/VQT plan and linked TODOs.
 
 **Docs Index**
 - Start here: `docs/README.md`

@@ -52,7 +52,7 @@ Rationale: keep concerns isolated, enable headless testing and cross-checking pe
 - Rendering backend: Start with software rasterizer in `tic-gfx` (deterministic, headless testable). Add a thin SDL2 or winit+pixels presentation layer later. Optional `wgpu` in a later phase.
 - Audio IO: Use `cpal` for capture/output. Keep synth/tick deterministic in `tic-audio`. For capture, implement a lock-free ring buffer shared with `tic-fx`.
 - Compression: Use `flate2`/`miniz_oxide` for zlib compatible packing/unpacking of carts.
-- FFT: Use `rustfft` for 2k (FFT) and 8k (VQT path) with exact binning and smoothing behavior; implement variable-Q kernel generation per CLAUDE.md.
+- FFT/VQT: Use `realfft` (R2C) for 2k/8k transforms with exact binning and smoothing behavior; implement variable‑Q kernel generation per CLAUDE.md. See `docs/specs/audio_fft_vqt.md` for the Rust plan.
 - Testing: Frame-hash snapshots for VRAM, audio block-level comparisons, API-level golden tests. Conformance carts from `demos/`.
 
 ## Phased Roadmap

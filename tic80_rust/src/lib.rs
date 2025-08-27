@@ -9,3 +9,7 @@ pub mod core {
 pub mod script {
     pub mod lua_runner;
 }
+
+pub mod audio {
+    pub mod capture;
+}

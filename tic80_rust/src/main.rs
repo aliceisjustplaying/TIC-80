@@ -13,6 +13,7 @@ use winit::window::WindowBuilder;
 use tic80_rust::gfx::framebuffer::{dimensions, Framebuffer};
 use tic80_rust::script::lua_runner::LuaRunner;
 use tic80_rust::core::memory::Memory;
+use tic80_rust::audio::capture as audio_cap;
 
 // Simple fixed-step ticker at ~60 FPS
 struct Ticker {
@@ -59,24 +60,79 @@ fn run() -> Result<(), Error> {
     let fb = Rc::new(RefCell::new(Framebuffer::new()));
     let mem = Rc::new(RefCell::new(Memory::new(fb.clone())));
     let mut ticker = Ticker::new();
-    // Program selection: first CLI arg as .lua script, else embedded default
-    let args: Vec<String> = std::env::args().skip(1).collect();
-    let script = if let Some(first) = args.first() {
-        if first.ends_with(".lua") && Path::new(first).is_file() {
-            match fs::read_to_string(first) {
-                Ok(s) => s,
-                Err(e) => {
-                    eprintln!("Failed to read {}: {}. Falling back to default cart.", first, e);
-                    DEFAULT_LUA.to_string()
+    // CLI parsing (minimal): flags + optional .lua path
+    let mut args_iter = std::env::args().skip(1);
+    let mut script_path: Option<String> = None;
+    let mut list_audio = false;
+    let mut audio_disable = false;
+    let mut audio_device: Option<String> = None;
+    let mut audio_vu = false;
+    while let Some(arg) = args_iter.next() {
+        match arg.as_str() {
+            "--list-audio" => list_audio = true,
+            "--audio-disable" => audio_disable = true,
+            "--audio-vu" => audio_vu = true,
+            "--audio-device" => {
+                if let Some(val) = args_iter.next() { audio_device = Some(val); }
+            }
+            other => {
+                if other.ends_with(".lua") && Path::new(other).is_file() {
+                    script_path = Some(other.to_string());
                 }
             }
+        }
+    }
+    if list_audio {
+        let list = audio_cap::list_input_devices();
+        if list.is_empty() {
+            println!("No input devices found.");
         } else {
-            DEFAULT_LUA.to_string()
+            println!("Input devices:");
+            for (i, name) in list.iter().enumerate() {
+                println!("  {}: {}", i, name);
+            }
+        }
+        return Ok(());
+    }
+    let script = if let Some(path) = script_path.as_ref() {
+        match fs::read_to_string(path) {
+            Ok(s) => s,
+            Err(e) => {
+                eprintln!("Failed to read {}: {}. Falling back to default cart.", path, e);
+                DEFAULT_LUA.to_string()
+            }
         }
     } else {
         DEFAULT_LUA.to_string()
     };
     let lua_runner = LuaRunner::new(fb.clone(), mem.clone(), &script).ok();
+
+    // Optional audio capture
+    struct AudioState {
+        _handle: audio_cap::AudioCaptureHandle,
+        cons: rtrb::Consumer<f32>,
+        vu_enabled: bool,
+        last_print: Instant,
+        peak_acc: f32,
+    }
+    let mut audio_state: Option<AudioState> = None;
+    if !audio_disable {
+        let cap_cfg = audio_cap::AudioCaptureConfig {
+            device_substr: audio_device.clone(),
+            sample_rate: Some(44_100),
+            ring_capacity: audio_cap::default_ring_capacity(),
+        };
+        match audio_cap::start_capture(cap_cfg) {
+            Ok((handle, cons)) => {
+                println!("Audio capture: '{}' @ {} Hz, {} ch", handle.info.device_name, handle.info.sample_rate, handle.info.channels);
+                if audio_vu { println!("Audio VU: enabled (prints every ~1s)"); }
+                audio_state = Some(AudioState { _handle: handle, cons, vu_enabled: audio_vu, last_print: Instant::now(), peak_acc: 0.0 });
+            }
+            Err(e) => {
+                eprintln!("Audio capture disabled ({}). Use --audio-disable to silence this.", e);
+            }
+        }
+    }
 
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Poll;
@@ -101,6 +157,18 @@ fn run() -> Result<(), Error> {
                 if ticker.should_tick() {
                     if let Some(r) = &lua_runner {
                         r.tick();
+                    }
+                    // Simple VU meter from audio ring
+                    if let Some(a) = audio_state.as_mut() {
+                        // Drain available samples and track peak
+                        while let Ok(s) = a.cons.pop() { a.peak_acc = a.peak_acc.max(s.abs()); }
+                        if a.vu_enabled && a.last_print.elapsed() >= Duration::from_millis(1000) {
+                            let peak = a.peak_acc.max(1e-9);
+                            let db = 20.0 * peak.log10();
+                            println!("VU: peak {:.3} ({:.1} dBFS)", peak, db);
+                            a.peak_acc = 0.0;
+                            a.last_print = Instant::now();
+                        }
                     }
                     window.request_redraw();
                 }

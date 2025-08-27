@@ -26,6 +26,7 @@ Implemented (Lua + Core)
 Implemented (Runner/CLI)
 - `.lua` loader: First CLI arg as a `.lua` path runs external script; fallback to bundled `assets/default.lua`.
 - Window title: “rustic”.
+- Audio capture scaffolding: `cpal` input stream (44.1 kHz if supported), stereo→mono downmix, lock‑free ring buffer (8192 samples); CLI flags to list/select devices and optional VU meter output.
 
 Behavioral Notes
 - Triangles: top-left inclusion; CCW orientation enforced internally; half-open bounding box prevents shared-edge double draws.
