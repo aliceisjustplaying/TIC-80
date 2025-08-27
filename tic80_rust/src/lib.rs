@@ -32,3 +32,7 @@ pub mod audio {
     pub mod fft;
     pub mod vqt;
 }
+
+pub mod editor {
+    pub mod ui;
+}

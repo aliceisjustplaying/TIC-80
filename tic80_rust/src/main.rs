@@ -42,6 +42,7 @@ use std::sync::Arc;
 use tic80_rust::audio::capture as audio_cap;
 use tic80_rust::audio::fft::{set_global_fft, FFTState};
 use tic80_rust::core::memory::Memory;
+use tic80_rust::editor::ui::EditorUi;
 use tic80_rust::gfx::framebuffer::{dimensions, Framebuffer};
 use tic80_rust::script::lua_runner::LuaRunner;
 
@@ -82,6 +83,7 @@ struct Args {
     debug_fx: bool,
     quiet: bool,
     help: bool,
+    editor: bool,
 }
 
 fn parse_args() -> Args {
@@ -96,6 +98,7 @@ fn parse_args() -> Args {
         debug_fx: false,
         quiet: false,
         help: false,
+        editor: false,
     };
     while let Some(arg) = args_iter.next() {
         match arg.as_str() {
@@ -106,6 +109,7 @@ fn parse_args() -> Args {
             "--debug-fft" => out.debug_fft = true,
             "--debug-fx" => out.debug_fx = true,
             "--quiet" => out.quiet = true,
+            "--editor" => out.editor = true,
             "--audio-device" => {
                 if let Some(val) = args_iter.next() {
                     out.audio_device = Some(val);
@@ -275,6 +279,7 @@ fn load_script(script_path: Option<&PathBuf>) -> String {
 fn run() -> Result<(), Error> {
     let event_loop = EventLoop::new();
     let (window, mut pixels) = create_window_and_pixels(&event_loop, 3.0)?; // default integer scaling
+    let window_scale = 3.0f64;
 
     let fb = Rc::new(RefCell::new(Framebuffer::new()));
     let mem = Rc::new(RefCell::new(Memory::new(fb.clone())));
@@ -285,27 +290,48 @@ fn run() -> Result<(), Error> {
         print_help();
         return Ok(());
     }
+    if args.help {
+        print_help();
+        return Ok(());
+    }
     if args.list_audio {
         print_devices_and_exit();
         return Ok(());
     }
-    let script = load_script(args.script_path.as_ref());
     tic80_rust::script::lua_runner::set_quiet(args.quiet);
-    let lua_runner = match LuaRunner::new(fb.clone(), mem.clone(), &script) {
-        Ok(r) => Some(r),
-        Err(e) => {
-            eprintln!("Lua initialization error: {e}");
-            None
-        }
+    let (lua_runner, mut editor_ui) = if args.editor {
+        (None, Some(EditorUi::new(window_scale)))
+    } else {
+        let script = load_script(args.script_path.as_ref());
+        let lr = match LuaRunner::new(fb.clone(), mem.clone(), &script) {
+            Ok(r) => Some(r),
+            Err(e) => {
+                eprintln!("Lua initialization error: {e}");
+                None
+            }
+        };
+        (lr, None)
     };
     let mut audio_state = init_audio(&args);
     let mut warned_no_tic = false;
+    let mut last_cursor_fb: Option<(i32, i32)> = None;
 
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Poll;
         match event {
             Event::WindowEvent { event, .. } => match event {
                 WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
+                WindowEvent::CursorMoved { position, .. } => {
+                    if let Some(ui) = editor_ui.as_ref() {
+                        let (fx, fy) = ui.window_to_fb(position.x, position.y);
+                        last_cursor_fb = Some((fx, fy));
+                    }
+                }
+                WindowEvent::MouseInput { state: ElementState::Pressed, .. } => {
+                    if let (Some((fx, fy)), Some(ui)) = (last_cursor_fb, editor_ui.as_mut()) {
+                        ui.on_click_fb(fx, fy);
+                    }
+                }
                 WindowEvent::KeyboardInput {
                     input:
                         KeyboardInput {
@@ -322,11 +348,13 @@ fn run() -> Result<(), Error> {
             },
             Event::MainEventsCleared => {
                 if ticker.should_tick() {
-                    if let Some(r) = &lua_runner {
-                        r.tick();
-                    } else if !warned_no_tic && !args.quiet {
-                        eprintln!("No TIC() to run; idle");
-                        warned_no_tic = true;
+                    if editor_ui.is_none() {
+                        if let Some(r) = &lua_runner {
+                            r.tick();
+                        } else if !warned_no_tic && !args.quiet {
+                            eprintln!("No TIC() to run; idle");
+                            warned_no_tic = true;
+                        }
                     }
                     // Simple VU meter from audio ring
                     if let Some(a) = audio_state.as_mut() {
@@ -437,6 +465,10 @@ fn run() -> Result<(), Error> {
             }
             Event::RedrawRequested(_) => {
                 let frame = pixels.frame_mut();
+                if let Some(ui) = editor_ui.as_ref() {
+                    let mut fbb = fb.borrow_mut();
+                    ui.draw(&mut fbb);
+                }
                 fb.borrow().blit_to_rgba(frame);
                 if let Err(err) = pixels.render() {
                     eprintln!("Render error: {err}");
