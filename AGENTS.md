@@ -15,6 +15,9 @@
   - Reference new/updated plans from AGENTS.md and the docs index.
 - Keep hygiene visible: mention clippy/test status with each change.
 - ALWAYS format code with `cargo fmt` after changes, in addition to fixing all compiler/clippy warnings and errors.
+- ALWAYS update the test carts catalog when adding a new cart:
+  - Add the cart to `docs/testing/test_carts.md` with purpose, run instructions, and expected behavior.
+  - If needed, add a short run snippet to `docs/README.md`.
 
 **Context**
 - **Rewrite code location:** All Rust rewrite code lives under `tic80_rust/` (crate root). Tests live in `tic80_rust/tests/`. The windowed demo binary is `tic80_rust/src/main.rs`.

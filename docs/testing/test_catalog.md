@@ -53,3 +53,4 @@ This document summarizes the current test coverage with file paths and intent.
 Notes
 - Tests prefer headless framebuffer inspection over image baselines.
 - Hashing uses FNV‑1a over VRAM palette indices for portability and stability.
+- For manual carts, see `docs/testing/test_carts.md`.

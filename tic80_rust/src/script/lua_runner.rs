@@ -1,5 +1,7 @@
 use std::cell::RefCell;
 use std::rc::Rc;
+use std::sync::{Mutex, OnceLock};
+use std::time::Instant;
 
 use mlua::{Function, Lua, MultiValue, RegistryKey, Result as LuaResult, Value};
 
@@ -12,6 +14,9 @@ pub struct LuaRunner {
     tic_key: Option<RegistryKey>,
 }
 
+// Optional trace buffer (used by tests); if present, trace() will also append messages here.
+static TRACE_BUFFER: OnceLock<Mutex<Vec<String>>> = OnceLock::new();
+
 impl LuaRunner {
     pub fn new(
         fb: Rc<RefCell<Framebuffer>>,
@@ -19,6 +24,7 @@ impl LuaRunner {
         script_src: &str,
     ) -> LuaResult<Self> {
         let lua = Lua::new();
+        let start_time = Instant::now();
         let tic_key = {
             let globals = lua.globals();
 
@@ -220,6 +226,40 @@ impl LuaRunner {
             })?;
             globals.set("fftrs", fftrs_fn)?;
 
+            // trace(message, color=15)
+            let trace_fn = lua.create_function(move |_, args: MultiValue| {
+                let msg = match args.get(0) {
+                    Some(Value::String(s)) => s.to_str()?.to_string(),
+                    Some(Value::Number(n)) => n.to_string(),
+                    Some(Value::Integer(i)) => i.to_string(),
+                    Some(Value::Boolean(b)) => b.to_string(),
+                    Some(Value::Nil) | None => String::new(),
+                    _ => String::new(),
+                };
+                let color = match args.get(1) {
+                    Some(Value::Integer(n)) => *n as i32,
+                    Some(Value::Number(n)) => *n as i32,
+                    _ => 15,
+                };
+                // Print to console; color is informational only here.
+                println!("[trace:{}] {}", color, msg);
+                if let Some(buf) = TRACE_BUFFER.get() {
+                    if let Ok(mut b) = buf.lock() {
+                        b.push(msg);
+                    }
+                }
+                Ok(())
+            })?;
+            globals.set("trace", trace_fn)?;
+
+            // time() -> milliseconds since cart start
+            let start_copy = start_time;
+            let time_fn = lua.create_function(move |_, ()| {
+                let ms = start_copy.elapsed().as_millis() as f64;
+                Ok(ms)
+            })?;
+            globals.set("time", time_fn)?;
+
             // memory: peek/poke + bit variants + memcpy/memset
             let mem_peek = mem.clone();
             let peek_fn = lua.create_function(move |_, (addr, bits): (u32, Option<u8>)| {
@@ -386,4 +426,26 @@ impl LuaRunner {
             }
         }
     }
+}
+
+// Test support: initialize a shared trace buffer (clears any existing messages).
+pub fn trace_buffer_init() {
+    let _ = TRACE_BUFFER.set(Mutex::new(Vec::new()));
+    if let Some(b) = TRACE_BUFFER.get() {
+        if let Ok(mut v) = b.lock() {
+            v.clear();
+        }
+    }
+}
+
+// Test support: take and clear all trace messages.
+pub fn trace_buffer_take() -> Vec<String> {
+    if let Some(b) = TRACE_BUFFER.get() {
+        if let Ok(mut v) = b.lock() {
+            let out = v.clone();
+            v.clear();
+            return out;
+        }
+    }
+    Vec::new()
 }

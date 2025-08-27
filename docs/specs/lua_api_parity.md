@@ -133,9 +133,11 @@ For each API, we list the expected signature (per spec), key side effects, and t
 
 - trace: `trace(message color=15)`
   - Effect: Print to console (not screen) in color.
+  - Status: Implemented (color accepted; prints to console; tests use internal buffer).
   - Subsystem: tic-core (logger).
 - time: `time() -> ticks`
   - Effect: Milliseconds since cart start (double); used for animation/timing.
+  - Status: Implemented (monotonic; tick-thread time origin).
   - Subsystem: tic-core (timer).
 - tstamp: `tstamp() -> timestamp`
   - Effect: Seconds since Unix epoch.

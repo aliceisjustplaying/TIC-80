@@ -21,7 +21,11 @@ Implemented (Lua + Core)
  - Memory
   - `peek(addr[,bits=8])`, `poke(addr, value[,bits=8])`: 8/4/2/1-bit addressing across full 96 KB; VRAM screen region mapped to live framebuffer (nibble-packed 2 px/byte).
   - `peek1/peek2/peek4`, `poke1/poke2/poke4`: Bit-specific helpers.
-  - `memcpy(dst, src, size)`, `memset(dst, value, size)`: Byte-wise operations; overlap-safe memcpy; VRAM ops update on-screen pixels immediately.
+ - `memcpy(dst, src, size)`, `memset(dst, value, size)`: Byte-wise operations; overlap-safe memcpy; VRAM ops update on-screen pixels immediately.
+
+Implemented (System)
+- `trace(message, color=15)`: Prints to console (color informational only in CLI); tests verify trace messages via an internal buffer used only in tests.
+- `time() -> milliseconds`: Monotonic milliseconds since cart start (tick-thread time origin); tested for monotonic increase across ticks.
 
 Implemented (Runner/CLI)
 - `.lua` loader: First CLI arg as a `.lua` path runs external script; fallback to bundled `assets/default.lua`.

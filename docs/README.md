@@ -21,6 +21,7 @@ This folder organizes the rewrite plan, specs, architecture notes, testing strat
 - `docs/testing/strategy.md`: Testing and validation strategy across API/VRAM/audio.
 - `docs/testing/frame_hashes.md`: Conventions for deterministic frame/audio hashing (stub).
 - `docs/testing/test_catalog.md`: Summary of current tests and their intent.
+- `docs/testing/test_carts.md`: Manual test carts (Lua) for quick verification (FFT, time/trace).
 
 ## Decisions (ADR)
 - `docs/adr/0001-winit-pixels.md`: Windowing/presentation stack decision.
@@ -41,3 +42,6 @@ Notes
 - Audio FFT test cart:
   - `cargo run --manifest-path tic80_rust/Cargo.toml -- tic80_rust/assets/fft_test.lua --audio-device "<name-substr>"`
   - Add `--audio-vu` to print a 1s peak; add `--debug-fft` to print the first few bins.
+- Time/Trace test cart:
+  - `cargo run --manifest-path tic80_rust/Cargo.toml -- tic80_rust/assets/time_trace_test.lua`
+  - Shows elapsed ms and emits a trace once per second to the console.
