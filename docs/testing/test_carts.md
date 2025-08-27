@@ -28,6 +28,12 @@ This page lists small Lua carts in `tic80_rust/assets/` intended for quick, manu
     - `cargo run --manifest-path tic80_rust/Cargo.toml -- tic80_rust/assets/time_trace_test.lua`
   - Expected: On-screen elapsed ms text; a small marker toggles color every second; console prints `sec=<n>` lines via `trace()`.
 
+- `tic80_rust/assets/vqt_test.lua`
+  - Purpose: Visualize VQT across 12 octaves (120 bins), with auto-toggle between unwhitened and whitened views.
+  - How to run:
+    - `cargo run --manifest-path tic80_rust/Cargo.toml -- tic80_rust/assets/vqt_test.lua --audio-device "<name-substr>"`
+  - Expected: 120 bars (2px each) filling the 240px width; octave grid lines at every 12 bins; legend shows current mode (`raw` vs `whitened`) toggled every ~3 seconds; peak bin outlined.
+
 Notes
 - These carts are designed for fast feedback during local development. They complement headless tests and can reveal platform quirks (devices, timing).
 - Keep carts small, single-purpose, and deterministic where possible.

@@ -42,6 +42,14 @@ Implemented (Analysis)
   - Lua APIs implemented: `fft/ffts/fftr/fftrs` with C-identical clamping/sum semantics.
   - Tests: headless unit tests cover raw-peak behavior and Lua bridging; additional clamp/sum range tests added.
 
+- VQT (8k):
+  - Kernel generation for 120 semitone-spaced bins from 19.445 Hz; Hamming window; modulated and normalized over full 8192 buffer; sparse frequency-domain kernels via magnitude threshold.
+  - Tick-thread R2C over latest 8192 samples; per-bin sparse complex dot; magnitude scaled by 2.0.
+  - Unwhitened: smoothed (0.3), peak-normalized [0,1].
+  - Whitened: log-domain envelope (width 21), subtract, exp, mixed by alpha 0.95; smoothed and peak-normalized separately.
+  - Lua APIs implemented: `vqt/vqts/vqtr/vqtrs` and `vqtw/vqtsw/vqtrw/vqtrsw` with C-identical OOB behavior.
+  - Tests: kernel/peak sanity, Lua bridging, whitened arrays finite.
+
 Behavioral Notes
 - Triangles: top-left inclusion; CCW orientation enforced internally; half-open bounding box prevents shared-edge double draws.
 - Ellipses vs circles: fill then border may overdraw endpoints; order-dependent at axis rows (parity with TIC-80).
@@ -58,7 +66,7 @@ Pending APIs (not implemented yet)
 - Audio
   - `sfx`, `music`; audio mixer/synth; capture ring for analysis.
 - Analysis
-  - `vqt/vqts/vqtr/vqtrs` and whitening variants; behavior per CLAUDE.md.
+  - (none for VQT); whitening completed.
 - Sprite flags
   - `fget`, `fset`.
 

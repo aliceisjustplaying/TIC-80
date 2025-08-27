@@ -125,6 +125,7 @@ fn run() -> Result<(), Error> {
         last_print: Instant,
         peak_acc: f32,
         fft: Arc<RwLock<FFTState>>,
+        vqt: Arc<RwLock<tic80_rust::audio::vqt::VQTState>>,
         debug_fft: bool,
         last_fft_dbg: Instant,
     }
@@ -148,6 +149,12 @@ fn run() -> Result<(), Error> {
                     audio_cap::default_ring_capacity(),
                 )));
                 set_global_fft(fft_arc.clone());
+                let vqt_arc: Arc<RwLock<tic80_rust::audio::vqt::VQTState>> =
+                    Arc::new(RwLock::new(tic80_rust::audio::vqt::VQTState::new(
+                        handle.info.sample_rate,
+                        audio_cap::default_ring_capacity(),
+                    )));
+                tic80_rust::audio::vqt::set_global_vqt(vqt_arc.clone());
                 audio_state = Some(AudioState {
                     _handle: handle,
                     cons,
@@ -155,6 +162,7 @@ fn run() -> Result<(), Error> {
                     last_print: Instant::now(),
                     peak_acc: 0.0,
                     fft: fft_arc,
+                    vqt: vqt_arc,
                     debug_fft,
                     last_fft_dbg: Instant::now(),
                 });
@@ -200,8 +208,11 @@ fn run() -> Result<(), Error> {
                             while let Ok(s) = a.cons.pop() {
                                 a.peak_acc = a.peak_acc.max(s.abs());
                                 w.ingest(s);
+                                // Also feed VQT buffer
+                                a.vqt.write().ingest(s);
                             }
                             w.update();
+                            a.vqt.write().update();
                         }
                         if a.debug_fft && a.last_fft_dbg.elapsed() >= Duration::from_millis(500) {
                             // Print a small subset of normalized bins

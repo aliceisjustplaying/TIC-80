@@ -45,3 +45,6 @@ Notes
 - Time/Trace test cart:
   - `cargo run --manifest-path tic80_rust/Cargo.toml -- tic80_rust/assets/time_trace_test.lua`
   - Shows elapsed ms and emits a trace once per second to the console.
+ - VQT test cart:
+  - `cargo run --manifest-path tic80_rust/Cargo.toml -- tic80_rust/assets/vqt_test.lua --audio-device "<name-substr>"`
+  - Visualizes 120 bins (12 octaves) with a 2px per-bin bar chart; auto-toggles between raw and whitened views every ~3 seconds.

@@ -6,6 +6,7 @@ use std::time::Instant;
 use mlua::{Function, Lua, MultiValue, RegistryKey, Result as LuaResult, Value};
 
 use crate::audio::fft::{get_global_fft, query_fft};
+use crate::audio::vqt::get_global_vqt;
 use crate::core::memory::Memory;
 use crate::gfx::framebuffer::Framebuffer;
 
@@ -225,6 +226,128 @@ impl LuaRunner {
                 Ok(val)
             })?;
             globals.set("fftrs", fftrs_fn)?;
+
+            // VQT APIs: vqt/vqts/vqtr/vqtrs and whitened variants vqtw/vqtsw/vqtrw/vqtrsw
+            let vqt_fn = lua.create_function(move |_, bin: i32| {
+                let val = if let Some(arc) = get_global_vqt() {
+                    let guard = arc.read();
+                    // Return normalized instantaneous; align with TIC: vqt returns normalized
+                    if bin >= 0 && (bin as usize) < guard.bins_count() {
+                        guard.vqt_norm[bin as usize] as f64
+                    } else {
+                        0.0
+                    }
+                } else {
+                    0.0
+                };
+                Ok(val)
+            })?;
+            globals.set("vqt", vqt_fn)?;
+
+            let vqts_fn = lua.create_function(move |_, bin: i32| {
+                let val = if let Some(arc) = get_global_vqt() {
+                    let guard = arc.read();
+                    if bin >= 0 && (bin as usize) < guard.bins_count() {
+                        guard.vqt_norm[bin as usize] as f64
+                    } else {
+                        0.0
+                    }
+                } else {
+                    0.0
+                };
+                Ok(val)
+            })?;
+            globals.set("vqts", vqts_fn)?;
+
+            let vqtr_fn = lua.create_function(move |_, bin: i32| {
+                let val = if let Some(arc) = get_global_vqt() {
+                    let guard = arc.read();
+                    if bin >= 0 && (bin as usize) < guard.bins_count() {
+                        guard.vqt_raw[bin as usize] as f64
+                    } else {
+                        0.0
+                    }
+                } else {
+                    0.0
+                };
+                Ok(val)
+            })?;
+            globals.set("vqtr", vqtr_fn)?;
+
+            let vqtrs_fn = lua.create_function(move |_, bin: i32| {
+                let val = if let Some(arc) = get_global_vqt() {
+                    let guard = arc.read();
+                    if bin >= 0 && (bin as usize) < guard.bins_count() {
+                        guard.vqt_sm[bin as usize] as f64
+                    } else {
+                        0.0
+                    }
+                } else {
+                    0.0
+                };
+                Ok(val)
+            })?;
+            globals.set("vqtrs", vqtrs_fn)?;
+
+            let vqtw_fn = lua.create_function(move |_, bin: i32| {
+                let val = if let Some(arc) = get_global_vqt() {
+                    let guard = arc.read();
+                    if bin >= 0 && (bin as usize) < guard.bins_count() {
+                        guard.vqt_w_norm[bin as usize] as f64
+                    } else {
+                        0.0
+                    }
+                } else {
+                    0.0
+                };
+                Ok(val)
+            })?;
+            globals.set("vqtw", vqtw_fn)?;
+
+            let vqtsw_fn = lua.create_function(move |_, bin: i32| {
+                let val = if let Some(arc) = get_global_vqt() {
+                    let guard = arc.read();
+                    if bin >= 0 && (bin as usize) < guard.bins_count() {
+                        guard.vqt_w_norm[bin as usize] as f64
+                    } else {
+                        0.0
+                    }
+                } else {
+                    0.0
+                };
+                Ok(val)
+            })?;
+            globals.set("vqtsw", vqtsw_fn)?;
+
+            let vqtrw_fn = lua.create_function(move |_, bin: i32| {
+                let val = if let Some(arc) = get_global_vqt() {
+                    let guard = arc.read();
+                    if bin >= 0 && (bin as usize) < guard.bins_count() {
+                        guard.vqt_w_raw[bin as usize] as f64
+                    } else {
+                        0.0
+                    }
+                } else {
+                    0.0
+                };
+                Ok(val)
+            })?;
+            globals.set("vqtrw", vqtrw_fn)?;
+
+            let vqtrsw_fn = lua.create_function(move |_, bin: i32| {
+                let val = if let Some(arc) = get_global_vqt() {
+                    let guard = arc.read();
+                    if bin >= 0 && (bin as usize) < guard.bins_count() {
+                        guard.vqt_w_sm[bin as usize] as f64
+                    } else {
+                        0.0
+                    }
+                } else {
+                    0.0
+                };
+                Ok(val)
+            })?;
+            globals.set("vqtrsw", vqtrsw_fn)?;
 
             // trace(message, color=15)
             let trace_fn = lua.create_function(move |_, args: MultiValue| {
