@@ -1,17 +1,19 @@
 use std::cell::RefCell;
-use std::rc::Rc;
 use std::fs;
 use std::path::PathBuf;
+use std::rc::Rc;
 
+use tic80_rust::core::memory::Memory;
 use tic80_rust::gfx::framebuffer::{dimensions, Framebuffer};
 use tic80_rust::script::lua_runner::LuaRunner;
-use tic80_rust::core::memory::Memory;
 
 fn run_lua(script: &str, ticks: usize) -> Rc<RefCell<Framebuffer>> {
     let fb = Rc::new(RefCell::new(Framebuffer::new()));
     let mem = Rc::new(RefCell::new(Memory::new(fb.clone())));
     let runner = LuaRunner::new(fb.clone(), mem, script).expect("lua init");
-    for _ in 0..ticks { runner.tick(); }
+    for _ in 0..ticks {
+        runner.tick();
+    }
     fb
 }
 
@@ -75,7 +77,9 @@ fn lua_print_width_marker() {
                 break;
             }
         }
-        if any { break; }
+        if any {
+            break;
+        }
     }
     assert!(any, "expected some glyph pixels drawn near (10,10)");
 
@@ -83,9 +87,15 @@ fn lua_print_width_marker() {
     let (w, _) = dimensions();
     let mut found_marker = false;
     for x in 10..(w as i32) {
-        if fbm.pix(x, 10, None) == Some(14) { found_marker = true; break; }
+        if fbm.pix(x, 10, None) == Some(14) {
+            found_marker = true;
+            break;
+        }
     }
-    assert!(found_marker, "expected marker pixel with color 14 on row 10");
+    assert!(
+        found_marker,
+        "expected marker pixel with color 14 on row 10"
+    );
 }
 
 #[test]
@@ -114,9 +124,14 @@ fn lua_print_defaults_and_pix_read() {
     let mut any = false;
     for yy in 0..8 {
         for xx in 0..8 {
-            if fbm.pix(xx, yy, None) == Some(15) { any = true; break; }
+            if fbm.pix(xx, yy, None) == Some(15) {
+                any = true;
+                break;
+            }
         }
-        if any { break; }
+        if any {
+            break;
+        }
     }
     assert!(any, "expected some glyph pixels drawn near origin");
     // verify the script marked (w,0) with 7 (we don't need to know w here)
@@ -209,7 +224,9 @@ fn lua_default_cart_deterministic_hash() {
         let fb = Rc::new(RefCell::new(Framebuffer::new()));
         let mem = Rc::new(RefCell::new(Memory::new(fb.clone())));
         let runner = LuaRunner::new(fb.clone(), mem, &script).expect("lua init");
-        for _ in 0..ticks { runner.tick(); }
+        for _ in 0..ticks {
+            runner.tick();
+        }
         let mut borrowed = fb.borrow_mut();
         fb_hash(&mut borrowed)
     };
@@ -223,7 +240,10 @@ fn lua_default_cart_deterministic_hash() {
     assert_eq!(h2, h2_again, "hash should be deterministic for 2 ticks");
 
     // Different frame counts should usually yield different hashes for this cart
-    assert_ne!(h1, h2, "different ticks should yield different frame hashes");
+    assert_ne!(
+        h1, h2,
+        "different ticks should yield different frame hashes"
+    );
 }
 
 #[test]
@@ -238,7 +258,9 @@ fn lua_circ_and_circb() {
     let fb = run_lua(script, 1);
     let mut fbm = fb.borrow_mut();
     // Filled circle: center row span for r=4
-    for x in 16..=24 { assert_eq!(fbm.pix(x, 20, None), Some(6)); }
+    for x in 16..=24 {
+        assert_eq!(fbm.pix(x, 20, None), Some(6));
+    }
     // Border circle: cardinal points for r=3
     assert_eq!(fbm.pix(33, 20, None), Some(9));
     assert_eq!(fbm.pix(27, 20, None), Some(9));
@@ -265,7 +287,9 @@ fn lua_elli_ellib_and_tri_trib() {
     assert_eq!(fbm.pix(60, 23, None), Some(12));
     assert_eq!(fbm.pix(60, 17, None), Some(12));
     // Filled ellipse center row (interior only; endpoints are border color)
-    for x in 56..=64 { assert_eq!(fbm.pix(x, 20, None), Some(4)); }
+    for x in 56..=64 {
+        assert_eq!(fbm.pix(x, 20, None), Some(4));
+    }
     // Triangle interior
     assert_eq!(fbm.pix(80, 18, None), Some(6));
     // Border triangle vertices

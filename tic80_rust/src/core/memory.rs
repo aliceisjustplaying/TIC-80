@@ -31,7 +31,9 @@ impl Memory {
             let mut get_px = |pi: usize| -> u8 {
                 if pi < w * h {
                     fb.pix((pi % w) as i32, (pi / w) as i32, None).unwrap_or(0) & 0x0F
-                } else { 0 }
+                } else {
+                    0
+                }
             };
             let lo = get_px(p);
             let hi = get_px(p + 1);
@@ -69,8 +71,12 @@ impl Memory {
         }
     }
 
-    pub fn peek(&self, addr: usize) -> u8 { self.get_byte(addr) }
-    pub fn poke(&mut self, addr: usize, val: u8) { self.set_byte(addr, val); }
+    pub fn peek(&self, addr: usize) -> u8 {
+        self.get_byte(addr)
+    }
+    pub fn poke(&mut self, addr: usize, val: u8) {
+        self.set_byte(addr, val);
+    }
 
     // bit-packed peeks/pokes across entire 96KB (VRAM included)
     pub fn peek_bits(&self, addr: usize, bits: u8) -> u8 {
@@ -78,7 +84,11 @@ impl Memory {
             8 => self.peek(addr),
             4 => {
                 let byte = self.peek(addr >> 1);
-                if (addr & 1) == 0 { byte & 0x0F } else { (byte >> 4) & 0x0F }
+                if (addr & 1) == 0 {
+                    byte & 0x0F
+                } else {
+                    (byte >> 4) & 0x0F
+                }
             }
             2 => {
                 let byte = self.peek(addr >> 2);
@@ -125,7 +135,9 @@ impl Memory {
     }
 
     pub fn memcpy(&mut self, dst: usize, src: usize, size: usize) {
-        if size == 0 { return; }
+        if size == 0 {
+            return;
+        }
         // Handle overlap with correct direction
         if src < dst && src + size > dst {
             for i in (0..size).rev() {
@@ -141,6 +153,8 @@ impl Memory {
     }
 
     pub fn memset(&mut self, dst: usize, value: u8, size: usize) {
-        for i in 0..size { self.set_byte(dst + i, value); }
+        for i in 0..size {
+            self.set_byte(dst + i, value);
+        }
     }
 }

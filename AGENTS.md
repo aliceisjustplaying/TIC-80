@@ -14,6 +14,7 @@
   - Add a plan/Implementation TODOs section under the relevant spec (e.g., audio FFT/VQT) or create a new spec.
   - Reference new/updated plans from AGENTS.md and the docs index.
 - Keep hygiene visible: mention clippy/test status with each change.
+- ALWAYS format code with `cargo fmt` after changes, in addition to fixing all compiler/clippy warnings and errors.
 
 **Context**
 - **Rewrite code location:** All Rust rewrite code lives under `tic80_rust/` (crate root). Tests live in `tic80_rust/tests/`. The windowed demo binary is `tic80_rust/src/main.rs`.
@@ -50,6 +51,7 @@
 - Memory ops (`peek/poke` 1/2/4/8‑bit, `memcpy`, `memset`) implemented; VRAM updates reflect on screen.
 - CLI loads bundled default cart or a provided `.lua` path.
 - Audio capture foundation: `cpal` input stream with mono downmix into a lock‑free ring buffer (8192 samples); CLI flags `--list-audio`, `--audio-device`, `--audio-vu`, `--audio-disable`; simple VU feedback prints peak dBFS once per second.
+ - FFT foundation: 2k R2C (`realfft`) updates on the tick thread; maintains raw/smoothed/normalized buffers with peak tracking; `--debug-fft` prints first bins; Lua APIs pending.
 
 **Near-Term Backlog**
 - FFT implementation (cpal + realfft) per `docs/specs/audio_fft_vqt.md` (see Implementation TODOs section); add headless tests and Lua `fft/ffts/fftr/fftrs`.
@@ -95,6 +97,7 @@
    - Implemented audio capture with `cpal`: device selection/listing, mono downmix, ring buffer.
    - Added CLI: `--list-audio`, `--audio-device`, `--audio-vu`, `--audio-disable`.
    - Integrated a 1s VU peak readout for manual verification.
+   - Implemented 2k FFT analysis (realfft) with normalized/smoothed buffers and debug print flag.
    - Kept clippy/tests green; documented the FFT/VQT plan and linked TODOs.
 
 **Docs Index**

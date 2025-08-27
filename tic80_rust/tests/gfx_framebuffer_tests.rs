@@ -50,8 +50,8 @@ fn rect_fill_and_clipping() {
     let (w, h) = dimensions();
     let x0 = 0i32;
     let y0 = 0i32;
-    let x1 = ( -5 + 10).min(w as i32);
-    let y1 = ( -3 + 8).min(h as i32);
+    let x1 = (-5 + 10).min(w as i32);
+    let y1 = (-3 + 8).min(h as i32);
     let expected = (x1 - x0).max(0) as usize * (y1 - y0).max(0) as usize;
     let mut count = 0usize;
     for y in 0..(h as i32) {
@@ -141,9 +141,9 @@ fn blit_to_rgba_maps_palette() {
     let mut fb = Framebuffer::new();
     fb.cls(0);
     // set three sample pixels to known colors
-    fb.set_pixel(0, 0, 0);   // black
-    fb.set_pixel(1, 0, 9);   // orange
-    fb.set_pixel(2, 0, 15);  // peach
+    fb.set_pixel(0, 0, 0); // black
+    fb.set_pixel(1, 0, 9); // orange
+    fb.set_pixel(2, 0, 15); // peach
 
     let (w, h) = dimensions();
     let mut rgba = vec![0u8; (w * h * 4) as usize];
@@ -208,13 +208,19 @@ fn print_width_fixed_vs_variable_and_newline() {
     // Something on row 0
     let mut any_row0 = false;
     for x in 0..8 {
-        if fb2.pix(x, 0, None) == Some(15) { any_row0 = true; break; }
+        if fb2.pix(x, 0, None) == Some(15) {
+            any_row0 = true;
+            break;
+        }
     }
     assert!(any_row0);
     // And something on row 6
     let mut any_row6 = false;
     for x in 0..8 {
-        if fb2.pix(x, 6, None) == Some(15) { any_row6 = true; break; }
+        if fb2.pix(x, 6, None) == Some(15) {
+            any_row6 = true;
+            break;
+        }
     }
     assert!(any_row6);
 }
@@ -224,7 +230,7 @@ fn clip_affects_pix_write() {
     let mut fb = Framebuffer::new();
     fb.cls(2);
     fb.clip(1, 1, 1, 1); // only (1,1)
-    // Write outside clip
+                         // Write outside clip
     let _ = fb.pix(0, 0, Some(7));
     // Write inside clip
     let _ = fb.pix(1, 1, Some(7));
@@ -352,10 +358,14 @@ fn tri_top_left_flat_top_inclusion() {
     fb.tri(10, 10, 20, 10, 15, 15, 6);
     // Top scanline: interior x in (10,20) filled; endpoints excluded by top-left rule
     assert_eq!(fb.pix(10, 10, None), Some(0));
-    for x in 11..20 { assert_eq!(fb.pix(x, 10, None), Some(6)); }
+    for x in 11..20 {
+        assert_eq!(fb.pix(x, 10, None), Some(6));
+    }
     assert_eq!(fb.pix(20, 10, None), Some(0));
     // Bottom row excluded
-    for x in 10..=20 { assert_eq!(fb.pix(x, 15, None), Some(0)); }
+    for x in 10..=20 {
+        assert_eq!(fb.pix(x, 15, None), Some(0));
+    }
 }
 
 #[test]
@@ -364,7 +374,9 @@ fn tri_top_left_flat_bottom_exclusion() {
     fb.cls(0);
     // Flat-bottom triangle: bottom edge y=20 excluded
     fb.tri(10, 10, 5, 20, 15, 20, 7);
-    for x in 5..=15 { assert_eq!(fb.pix(x, 20, None), Some(0)); }
+    for x in 5..=15 {
+        assert_eq!(fb.pix(x, 20, None), Some(0));
+    }
     // No assumption on apex inclusion; key check is base exclusion
 }
 
@@ -376,7 +388,13 @@ fn tri_adjacent_rect_no_gaps() {
     fb.tri(0, 0, 10, 0, 0, 10, 3);
     fb.tri(10, 10, 10, 0, 0, 10, 3);
     let mut count = 0usize;
-    for y in 0..10 { for x in 0..10 { if fb.pix(x, y, None) == Some(3) { count += 1; } } }
+    for y in 0..10 {
+        for x in 0..10 {
+            if fb.pix(x, y, None) == Some(3) {
+                count += 1;
+            }
+        }
+    }
     assert_eq!(count, 100, "expected full 10x10 coverage without gaps");
 }
 
@@ -388,6 +406,11 @@ fn tri_degenerate_zero_area_draws_nothing() {
     fb.tri(10, 10, 10, 15, 10, 20, 9);
     // No pixels should be colored with 9
     let mut any = false;
-    for y in 10..=20 { if fb.pix(10, y, None) == Some(9) { any = true; break; } }
+    for y in 10..=20 {
+        if fb.pix(10, y, None) == Some(9) {
+            any = true;
+            break;
+        }
+    }
     assert!(!any, "degenerate triangle should not draw");
 }

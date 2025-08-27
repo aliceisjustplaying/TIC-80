@@ -3,8 +3,9 @@ use std::rc::Rc;
 
 use mlua::{Function, Lua, MultiValue, RegistryKey, Result as LuaResult, Value};
 
-use crate::gfx::framebuffer::Framebuffer;
+use crate::audio::fft::{get_global_fft, query_fft};
 use crate::core::memory::Memory;
+use crate::gfx::framebuffer::Framebuffer;
 
 pub struct LuaRunner {
     lua: Lua,
@@ -12,7 +13,11 @@ pub struct LuaRunner {
 }
 
 impl LuaRunner {
-    pub fn new(fb: Rc<RefCell<Framebuffer>>, mem: Rc<RefCell<Memory>>, script_src: &str) -> LuaResult<Self> {
+    pub fn new(
+        fb: Rc<RefCell<Framebuffer>>,
+        mem: Rc<RefCell<Memory>>,
+        script_src: &str,
+    ) -> LuaResult<Self> {
         let lua = Lua::new();
         let tic_key = {
             let globals = lua.globals();
@@ -56,28 +61,29 @@ impl LuaRunner {
 
             // rectb(x,y,w,h,color)
             let fb_rectb = fb.clone();
-            let rectb_fn = lua.create_function(
-                move |_, (x, y, w, h, color): (i32, i32, i32, i32, u8)| {
+            let rectb_fn =
+                lua.create_function(move |_, (x, y, w, h, color): (i32, i32, i32, i32, u8)| {
                     fb_rectb.borrow_mut().rectb(x, y, w, h, color);
                     Ok(())
-                },
-            )?;
+                })?;
             globals.set("rectb", rectb_fn)?;
 
             // circ(x, y, r, color)
             let fb_circ = fb.clone();
-            let circ_fn = lua.create_function(move |_, (x, y, r, color): (i32, i32, i32, u8)| {
-                fb_circ.borrow_mut().circ(x, y, r, color);
-                Ok(())
-            })?;
+            let circ_fn =
+                lua.create_function(move |_, (x, y, r, color): (i32, i32, i32, u8)| {
+                    fb_circ.borrow_mut().circ(x, y, r, color);
+                    Ok(())
+                })?;
             globals.set("circ", circ_fn)?;
 
             // circb(x, y, r, color)
             let fb_circb = fb.clone();
-            let circb_fn = lua.create_function(move |_, (x, y, r, color): (i32, i32, i32, u8)| {
-                fb_circb.borrow_mut().circb(x, y, r, color);
-                Ok(())
-            })?;
+            let circb_fn =
+                lua.create_function(move |_, (x, y, r, color): (i32, i32, i32, u8)| {
+                    fb_circb.borrow_mut().circb(x, y, r, color);
+                    Ok(())
+                })?;
             globals.set("circb", circb_fn)?;
 
             // clip(x,y,w,h) or clip() to reset
@@ -86,10 +92,22 @@ impl LuaRunner {
                 if args.is_empty() {
                     fb_clip.borrow_mut().clip_reset();
                 } else {
-                    let x = match args.get(0) { Some(Value::Integer(n)) => *n as i32, _ => 0 };
-                    let y = match args.get(1) { Some(Value::Integer(n)) => *n as i32, _ => 0 };
-                    let w = match args.get(2) { Some(Value::Integer(n)) => *n as i32, _ => 0 };
-                    let h = match args.get(3) { Some(Value::Integer(n)) => *n as i32, _ => 0 };
+                    let x = match args.get(0) {
+                        Some(Value::Integer(n)) => *n as i32,
+                        _ => 0,
+                    };
+                    let y = match args.get(1) {
+                        Some(Value::Integer(n)) => *n as i32,
+                        _ => 0,
+                    };
+                    let w = match args.get(2) {
+                        Some(Value::Integer(n)) => *n as i32,
+                        _ => 0,
+                    };
+                    let h = match args.get(3) {
+                        Some(Value::Integer(n)) => *n as i32,
+                        _ => 0,
+                    };
                     fb_clip.borrow_mut().clip(x, y, w, h);
                 }
                 Ok(())
@@ -141,75 +159,206 @@ impl LuaRunner {
             })?;
             globals.set("print", print_fn)?;
 
+            // FFT APIs: fft/ffts/fftr/fftrs
+            fn parse_fft_args(args: &MultiValue) -> (i32, i32) {
+                let start = match args.get(0) {
+                    Some(Value::Integer(n)) => *n as i32,
+                    _ => -1,
+                };
+                let end = match args.get(1) {
+                    Some(Value::Integer(n)) => *n as i32,
+                    _ => -1,
+                };
+                (start, end)
+            }
+
+            let fft_fn = lua.create_function(move |_, args: MultiValue| {
+                let (start, end) = parse_fft_args(&args);
+                let val = if let Some(arc) = get_global_fft() {
+                    let guard = arc.read();
+                    query_fft(&guard, start, end, false, false)
+                } else {
+                    0.0
+                };
+                Ok(val)
+            })?;
+            globals.set("fft", fft_fn)?;
+
+            let ffts_fn = lua.create_function(move |_, args: MultiValue| {
+                let (start, end) = parse_fft_args(&args);
+                let val = if let Some(arc) = get_global_fft() {
+                    let guard = arc.read();
+                    query_fft(&guard, start, end, true, false)
+                } else {
+                    0.0
+                };
+                Ok(val)
+            })?;
+            globals.set("ffts", ffts_fn)?;
+
+            let fftr_fn = lua.create_function(move |_, args: MultiValue| {
+                let (start, end) = parse_fft_args(&args);
+                let val = if let Some(arc) = get_global_fft() {
+                    let guard = arc.read();
+                    query_fft(&guard, start, end, false, true)
+                } else {
+                    0.0
+                };
+                Ok(val)
+            })?;
+            globals.set("fftr", fftr_fn)?;
+
+            let fftrs_fn = lua.create_function(move |_, args: MultiValue| {
+                let (start, end) = parse_fft_args(&args);
+                let val = if let Some(arc) = get_global_fft() {
+                    let guard = arc.read();
+                    query_fft(&guard, start, end, true, true)
+                } else {
+                    0.0
+                };
+                Ok(val)
+            })?;
+            globals.set("fftrs", fftrs_fn)?;
+
             // memory: peek/poke + bit variants + memcpy/memset
             let mem_peek = mem.clone();
             let peek_fn = lua.create_function(move |_, (addr, bits): (u32, Option<u8>)| {
                 let a = addr as usize;
                 let b = bits.unwrap_or(8);
-                let v = if b == 8 { mem_peek.borrow().peek(a) } else { mem_peek.borrow().peek_bits(a, b) };
+                let v = if b == 8 {
+                    mem_peek.borrow().peek(a)
+                } else {
+                    mem_peek.borrow().peek_bits(a, b)
+                };
                 Ok(v as u32)
             })?;
             globals.set("peek", peek_fn)?;
 
             let mem_poke = mem.clone();
-            let poke_fn = lua.create_function(move |_, (addr, val, bits): (u32, u32, Option<u8>)| {
-                let a = addr as usize;
-                let v = val as u8;
-                let b = bits.unwrap_or(8);
-                if b == 8 { mem_poke.borrow_mut().poke(a, v); } else { mem_poke.borrow_mut().poke_bits(a, b, v); }
-                Ok(())
-            })?;
+            let poke_fn =
+                lua.create_function(move |_, (addr, val, bits): (u32, u32, Option<u8>)| {
+                    let a = addr as usize;
+                    let v = val as u8;
+                    let b = bits.unwrap_or(8);
+                    if b == 8 {
+                        mem_poke.borrow_mut().poke(a, v);
+                    } else {
+                        mem_poke.borrow_mut().poke_bits(a, b, v);
+                    }
+                    Ok(())
+                })?;
             globals.set("poke", poke_fn)?;
 
             let mem_peek1 = mem.clone();
-            globals.set("peek1", lua.create_function(move |_, addr: u32| Ok(mem_peek1.borrow().peek_bits(addr as usize, 1) as u32))?)?;
+            globals.set(
+                "peek1",
+                lua.create_function(move |_, addr: u32| {
+                    Ok(mem_peek1.borrow().peek_bits(addr as usize, 1) as u32)
+                })?,
+            )?;
             let mem_peek2 = mem.clone();
-            globals.set("peek2", lua.create_function(move |_, addr: u32| Ok(mem_peek2.borrow().peek_bits(addr as usize, 2) as u32))?)?;
+            globals.set(
+                "peek2",
+                lua.create_function(move |_, addr: u32| {
+                    Ok(mem_peek2.borrow().peek_bits(addr as usize, 2) as u32)
+                })?,
+            )?;
             let mem_peek4 = mem.clone();
-            globals.set("peek4", lua.create_function(move |_, addr: u32| Ok(mem_peek4.borrow().peek_bits(addr as usize, 4) as u32))?)?;
+            globals.set(
+                "peek4",
+                lua.create_function(move |_, addr: u32| {
+                    Ok(mem_peek4.borrow().peek_bits(addr as usize, 4) as u32)
+                })?,
+            )?;
 
             let mem_poke1 = mem.clone();
-            globals.set("poke1", lua.create_function(move |_, (addr, val): (u32, u32)| { mem_poke1.borrow_mut().poke_bits(addr as usize, 1, val as u8); Ok(()) })?)?;
+            globals.set(
+                "poke1",
+                lua.create_function(move |_, (addr, val): (u32, u32)| {
+                    mem_poke1
+                        .borrow_mut()
+                        .poke_bits(addr as usize, 1, val as u8);
+                    Ok(())
+                })?,
+            )?;
             let mem_poke2 = mem.clone();
-            globals.set("poke2", lua.create_function(move |_, (addr, val): (u32, u32)| { mem_poke2.borrow_mut().poke_bits(addr as usize, 2, val as u8); Ok(()) })?)?;
+            globals.set(
+                "poke2",
+                lua.create_function(move |_, (addr, val): (u32, u32)| {
+                    mem_poke2
+                        .borrow_mut()
+                        .poke_bits(addr as usize, 2, val as u8);
+                    Ok(())
+                })?,
+            )?;
             let mem_poke4 = mem.clone();
-            globals.set("poke4", lua.create_function(move |_, (addr, val): (u32, u32)| { mem_poke4.borrow_mut().poke_bits(addr as usize, 4, val as u8); Ok(()) })?)?;
+            globals.set(
+                "poke4",
+                lua.create_function(move |_, (addr, val): (u32, u32)| {
+                    mem_poke4
+                        .borrow_mut()
+                        .poke_bits(addr as usize, 4, val as u8);
+                    Ok(())
+                })?,
+            )?;
 
             let mem_memcpy = mem.clone();
-            globals.set("memcpy", lua.create_function(move |_, (dst, src, size): (u32, u32, u32)| { mem_memcpy.borrow_mut().memcpy(dst as usize, src as usize, size as usize); Ok(()) })?)?;
+            globals.set(
+                "memcpy",
+                lua.create_function(move |_, (dst, src, size): (u32, u32, u32)| {
+                    mem_memcpy
+                        .borrow_mut()
+                        .memcpy(dst as usize, src as usize, size as usize);
+                    Ok(())
+                })?,
+            )?;
             let mem_memset = mem.clone();
-            globals.set("memset", lua.create_function(move |_, (dst, val, size): (u32, u32, u32)| { mem_memset.borrow_mut().memset(dst as usize, val as u8, size as usize); Ok(()) })?)?;
+            globals.set(
+                "memset",
+                lua.create_function(move |_, (dst, val, size): (u32, u32, u32)| {
+                    mem_memset
+                        .borrow_mut()
+                        .memset(dst as usize, val as u8, size as usize);
+                    Ok(())
+                })?,
+            )?;
 
             // elli(x, y, a, b, color)
             let fb_elli = fb.clone();
-            let elli_fn = lua.create_function(move |_, (x, y, a, b, color): (i32, i32, i32, i32, u8)| {
-                fb_elli.borrow_mut().elli(x, y, a, b, color);
-                Ok(())
-            })?;
+            let elli_fn =
+                lua.create_function(move |_, (x, y, a, b, color): (i32, i32, i32, i32, u8)| {
+                    fb_elli.borrow_mut().elli(x, y, a, b, color);
+                    Ok(())
+                })?;
             globals.set("elli", elli_fn)?;
 
             // ellib(x, y, a, b, color)
             let fb_ellib = fb.clone();
-            let ellib_fn = lua.create_function(move |_, (x, y, a, b, color): (i32, i32, i32, i32, u8)| {
-                fb_ellib.borrow_mut().ellib(x, y, a, b, color);
-                Ok(())
-            })?;
+            let ellib_fn =
+                lua.create_function(move |_, (x, y, a, b, color): (i32, i32, i32, i32, u8)| {
+                    fb_ellib.borrow_mut().ellib(x, y, a, b, color);
+                    Ok(())
+                })?;
             globals.set("ellib", ellib_fn)?;
 
             // tri(x1,y1,x2,y2,x3,y3,color)
             let fb_tri = fb.clone();
-            let tri_fn = lua.create_function(move |_, (x1,y1,x2,y2,x3,y3,color): (i32,i32,i32,i32,i32,i32,u8)| {
-                fb_tri.borrow_mut().tri(x1,y1,x2,y2,x3,y3,color);
-                Ok(())
-            })?;
+            let tri_fn = lua.create_function(
+                move |_, (x1, y1, x2, y2, x3, y3, color): (i32, i32, i32, i32, i32, i32, u8)| {
+                    fb_tri.borrow_mut().tri(x1, y1, x2, y2, x3, y3, color);
+                    Ok(())
+                },
+            )?;
             globals.set("tri", tri_fn)?;
 
             // trib(x1,y1,x2,y2,x3,y3,color)
             let fb_trib = fb.clone();
-            let trib_fn = lua.create_function(move |_, (x1,y1,x2,y2,x3,y3,color): (i32,i32,i32,i32,i32,i32,u8)| {
-                fb_trib.borrow_mut().trib(x1,y1,x2,y2,x3,y3,color);
-                Ok(())
-            })?;
+            let trib_fn = lua.create_function(
+                move |_, (x1, y1, x2, y2, x3, y3, color): (i32, i32, i32, i32, i32, i32, u8)| {
+                    fb_trib.borrow_mut().trib(x1, y1, x2, y2, x3, y3, color);
+                    Ok(())
+                },
+            )?;
             globals.set("trib", trib_fn)?;
 
             // Load script

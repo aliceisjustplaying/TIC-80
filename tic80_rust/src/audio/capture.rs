@@ -115,7 +115,13 @@ pub fn start_capture(
         channels,
     };
 
-    Ok((AudioCaptureHandle { _stream: stream, info }, cons))
+    Ok((
+        AudioCaptureHandle {
+            _stream: stream,
+            info,
+        },
+        cons,
+    ))
 }
 
 fn build_stream<T>(

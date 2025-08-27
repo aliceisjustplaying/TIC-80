@@ -33,15 +33,21 @@ fn memcpy_and_memset_affect_vram() {
     let mut mem = Memory::new(fb.clone());
     // memset first 10 bytes of VRAM screen -> sets first 20 pixels (pairs) to (0x5,0x5)
     mem.memset(0, 0x55, 10);
-    for x in 0..20 { assert_eq!(fb.borrow_mut().pix(x, 0, None), Some(0x5)); }
+    for x in 0..20 {
+        assert_eq!(fb.borrow_mut().pix(x, 0, None), Some(0x5));
+    }
 
     // prepare source bytes with pattern 0xAB -> (0xB,0xA) on pixels
     let src = 40000usize; // within RAM region beyond VRAM
-    for i in 0..4 { mem.poke(src + i, 0xAB); }
+    for i in 0..4 {
+        mem.poke(src + i, 0xAB);
+    }
     mem.memcpy(0, src, 4); // copy into beginning of VRAM
-    // First 8 pixels now map from 0xAB pairs
+                           // First 8 pixels now map from 0xAB pairs
     let mut px = vec![];
-    for x in 0..8 { px.push(fb.borrow_mut().pix(x, 0, None).unwrap()); }
+    for x in 0..8 {
+        px.push(fb.borrow_mut().pix(x, 0, None).unwrap());
+    }
     assert_eq!(&px, &[0xB, 0xA, 0xB, 0xA, 0xB, 0xA, 0xB, 0xA]);
 }
 

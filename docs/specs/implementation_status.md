@@ -27,6 +27,15 @@ Implemented (Runner/CLI)
 - `.lua` loader: First CLI arg as a `.lua` path runs external script; fallback to bundled `assets/default.lua`.
 - Window title: “rustic”.
 - Audio capture scaffolding: `cpal` input stream (44.1 kHz if supported), stereo→mono downmix, lock‑free ring buffer (8192 samples); CLI flags to list/select devices and optional VU meter output.
+ - VU behavior: Peak meter observed ~-180 dBFS at silence (BlackHole 2ch on macOS), responsive under Multi‑Output device routing.
+
+Implemented (Analysis)
+- FFT (2k):
+  - Real‑to‑complex transform using `realfft` over the latest 2048 samples on the tick thread.
+  - Bins 0..1023 maintained (Nyquist dropped), magnitudes scaled by 2.0 to match C behavior.
+  - Buffers: raw, raw‑smoothed (0.6), normalized, normalized‑smoothed, with peak tracking (`fPeakMin=0.01`, `fPeakSmooth=0.995`).
+  - Optional `--debug-fft` prints the first 16 smoothed normalized bins periodically.
+  - Lua APIs pending wiring (`fft/ffts/fftr/fftrs`).
 
 Behavioral Notes
 - Triangles: top-left inclusion; CCW orientation enforced internally; half-open bounding box prevents shared-edge double draws.

@@ -143,10 +143,7 @@ impl Framebuffer {
 
     // Blit to RGBA buffer for pixels
     pub fn blit_to_rgba(&self, rgba: &mut [u8]) {
-        for (px, idx) in rgba
-            .chunks_exact_mut(4)
-            .zip(self.idx.iter().copied())
-        {
+        for (px, idx) in rgba.chunks_exact_mut(4).zip(self.idx.iter().copied()) {
             let pal = &PALETTE[(idx & 0x0F) as usize];
             px.copy_from_slice(pal);
         }
@@ -225,7 +222,9 @@ impl Framebuffer {
 
     // Circle border using 8-way symmetry (integer midpoint algorithm)
     pub fn circb(&mut self, cx: i32, cy: i32, r: i32, color: u8) {
-        if r < 0 { return; }
+        if r < 0 {
+            return;
+        }
         let c = color & 0x0F;
         if r == 0 {
             let _ = self.set_pixel(cx, cy, c);
@@ -257,7 +256,9 @@ impl Framebuffer {
 
     // Filled circle via horizontal spans using symmetry
     pub fn circ(&mut self, cx: i32, cy: i32, r: i32, color: u8) {
-        if r < 0 { return; }
+        if r < 0 {
+            return;
+        }
         let c = color & 0x0F;
         if r == 0 {
             let _ = self.set_pixel(cx, cy, c);
@@ -284,7 +285,9 @@ impl Framebuffer {
     }
 
     fn hspan(&mut self, x0: i32, x1: i32, y: i32, color: u8) {
-        if y < 0 || y as u32 >= HEIGHT { return; }
+        if y < 0 || y as u32 >= HEIGHT {
+            return;
+        }
         let start = x0.min(x1);
         let end = x0.max(x1);
         for x in start..=end {
@@ -294,9 +297,14 @@ impl Framebuffer {
 
     // Ellipse border using midpoint algorithm
     pub fn ellib(&mut self, cx: i32, cy: i32, a: i32, b: i32, color: u8) {
-        if a < 0 || b < 0 { return; }
+        if a < 0 || b < 0 {
+            return;
+        }
         let c = color & 0x0F;
-        if a == 0 && b == 0 { let _ = self.set_pixel(cx, cy, c); return; }
+        if a == 0 && b == 0 {
+            let _ = self.set_pixel(cx, cy, c);
+            return;
+        }
 
         let a2 = (a as i64) * (a as i64);
         let b2 = (b as i64) * (b as i64);
@@ -305,7 +313,8 @@ impl Framebuffer {
         let mut y: i64 = b as i64;
         let mut d = b2 - a2 * (b as i64) + a2 / 4;
         while b2 * x <= a2 * y {
-            let xx = x as i32; let yy = y as i32;
+            let xx = x as i32;
+            let yy = y as i32;
             let _ = self.set_pixel(cx + xx, cy + yy, c);
             let _ = self.set_pixel(cx - xx, cy + yy, c);
             let _ = self.set_pixel(cx + xx, cy - yy, c);
@@ -319,9 +328,12 @@ impl Framebuffer {
             x += 1;
         }
 
-        x = a as i64; y = 0; d = a2 - b2 * (a as i64) + b2 / 4;
+        x = a as i64;
+        y = 0;
+        d = a2 - b2 * (a as i64) + b2 / 4;
         while a2 * y <= b2 * x {
-            let xx = x as i32; let yy = y as i32;
+            let xx = x as i32;
+            let yy = y as i32;
             let _ = self.set_pixel(cx + xx, cy + yy, c);
             let _ = self.set_pixel(cx - xx, cy + yy, c);
             let _ = self.set_pixel(cx + xx, cy - yy, c);
@@ -338,16 +350,35 @@ impl Framebuffer {
 
     // Filled ellipse using horizontal spans
     pub fn elli(&mut self, cx: i32, cy: i32, a: i32, b: i32, color: u8) {
-        if a < 0 || b < 0 { return; }
+        if a < 0 || b < 0 {
+            return;
+        }
         let c = color & 0x0F;
-        if a == 0 && b == 0 { let _ = self.set_pixel(cx, cy, c); return; }
-        if a == 0 { for yy in (cy - b)..=(cy + b) { let _ = self.set_pixel(cx, yy, c); } return; }
-        if b == 0 { for xx in (cx - a)..=(cx + a) { let _ = self.set_pixel(xx, cy, c); } return; }
-        let af = a as f32; let bf = b as f32; let bf2 = bf * bf;
+        if a == 0 && b == 0 {
+            let _ = self.set_pixel(cx, cy, c);
+            return;
+        }
+        if a == 0 {
+            for yy in (cy - b)..=(cy + b) {
+                let _ = self.set_pixel(cx, yy, c);
+            }
+            return;
+        }
+        if b == 0 {
+            for xx in (cx - a)..=(cx + a) {
+                let _ = self.set_pixel(xx, cy, c);
+            }
+            return;
+        }
+        let af = a as f32;
+        let bf = b as f32;
+        let bf2 = bf * bf;
         for dy in -b..=b {
             let yf = dy as f32;
             let t = 1.0 - (yf * yf) / bf2;
-            if t < 0.0 { continue; }
+            if t < 0.0 {
+                continue;
+            }
             let xf = af * t.sqrt();
             let x = xf.floor() as i32;
             self.hspan(cx - x, cx + x, cy + dy, c);
@@ -387,9 +418,12 @@ impl Framebuffer {
         let (cx2, cy2) = ((v2x as i64) * 2, (v2y as i64) * 2);
 
         // Edge deltas
-        let e0_dx = bx2 - ax2; let e0_dy = by2 - ay2; // v0->v1
-        let e1_dx = cx2 - bx2; let e1_dy = cy2 - by2; // v1->v2
-        let e2_dx = ax2 - cx2; let e2_dy = ay2 - cy2; // v2->v0
+        let e0_dx = bx2 - ax2;
+        let e0_dy = by2 - ay2; // v0->v1
+        let e1_dx = cx2 - bx2;
+        let e1_dy = cy2 - by2; // v1->v2
+        let e2_dx = ax2 - cx2;
+        let e2_dy = ay2 - cy2; // v2->v0
 
         // Top-left classification
         let e0_top_left = e0_dy > 0 || (e0_dy == 0 && e0_dx < 0);
@@ -468,12 +502,20 @@ impl Framebuffer {
                     if mask != 0 {
                         // find first 1 from the left (LSB)
                         let mut l = 0;
-                        while l < GLYPH_W && ((mask >> l) & 1) == 0 { l += 1; }
+                        while l < GLYPH_W && ((mask >> l) & 1) == 0 {
+                            l += 1;
+                        }
                         // find last 1 from the left (rightmost set bit + 1)
                         let mut r = GLYPH_W;
-                        while r > 0 && (((mask >> (r - 1)) & 1) == 0) { r -= 1; }
-                        if l < left { left = l; }
-                        if r > right { right = r; }
+                        while r > 0 && (((mask >> (r - 1)) & 1) == 0) {
+                            r -= 1;
+                        }
+                        if l < left {
+                            left = l;
+                        }
+                        if r > right {
+                            right = r;
+                        }
                     }
                 }
                 let width = right.saturating_sub(left);

@@ -10,10 +10,13 @@ use winit::event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEve
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::WindowBuilder;
 
+use parking_lot::RwLock;
+use std::sync::Arc;
+use tic80_rust::audio::capture as audio_cap;
+use tic80_rust::audio::fft::{set_global_fft, FFTState};
+use tic80_rust::core::memory::Memory;
 use tic80_rust::gfx::framebuffer::{dimensions, Framebuffer};
 use tic80_rust::script::lua_runner::LuaRunner;
-use tic80_rust::core::memory::Memory;
-use tic80_rust::audio::capture as audio_cap;
 
 // Simple fixed-step ticker at ~60 FPS
 struct Ticker {
@@ -73,7 +76,9 @@ fn run() -> Result<(), Error> {
             "--audio-disable" => audio_disable = true,
             "--audio-vu" => audio_vu = true,
             "--audio-device" => {
-                if let Some(val) = args_iter.next() { audio_device = Some(val); }
+                if let Some(val) = args_iter.next() {
+                    audio_device = Some(val);
+                }
             }
             other => {
                 if other.ends_with(".lua") && Path::new(other).is_file() {
@@ -98,7 +103,10 @@ fn run() -> Result<(), Error> {
         match fs::read_to_string(path) {
             Ok(s) => s,
             Err(e) => {
-                eprintln!("Failed to read {}: {}. Falling back to default cart.", path, e);
+                eprintln!(
+                    "Failed to read {}: {}. Falling back to default cart.",
+                    path, e
+                );
                 DEFAULT_LUA.to_string()
             }
         }
@@ -114,8 +122,13 @@ fn run() -> Result<(), Error> {
         vu_enabled: bool,
         last_print: Instant,
         peak_acc: f32,
+        fft: Arc<RwLock<FFTState>>,
+        debug_fft: bool,
     }
     let mut audio_state: Option<AudioState> = None;
+    // Optional debug flag for FFT bins
+    let debug_fft = std::env::args().any(|a| a == "--debug-fft");
+
     if !audio_disable {
         let cap_cfg = audio_cap::AudioCaptureConfig {
             device_substr: audio_device.clone(),
@@ -124,12 +137,32 @@ fn run() -> Result<(), Error> {
         };
         match audio_cap::start_capture(cap_cfg) {
             Ok((handle, cons)) => {
-                println!("Audio capture: '{}' @ {} Hz, {} ch", handle.info.device_name, handle.info.sample_rate, handle.info.channels);
-                if audio_vu { println!("Audio VU: enabled (prints every ~1s)"); }
-                audio_state = Some(AudioState { _handle: handle, cons, vu_enabled: audio_vu, last_print: Instant::now(), peak_acc: 0.0 });
+                println!(
+                    "Audio capture: '{}' @ {} Hz, {} ch",
+                    handle.info.device_name, handle.info.sample_rate, handle.info.channels
+                );
+                if audio_vu {
+                    println!("Audio VU: enabled (prints every ~1s)");
+                }
+                let fft_arc: Arc<RwLock<FFTState>> = Arc::new(RwLock::new(FFTState::new(
+                    audio_cap::default_ring_capacity(),
+                )));
+                set_global_fft(fft_arc.clone());
+                audio_state = Some(AudioState {
+                    _handle: handle,
+                    cons,
+                    vu_enabled: audio_vu,
+                    last_print: Instant::now(),
+                    peak_acc: 0.0,
+                    fft: fft_arc,
+                    debug_fft,
+                });
             }
             Err(e) => {
-                eprintln!("Audio capture disabled ({}). Use --audio-disable to silence this.", e);
+                eprintln!(
+                    "Audio capture disabled ({}). Use --audio-disable to silence this.",
+                    e
+                );
             }
         }
     }
@@ -160,8 +193,30 @@ fn run() -> Result<(), Error> {
                     }
                     // Simple VU meter from audio ring
                     if let Some(a) = audio_state.as_mut() {
-                        // Drain available samples and track peak
-                        while let Ok(s) = a.cons.pop() { a.peak_acc = a.peak_acc.max(s.abs()); }
+                        // Drain available samples, feed analyzer, track peak
+                        while let Ok(s) = a.cons.pop() {
+                            a.peak_acc = a.peak_acc.max(s.abs());
+                            if let Some(mut w) = a.fft.try_write() {
+                                w.ingest(s);
+                            }
+                        }
+                        if let Some(mut w) = a.fft.try_write() {
+                            w.update();
+                        }
+                        if a.debug_fft {
+                            // Print a small subset of normalized bins
+                            let bins = {
+                                let r = a.fft.read();
+                                r.bins().min(16)
+                            };
+                            let mut line = String::from("FFT[0..16]: ");
+                            if let Some(r) = a.fft.try_read() {
+                                for i in 0..bins {
+                                    line.push_str(&format!("{:.2} ", r.fft_sm[i]));
+                                }
+                            }
+                            println!("{}", line);
+                        }
                         if a.vu_enabled && a.last_print.elapsed() >= Duration::from_millis(1000) {
                             let peak = a.peak_acc.max(1e-9);
                             let db = 20.0 * peak.log10();

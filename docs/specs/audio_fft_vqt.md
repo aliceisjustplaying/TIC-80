@@ -87,7 +87,7 @@ This page captures the runtime behavior and the implementation plan for FFT/VQT 
 
 Status
 - Phase 1 implemented: `cpal` capture + mono downmix + ring buffer + CLI flags + VU feedback.
-- Next: Phase 2 (FFT 2k, realfft R2C, Lua APIs, tests).
+- Phase 2 implemented: FFT 2k using `realfft` (tick‑thread), raw/smoothed/normalized buffers and peak tracking; optional `--debug-fft`. Lua wiring and tests next.
 
 Phase 1: Audio (cpal)
 - Device listing: Add `--list-audio` to print capture devices and default.

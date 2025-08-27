@@ -38,3 +38,6 @@ Notes
 - Load a `.lua` file:
   - `cargo run --manifest-path tic80_rust/Cargo.toml -- tic80_rust/assets/alt.lua`
   - In crate dir: `cargo run -- assets/alt.lua`
+- Audio FFT test cart:
+  - `cargo run --manifest-path tic80_rust/Cargo.toml -- tic80_rust/assets/fft_test.lua --audio-device "<name-substr>"`
+  - Add `--audio-vu` to print a 1s peak; add `--debug-fft` to print the first few bins.
