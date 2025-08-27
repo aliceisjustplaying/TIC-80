@@ -35,7 +35,8 @@ Implemented (Analysis)
   - Bins 0..1023 maintained (Nyquist dropped), magnitudes scaled by 2.0 to match C behavior.
   - Buffers: raw, raw‑smoothed (0.6), normalized, normalized‑smoothed, with peak tracking (`fPeakMin=0.01`, `fPeakSmooth=0.995`).
   - Optional `--debug-fft` prints the first 16 smoothed normalized bins periodically.
-  - Lua APIs pending wiring (`fft/ffts/fftr/fftrs`).
+  - Lua APIs implemented: `fft/ffts/fftr/fftrs` with C-identical clamping/sum semantics.
+  - Tests: headless unit tests cover raw-peak behavior and Lua bridging; additional clamp/sum range tests added.
 
 Behavioral Notes
 - Triangles: top-left inclusion; CCW orientation enforced internally; half-open bounding box prevents shared-edge double draws.
@@ -53,7 +54,7 @@ Pending APIs (not implemented yet)
 - Audio
   - `sfx`, `music`; audio mixer/synth; capture ring for analysis.
 - Analysis
-  - `fft/ffts/fftr/fftrs`, `vqt/vqts/vqtr/vqtrs` and whitening variants; behavior per CLAUDE.md.
+  - `vqt/vqts/vqtr/vqtrs` and whitening variants; behavior per CLAUDE.md.
 - Sprite flags
   - `fget`, `fset`.
 

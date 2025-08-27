@@ -44,6 +44,12 @@ This document summarizes the current test coverage with file paths and intent.
   - `memcpy_and_memset_affect_vram`: VRAM writes via memcpy/memset reach the screen.
   - `peek_poke_bits_general_ram`: 1/4-bit addressing in general RAM behaves correctly.
 
+## FFT Tests
+- `tic80_rust/tests/fft_tests.rs`
+  - `fft_query_peak_at_bin`: Bin-aligned sine produces a distinct raw peak at the expected bin versus neighbors.
+  - `lua_fft_returns_normalized_bin`: Verifies Lua `fft(k)` returns normalized magnitude by gating a pixel.
+  - `fft_query_range_clamps_and_sums`: Clamping and inclusive sum behavior matches C (OOB handling and range sums).
+
 Notes
 - Tests prefer headless framebuffer inspection over image baselines.
 - Hashing uses FNV‑1a over VRAM palette indices for portability and stability.
