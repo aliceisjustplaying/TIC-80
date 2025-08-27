@@ -517,7 +517,8 @@ impl Framebuffer {
             }
 
             let (start_col, width_cols) = if fixed {
-                (0, GLYPH_W)
+                // Fixed-width: TIC-80 advances 6 px per glyph; render leftmost 6 columns
+                (0, 6)
             } else {
                 // Variable-width: trim empty columns using LSB-left orientation
                 let mut left = GLYPH_W;

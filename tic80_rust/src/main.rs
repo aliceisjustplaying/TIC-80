@@ -42,6 +42,7 @@ use std::sync::Arc;
 use tic80_rust::audio::capture as audio_cap;
 use tic80_rust::audio::fft::{set_global_fft, FFTState};
 use tic80_rust::core::memory::Memory;
+use tic80_rust::editor::code::{Area as CodeArea, CodeBuffer};
 use tic80_rust::editor::ui::EditorUi;
 use tic80_rust::gfx::framebuffer::{dimensions, Framebuffer};
 use tic80_rust::script::lua_runner::LuaRunner;
@@ -299,8 +300,13 @@ fn run() -> Result<(), Error> {
         return Ok(());
     }
     tic80_rust::script::lua_runner::set_quiet(args.quiet);
-    let (lua_runner, mut editor_ui) = if args.editor {
-        (None, Some(EditorUi::new(window_scale)))
+    let (lua_runner, mut editor_ui, mut code_buf) = if args.editor {
+        let initial = load_script(args.script_path.as_ref());
+        (
+            None,
+            Some(EditorUi::new(window_scale)),
+            Some(CodeBuffer::from_text(&initial)),
+        )
     } else {
         let script = load_script(args.script_path.as_ref());
         let lr = match LuaRunner::new(fb.clone(), mem.clone(), &script) {
@@ -310,12 +316,13 @@ fn run() -> Result<(), Error> {
                 None
             }
         };
-        (lr, None)
+        (lr, None, None)
     };
     let mut audio_state = init_audio(&args);
     let mut warned_no_tic = false;
     let mut last_cursor_fb: Option<(i32, i32)> = None;
 
+    #[allow(clippy::cognitive_complexity)]
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Poll;
         match event {
@@ -341,6 +348,23 @@ fn run() -> Result<(), Error> {
                         },
                     ..
                 } => *control_flow = ControlFlow::Exit,
+                WindowEvent::KeyboardInput { input, .. } => {
+                    if let (Some(ui), Some(cb)) = (editor_ui.as_ref(), code_buf.as_mut()) {
+                        if ui.active == tic80_rust::editor::ui::Tab::Code
+                            && input.state == ElementState::Pressed
+                        {
+                            if let Some(key) = input.virtual_keycode {
+                                match key {
+                                    VirtualKeyCode::Left => cb.move_left(),
+                                    VirtualKeyCode::Right => cb.move_right(),
+                                    VirtualKeyCode::Up => cb.move_up(),
+                                    VirtualKeyCode::Down => cb.move_down(),
+                                    _ => {}
+                                }
+                            }
+                        }
+                    }
+                }
                 WindowEvent::Resized(size) => {
                     let _ = pixels.resize_surface(size.width, size.height);
                 }
@@ -468,6 +492,12 @@ fn run() -> Result<(), Error> {
                 if let Some(ui) = editor_ui.as_ref() {
                     let mut fbb = fb.borrow_mut();
                     ui.draw(&mut fbb);
+                    if ui.active == tic80_rust::editor::ui::Tab::Code {
+                        if let Some(cb) = code_buf.as_mut() {
+                            let area = CodeArea { x: 0, y: 12, w: 240, h: 124 };
+                            cb.draw(&mut fbb, area);
+                        }
+                    }
                 }
                 fb.borrow().blit_to_rgba(frame);
                 if let Err(err) = pixels.render() {

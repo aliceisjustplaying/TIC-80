@@ -208,11 +208,9 @@ impl EditorUi {
         match self.active {
             Tab::Code => {
                 fb.rect(0, 12, 240, 124, 1);
-                let _ = fb.print_text("[CODE]", 6, 16, 12, true, 1, false);
             }
             Tab::Console => {
                 fb.rect(0, 12, 240, 124, 2);
-                let _ = fb.print_text("[CONSOLE]", 6, 16, 12, true, 1, false);
             }
         }
     }
