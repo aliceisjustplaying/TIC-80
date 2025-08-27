@@ -231,9 +231,9 @@ impl LuaRunner {
             let vqt_fn = lua.create_function(move |_, bin: i32| {
                 let val = if let Some(arc) = get_global_vqt() {
                     let guard = arc.read();
-                    // Return normalized instantaneous; align with TIC: vqt returns normalized
+                    // normalized instantaneous (may exceed 1.0)
                     if bin >= 0 && (bin as usize) < guard.bins_count() {
-                        guard.vqt_norm[bin as usize] as f64
+                        (guard.vqt_raw[bin as usize] / guard.vqt_peak) as f64
                     } else {
                         0.0
                     }
@@ -293,7 +293,7 @@ impl LuaRunner {
                 let val = if let Some(arc) = get_global_vqt() {
                     let guard = arc.read();
                     if bin >= 0 && (bin as usize) < guard.bins_count() {
-                        guard.vqt_w_norm[bin as usize] as f64
+                        (guard.vqt_w_raw[bin as usize] / guard.vqt_w_peak) as f64
                     } else {
                         0.0
                     }

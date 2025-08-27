@@ -32,14 +32,14 @@ pub struct VQTState {
     pub vqt_sm: Vec<f32>,
     pub vqt_norm: Vec<f32>,
     // Peak normalization for raw path
-    vqt_peak: f32,
+    pub vqt_peak: f32,
 
     // Whitened copies
     pub vqt_w_raw: Vec<f32>,
     pub vqt_w_sm: Vec<f32>,
     pub vqt_w_norm: Vec<f32>,
     // Peak normalization for whitened path
-    vqt_w_peak: f32,
+    pub vqt_w_peak: f32,
 }
 
 const VQT_BINS: usize = 120;

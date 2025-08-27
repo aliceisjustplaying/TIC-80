@@ -40,6 +40,31 @@ fn vqt_peak_at_expected_bin() {
 }
 
 #[test]
+fn vqt_instantaneous_vs_smoothed_differs() {
+    // Fresh state so smoothed = (1-a)*raw; normalized instantaneous should exceed smoothed normalized
+    let cap = 8192;
+    let sr = 44_100;
+    let mut vqt = VQTState::new(sr, cap);
+    let bin = 24usize;
+    let f0 = vqt_center_freq(bin);
+    let samples = gen_sine(f0, sr, 9000);
+    for s in samples {
+        vqt.ingest(s);
+    }
+    vqt.update();
+    let inst = vqt.vqt_raw[bin] / vqt.vqt_peak;
+    let sm = vqt.vqt_norm[bin];
+    assert!(
+        inst > 1.05,
+        "instantaneous normalized should exceed 1.0 on first update"
+    );
+    assert!(
+        sm <= 1.0 + 1e-6,
+        "smoothed normalized should be clamped to <= 1.0"
+    );
+}
+
+#[test]
 fn lua_vqt_reads_bin() {
     let cap = 8192;
     let sr = 44_100;
