@@ -26,17 +26,18 @@ This plan describes a minimal, purpose‑built editor focused on livecoding with
 
 Phase 0 — Shell + Layout
 - [ ] Create `docs/` UI skin reference (palette, font, margins, tab geometry) (optional diagrams).
-- [ ] Add a minimal UI state model (active tab, focus, scroll positions).
-- [ ] Render top chrome, tabs, and placeholder panels into the framebuffer.
-- [ ] Wire tab switching and button hit‑testing (rect hit tests in 240×136 space).
-- [ ] Integrate integer scaling to window and mouse coordinate unprojection.
+- [x] Add a minimal UI state model (active tab, focus, scroll positions).
+- [x] Render top chrome, tabs, and placeholder panels into the framebuffer.
+- [x] Wire tab switching and button hit‑testing (rect hit tests in 240×136 space).
+- [x] Integrate integer scaling to window and mouse coordinate unprojection.
 
 Phase 1 — Text Engine + Editor Basics
-- [ ] Integrate a rope‑backed buffer (ropey) and load cart code into it.
-- [ ] Caret movement (arrows, home/end), insert/delete/backspace, newlines.
+- [x] Integrate a rope‑backed buffer (ropey) and load cart code into it.
+- [x] Caret movement (arrows) and auto-scroll; Home/End pending.
+- [ ] Insert/delete/backspace, newlines.
 - [ ] Selection (shift+arrows), clipboard (Ctrl/Cmd+C/V/X), undo/redo (local stack for code buffer).
-- [ ] Horizontal/vertical scrolling; viewport mapping from text rows to framebuffer pixels.
-- [ ] Draw gutter (line numbers) and current line highlight.
+- [x] Horizontal/vertical scrolling; viewport mapping from text rows to framebuffer pixels.
+- [x] Draw gutter (line numbers).
 
 Phase 2 — Syntax + UX polish (minimal)
 - [ ] Lightweight Lua colorizer (keywords, comments, strings, numbers) with palette colors.
@@ -57,7 +58,7 @@ Phase 5 — Tests + Docs
 - [ ] Headless test: .tic round‑trip preserves non‑code bytes.
 - [ ] Hot reload tests: failing edit keeps last‑good; fixing edit swaps runner.
 - [ ] Console tests: trace() lines and error render path covered.
-- [ ] Add README section with usage and keybinds; link test carts and debug flags.
+- [x] Add README section with usage and keybinds; link test carts and debug flags.
 
 ## Keybinds (initial)
 - Save: Ctrl/Cmd+S

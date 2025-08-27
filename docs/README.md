@@ -60,6 +60,7 @@ Notes
 - Options:
   - `-h, --help`: Show help and exit.
   - `--quiet`: Suppress once-only warnings and Lua BOOT()/TIC() error prints (useful for headless runs).
+  - `--editor`: Launch the livecoding editor UI (CODE/CONSOLE tabs) rendering in the 240×136 framebuffer.
   - `--list-audio`: List input audio devices and exit.
   - `--audio-device <SUBSTR>`: Select input device by substring match (case-insensitive).
   - `--audio-disable`: Disable audio capture and analysis.
@@ -74,3 +75,18 @@ Notes
 ## Debug Flags (Audio Analysis)
 - `--debug-fft`: First 16 FFT bins (smoothed normalized).
 - `--debug-fx`: FX timings plus ring stats (dp/ovf/underrun/cons), EMA samples/tick, estimated occupancy.
+
+## Editor (Livecoding)
+- Launch with `--editor` to open the framebuffer UI with CODE/CONSOLE tabs.
+- CODE view:
+  - Rope-backed text buffer for the loaded cart code (read-only viewport initially).
+  - Monospace grid 6×8 per cell (fixed-width glyphs render left 6 columns and advance 6 px).
+  - Gutter with 1-based line numbers; arrow keys move the caret; viewport auto-scrolls.
+  - Caret matches TIC‑80 style: red box slightly larger than the glyph, with 1 px drop shadow; underlying glyph drawn dark to simulate inversion.
+- Roadmap: see `docs/roadmap/editor_livecoding.md` for phases (editing, undo/redo, colorizer, find, console, hot reload).
+
+## Screenshots
+- Save during run: press F12 to write to `./screenshots/scr-YYYYmmdd-HHMMSS.png` (respects `--screenshot-scale` if set).
+- One-off capture: `--screenshot out.png [--screenshot-scale 3]` (exits after saving).
+- Headless capture: `--headless --screenshot out.png [--screenshot-frame 60]`.
+- Plan: see `docs/architecture/screenshot_plan.md`.

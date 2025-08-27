@@ -31,7 +31,7 @@ use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use std::time::{Duration, Instant};
 
-use pixels::{Error, Pixels, SurfaceTexture};
+use pixels::{Pixels, SurfaceTexture};
 use winit::dpi::LogicalSize;
 use winit::event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop};
@@ -85,6 +85,11 @@ struct Args {
     quiet: bool,
     help: bool,
     editor: bool,
+    // Screenshot/headless
+    headless: bool,
+    screenshot_path: Option<PathBuf>,
+    screenshot_scale: u32,
+    screenshot_frame: Option<u32>,
 }
 
 fn parse_args() -> Args {
@@ -100,6 +105,10 @@ fn parse_args() -> Args {
         quiet: false,
         help: false,
         editor: false,
+        headless: false,
+        screenshot_path: None,
+        screenshot_scale: 1,
+        screenshot_frame: None,
     };
     while let Some(arg) = args_iter.next() {
         match arg.as_str() {
@@ -111,6 +120,26 @@ fn parse_args() -> Args {
             "--debug-fx" => out.debug_fx = true,
             "--quiet" => out.quiet = true,
             "--editor" => out.editor = true,
+            "--headless" => out.headless = true,
+            "--screenshot" => {
+                if let Some(val) = args_iter.next() {
+                    out.screenshot_path = Some(PathBuf::from(val));
+                }
+            }
+            "--screenshot-scale" => {
+                if let Some(val) = args_iter.next() {
+                    if let Ok(n) = val.parse::<u32>() {
+                        out.screenshot_scale = n.max(1);
+                    }
+                }
+            }
+            "--screenshot-frame" => {
+                if let Some(val) = args_iter.next() {
+                    if let Ok(n) = val.parse::<u32>() {
+                        out.screenshot_frame = Some(n);
+                    }
+                }
+            }
             "--audio-device" => {
                 if let Some(val) = args_iter.next() {
                     out.audio_device = Some(val);
@@ -129,7 +158,7 @@ fn parse_args() -> Args {
 fn create_window_and_pixels(
     event_loop: &EventLoop<()>,
     scale: f64,
-) -> Result<(Window, Pixels), Error> {
+) -> anyhow::Result<(Window, Pixels)> {
     let (width, height) = dimensions();
     let size = LogicalSize::new((width as f64) * scale, (height as f64) * scale);
     let window = WindowBuilder::new()
@@ -255,8 +284,7 @@ fn print_help() {
         },
     );
     println!(
-        "Usage: {prog} [OPTIONS] [CART.lua]\n\nOptions:\n  -h, --help                 Show this help message and exit\n      --quiet                Suppress once-only warnings and Lua BOOT()/TIC() error prints\n      --list-audio           List input audio devices and exit\n      --audio-device <SUBSTR>  Select input device by substring match (case-insensitive)\n      --audio-disable        Disable audio capture and analysis\n      --audio-vu             Print VU peak dBFS once per second\n      --debug-fft            Print first 16 FFT bins (smoothed, normalized) ~every 500 ms\n      --debug-fx             Print per-second FX timings plus ring stats (dp/ovf/underrun/consumed, EMA samples/tick, occupancy)\n\nArguments:\n  CART.lua                   Optional path to a Lua cart; defaults to bundled demo when omitted\n\nNotes:\n- Window: fixed 240x136 internal resolution with integer scaling in a desktop window.\n- Audio: selects nearest supported sample rate to 44100 Hz and logs the choice.\n- Ring stats (with --debug-fx):\n    dp  = pushed samples since last report\n    ovf = overflows delta (and total) from producer\n    underrun = consumer had no data to read\n    consumed = samples pulled into analyzers (delta)\n    EMA samples/tick = moving average of consumed samples per game tick\n    occupancy = estimated ring fill vs. capacity\n\nExamples:\n  {prog}                                  # run bundled cart\n  {prog} assets/alt.lua                    # run a local cart\n  {prog} --list-audio                      # show devices and exit\n  {prog} --audio-device BlackHole --audio-vu\n  {prog} assets/fft_test.lua --debug-fft --debug-fx\n  {prog} assets/your_cart.lua --quiet\n        "
-    );
+        "Usage: {prog} [OPTIONS] [CART.lua]\n\nOptions:\n  -h, --help                 Show this help message and exit\n      --quiet                Suppress once-only warnings and Lua BOOT()/TIC() error prints\n      --editor               Launch the editor UI (CODE/CONSOLE)\n      --headless             Run offscreen without opening a window (for screenshots/CI)\n      --screenshot <PATH>    Save a screenshot and exit (first frame by default)\n      --screenshot-scale <N> Integer scale for screenshot (default 1)\n      --screenshot-frame <N> Capture after N frames (windowed/headless)\n      --list-audio           List input audio devices and exit\n      --audio-device <SUBSTR>  Select input device by substring match (case-insensitive)\n      --audio-disable        Disable audio capture and analysis\n      --audio-vu             Print VU peak dBFS once per second\n      --debug-fft            Print first 16 FFT bins (smoothed, normalized) ~every 500 ms\n      --debug-fx             Print per-second FX timings plus ring stats (dp/ovf/underrun/consumed, EMA samples/tick, occupancy)\n\nArguments:\n  CART.lua                   Optional path to a Lua cart; defaults to bundled demo when omitted\n\nNotes:\n- Window: fixed 240x136 internal resolution with integer scaling in a desktop window.\n- Audio: selects nearest supported sample rate to 44100 Hz and logs the choice.\n- Ring stats (with --debug-fx): dp=pushed, ovf=overflows, underrun=no-data, consumed=samples, EMA samples/tick, occupancy.\n\nExamples:\n  {prog} --screenshot out.png --screenshot-scale 3\n  {prog} --headless --screenshot out.png --screenshot-frame 60\n  {prog} --editor\n        ");
 }
 
 fn load_script(script_path: Option<&PathBuf>) -> String {
@@ -277,7 +305,17 @@ fn load_script(script_path: Option<&PathBuf>) -> String {
     }
 }
 
-fn run() -> Result<(), Error> {
+fn run() -> anyhow::Result<()> {
+    // Parse early to allow headless path
+    let args = parse_args();
+    if args.help {
+        print_help();
+        return Ok(());
+    }
+    if args.headless {
+        return run_headless(&args);
+    }
+
     let event_loop = EventLoop::new();
     let (window, mut pixels) = create_window_and_pixels(&event_loop, 3.0)?; // default integer scaling
     let window_scale = 3.0f64;
@@ -285,16 +323,6 @@ fn run() -> Result<(), Error> {
     let fb = Rc::new(RefCell::new(Framebuffer::new()));
     let mem = Rc::new(RefCell::new(Memory::new(fb.clone())));
     let mut ticker = Ticker::new();
-
-    let args = parse_args();
-    if args.help {
-        print_help();
-        return Ok(());
-    }
-    if args.help {
-        print_help();
-        return Ok(());
-    }
     if args.list_audio {
         print_devices_and_exit();
         return Ok(());
@@ -321,6 +349,8 @@ fn run() -> Result<(), Error> {
     let mut audio_state = init_audio(&args);
     let mut warned_no_tic = false;
     let mut last_cursor_fb: Option<(i32, i32)> = None;
+    let mut frame_counter: u32 = 0;
+    let mut one_off_saved = false;
 
     #[allow(clippy::cognitive_complexity)]
     event_loop.run(move |event, _, control_flow| {
@@ -348,6 +378,23 @@ fn run() -> Result<(), Error> {
                         },
                     ..
                 } => *control_flow = ControlFlow::Exit,
+                WindowEvent::KeyboardInput {
+                    input:
+                        KeyboardInput {
+                            virtual_keycode: Some(VirtualKeyCode::F12),
+                            state: ElementState::Pressed,
+                            ..
+                        },
+                    ..
+                } => {
+                    // Save a timestamped screenshot under ./screenshots
+                    let (w, h) = dimensions();
+                    let mut rgba = vec![0u8; (w * h * 4) as usize];
+                    fb.borrow().blit_to_rgba(&mut rgba);
+                    if let Err(e) = save_timestamped_screenshot(&args, &rgba, w, h) {
+                        eprintln!("Screenshot error: {e}");
+                    }
+                }
                 WindowEvent::KeyboardInput { input, .. } => {
                     if let (Some(ui), Some(cb)) = (editor_ui.as_ref(), code_buf.as_mut()) {
                         if ui.active == tic80_rust::editor::ui::Tab::Code
@@ -500,10 +547,20 @@ fn run() -> Result<(), Error> {
                     }
                 }
                 fb.borrow().blit_to_rgba(frame);
+                // One-off screenshot capture if requested
+                if !one_off_saved {
+                    let target = args.screenshot_frame.unwrap_or(0);
+                    if args.screenshot_path.is_some() && frame_counter >= target {
+                        if let Err(e) = save_screenshot_from_rgba(&args, frame) { eprintln!("Screenshot error: {e}"); }
+                        one_off_saved = true;
+                        *control_flow = ControlFlow::Exit;
+                    }
+                }
                 if let Err(err) = pixels.render() {
                     eprintln!("Render error: {err}");
                     *control_flow = ControlFlow::Exit;
                 }
+                frame_counter = frame_counter.saturating_add(1);
             }
             _ => {}
         }
@@ -514,4 +571,96 @@ fn main() {
     if let Err(err) = run() {
         eprintln!("Application error: {err}");
     }
+}
+
+// -- Screenshot helpers and headless path -------------------------------------------------------
+
+fn save_screenshot_from_rgba(args: &Args, rgba: &[u8]) -> anyhow::Result<()> {
+    use tic80_rust::util::image::{save_png_rgba, scale_rgba_nn};
+    let path = args
+        .screenshot_path
+        .as_ref()
+        .ok_or_else(|| anyhow::anyhow!("screenshot path not provided"))?;
+    let (w, h) = dimensions();
+    let scaled = if args.screenshot_scale <= 1 {
+        rgba.to_vec()
+    } else {
+        scale_rgba_nn(rgba, w, h, args.screenshot_scale)
+    };
+    let sw = w * args.screenshot_scale;
+    let sh = h * args.screenshot_scale;
+    save_png_rgba(path, sw, sh, &scaled)?;
+    println!(
+        "Saved screenshot: {} ({}x{}, scale {})",
+        path.display(),
+        sw,
+        sh,
+        args.screenshot_scale
+    );
+    Ok(())
+}
+
+fn save_timestamped_screenshot(args: &Args, rgba: &[u8], w: u32, h: u32) -> anyhow::Result<()> {
+    use tic80_rust::util::image::{save_png_rgba, scale_rgba_nn};
+    let dir = PathBuf::from("screenshots");
+    if !dir.exists() {
+        std::fs::create_dir_all(&dir)?;
+    }
+    let now = chrono::Local::now();
+    let fname = format!("scr-{}.png", now.format("%Y%m%d-%H%M%S"));
+    let path = dir.join(fname);
+    let scale = args.screenshot_scale.max(1);
+    let scaled = if scale <= 1 {
+        rgba.to_vec()
+    } else {
+        scale_rgba_nn(rgba, w, h, scale)
+    };
+    let sw = w * scale;
+    let sh = h * scale;
+    save_png_rgba(&path, sw, sh, &scaled)?;
+    println!(
+        "Saved screenshot: {} ({}x{}, scale {})",
+        path.display(),
+        sw,
+        sh,
+        scale
+    );
+    Ok(())
+}
+
+fn run_headless(args: &Args) -> anyhow::Result<()> {
+    // Prepare framebuffer + memory
+    let fb = Rc::new(RefCell::new(Framebuffer::new()));
+    let mem = Rc::new(RefCell::new(Memory::new(fb.clone())));
+    // Render either editor UI or cart ticks
+    if args.editor {
+        let initial = load_script(args.script_path.as_ref());
+        let ui = EditorUi::new(1.0);
+        let mut code = CodeBuffer::from_text(&initial);
+        {
+            let mut fbb = fb.borrow_mut();
+            ui.draw(&mut fbb);
+            let area = CodeArea {
+                x: 0,
+                y: 12,
+                w: 240,
+                h: 124,
+            };
+            code.draw(&mut fbb, area);
+        }
+    } else {
+        let script = load_script(args.script_path.as_ref());
+        let lr = LuaRunner::new(fb.clone(), mem.clone(), &script)?;
+        // Match windowed timing: capture on redraw number target+1
+        let ticks = args.screenshot_frame.unwrap_or(0).saturating_add(1);
+        for _ in 0..ticks {
+            lr.tick();
+        }
+    }
+    // Save from framebuffer
+    let (w, h) = dimensions();
+    let mut rgba = vec![0u8; (w * h * 4) as usize];
+    fb.borrow().blit_to_rgba(&mut rgba);
+    save_screenshot_from_rgba(args, &rgba)?;
+    Ok(())
 }

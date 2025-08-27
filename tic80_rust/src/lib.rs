@@ -37,3 +37,7 @@ pub mod editor {
     pub mod code;
     pub mod ui;
 }
+
+pub mod util {
+    pub mod image;
+}

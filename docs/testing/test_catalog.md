@@ -69,3 +69,14 @@ Notes
 - Tests prefer headless framebuffer inspection over image baselines.
 - Hashing uses FNV‑1a over VRAM palette indices for portability and stability.
 - For manual carts, see `docs/testing/test_carts.md`.
+
+## Editor Tests
+- `tic80_rust/tests/editor_smoke.rs`: UI shell draws and tabs switch on click; verifies top-bar pixels.
+- `tic80_rust/tests/editor_code_view_tests.rs`: CODE viewport renders gutter digits and text cells.
+
+## Screenshot Tests
+- `tic80_rust/tests/screenshot_smoke.rs`
+  - `save_scaled_png_has_expected_dimensions`: Draw to framebuffer, encode/decode PNG in-memory; save a 3x scaled PNG to temp and verify dimensions.
+- `tic80_rust/tests/e2e_headless_cli.rs`
+  - `e2e_headless_default_cart_screenshot`: Runs the CLI binary with `--headless --screenshot` and decodes the PNG.
+  - `e2e_headless_editor_screenshot`: Runs with `--headless --editor --screenshot` and verifies the PNG.

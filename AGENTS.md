@@ -56,6 +56,7 @@
 - CLI loads bundled default cart or a provided `.lua` path.
 - Audio capture foundation: `cpal` input stream with mono downmix into a lock‑free ring buffer (8192 samples); CLI flags `--list-audio`, `--audio-device`, `--audio-vu`, `--audio-disable`; simple VU feedback prints peak dBFS once per second.
  - FFT: 2k R2C (`realfft`) on tick thread; maintains raw/smoothed/normalized buffers with peak tracking; `--debug-fft` throttled print; Lua `fft/ffts/fftr/fftrs` wired with C-identical clamping/sum semantics; headless tests added; simple cart at `assets/fft_test.lua`.
+ - Screenshots: CLI supports `--screenshot <path> [--screenshot-scale N] [--screenshot-frame N]` and `--headless` offscreen capture. In windowed mode, F12 saves to `./screenshots/scr-YYYYmmdd-HHMMSS.png` without exiting.
 
 **Near-Term Backlog**
 - FFT implementation (cpal + realfft) per `docs/specs/audio_fft_vqt.md` (see Implementation TODOs section); add headless tests and Lua `fft/ffts/fftr/fftrs`.
@@ -99,6 +100,13 @@
     - Added docs index at `docs/README.md`, architecture/testing pages, and ADRs.
   - Added detailed testing docs (`docs/testing/strategy.md`) and a test catalog (`docs/testing/test_catalog.md`).
  - 2025-08-27:
+   - Screenshots completed:
+     - CLI flags implemented: `--screenshot`, `--screenshot-scale`, `--screenshot-frame`, `--headless`.
+     - Windowed one-off capture wired; exits after saving when path is provided.
+     - F12 hotkey saves to `./screenshots/scr-YYYYmmdd-HHMMSS.png` (auto-creates directory).
+     - Headless renderer: draws editor UI/code view or runs cart ticks offscreen, then saves.
+     - Tests: added `tests/screenshot_smoke.rs` to verify scaled PNG dimensions; extended util image tests.
+     - Hygiene verified: `cargo fmt`, `cargo clippy --all-targets --all-features -- -D warnings` clean; `cargo test` all green.
    - Implemented audio capture with `cpal`: device selection/listing, mono downmix, ring buffer.
    - Added CLI: `--list-audio`, `--audio-device`, `--audio-vu`, `--audio-disable`.
    - Integrated a 1s VU peak readout for manual verification.
@@ -116,6 +124,12 @@
    - Memory map clarity: replaced magic numbers with named constants; documented screen nibble packing.
    - Bit manipulation tests: added round-trip tests for 1/2/4/8‑bit ops, VRAM screen boundary, and unaligned 4‑bit sequences (nibble order).
    - Lua runner quiet mode: added `--quiet` flag and a global switch; suppresses once-only init/missing TIC and TIC/BOOT error prints for headless runs.
+   - Editor (Phase 0 + Phase 1 partial):
+     - Added `--editor` flag to launch a framebuffer UI with TIC‑80‑style chrome and tabs; top‑bar buttons auto‑size and center labels.
+     - CODE view: rope‑backed buffer (ropey), read‑only viewport rendering, gutter with line numbers, arrow‑key caret navigation with auto‑scroll.
+     - Caret: TIC‑style red box with 1px drop shadow; glyph under caret drawn dark to simulate inversion; aligned to a true 6×8 cell grid (fixed‑width glyphs render only left 6 columns, advance 6 px).
+     - Tests: editor smoke (draw + tab switch), code viewport rendering (gutter/text pixels).
+     - Kept clippy/tests green.
    - Verified hygiene: `cargo clippy --all-targets --all-features -D warnings` is clean; `cargo test` all green; ran `cargo fmt`.
    - Tightened clippy setup (pedantic/nursery/cargo) with pragmatic allows:
      - Crate-level allows for TIC-style APIs and numeric DSP: `many_single_char_names`, `too_many_arguments`, `similar_names`, selected numeric cast lints, and multiple crate versions.
@@ -131,6 +145,6 @@
 - Start here: `docs/README.md`
 - Roadmap: `docs/roadmap/overview.md`, `docs/roadmap/gui_first.md`
 - Specs: `docs/specs/memory_map.md`, `docs/specs/lua_api_parity.md`, `docs/specs/graphics.md`, `docs/specs/audio_fft_vqt.md`
-- Architecture: `docs/architecture/workspace.md`, `docs/architecture/runtime.md`
+ - Architecture: `docs/architecture/workspace.md`, `docs/architecture/runtime.md`, `docs/architecture/screenshot_plan.md`
 - Testing: `docs/testing/strategy.md`, `docs/testing/frame_hashes.md`
 - ADRs: `docs/adr/0001-winit-pixels.md`, `docs/adr/0002-mlua-lua54-compat.md` (superseded), `docs/adr/0003-lua53-with-compat.md`

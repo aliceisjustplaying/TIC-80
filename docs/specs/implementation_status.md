@@ -32,7 +32,11 @@ Implemented (Runner/CLI)
 - `.lua` loader: First CLI arg as a `.lua` path runs external script; fallback to bundled `assets/default.lua`.
 - Window title: “rustic”.
 - Audio capture scaffolding: `cpal` input stream (44.1 kHz if supported), stereo→mono downmix, lock‑free ring buffer (8192 samples); CLI flags to list/select devices and optional VU meter output.
- - VU behavior: Peak meter observed ~-180 dBFS at silence (BlackHole 2ch on macOS), responsive under Multi‑Output device routing.
+- VU behavior: Peak meter observed ~-180 dBFS at silence (BlackHole 2ch on macOS), responsive under Multi‑Output device routing.
+ - Screenshots:
+   - One‑off capture via `--screenshot <path>` with optional `--screenshot-scale <N>`; saves after frame `N` specified by `--screenshot-frame` (default first frame) and exits.
+   - Headless path `--headless` renders offscreen (editor UI or Lua cart ticks) and saves.
+   - Hotkey F12 saves to `./screenshots/scr-YYYYmmdd-HHMMSS.png` during windowed runs (no exit).
 
 Implemented (Analysis)
 - FFT (2k):
@@ -71,6 +75,11 @@ Pending APIs (not implemented yet)
   - (none for VQT); whitening completed.
 - Sprite flags
   - `fget`, `fset`.
+
+Implemented (Editor — initial)
+- UI shell: top bar (tabs + buttons) rendered in framebuffer; integer-scaling window.
+- CODE view: rope‑backed buffer; read‑only viewport rendering; gutter; caret navigation (arrows) with auto‑scroll; TIC‑style caret (red box + shadow with inverted glyph); 6×8 cell grid.
+- CLI: `--editor` launches the editor.
 
 Test Coverage (summary)
 - Framebuffer unit tests cover: cls/pix/line/rect/rectb/circ/circb/elli/ellib/tri/trib, clip behavior, OOB, print width/newlines, palette blit, triangle edge rules.
