@@ -259,11 +259,13 @@ impl CodeBuffer {
 
     #[allow(clippy::cast_possible_truncation, clippy::too_many_lines)]
     pub fn draw(&mut self, fb: &mut crate::gfx::framebuffer::Framebuffer, area: Area) {
-        let gutter_w = 24i32;
+        // Gutter width: 3 digits * 6px = 18px, plus a 1px gap before code
+        let gutter_w = 18i32;
+        let gap = 1i32;
         // Match TIC-80 editor line pitch: 7px (TIC_FONT_HEIGHT + 1)
         let line_pitch = 7i32;
         let lines_vis = (area.h / line_pitch).max(1) as usize;
-        let cols_vis = ((area.w - gutter_w) / 6).max(1) as usize;
+        let cols_vis = ((area.w - gutter_w - gap) / 6).max(1) as usize;
         self.ensure_visible(lines_vis, cols_vis);
 
         // Clip to drawing area
@@ -279,7 +281,8 @@ impl CodeBuffer {
             let gutter_y = area.y + i32::try_from(i).unwrap_or(0) * line_pitch;
             let ln = line_idx + 1;
             let label = format!("{ln:>3}");
-            let _ = fb.print_text(&label, area.x + 2, gutter_y, 6, true, 1, false);
+            // Right-justified 3-digit label, drawn flush to gutter (no extra left/right padding)
+            let _ = fb.print_text(&label, area.x, gutter_y, 14, true, 1, true);
 
             // Text slice
             let mut line = self.rope.line(line_idx).to_string();
@@ -293,7 +296,7 @@ impl CodeBuffer {
             let line_char_start = self.rope.line_to_char(line_idx);
             let sel = self.selection_range_idx();
             for (i_vis, ch) in vis.chars().enumerate() {
-                let cell_x = area.x + gutter_w + i32::try_from(i_vis).unwrap_or(0) * 6;
+                let cell_x = area.x + gutter_w + gap + i32::try_from(i_vis).unwrap_or(0) * 6;
                 let cell_y = gutter_y;
                 let global_idx = line_char_start + start + i_vis;
                 let selected = sel.is_some_and(|(s, e)| global_idx >= s && global_idx < e);
@@ -304,12 +307,12 @@ impl CodeBuffer {
                     fb.rect(cell_x - 1, cell_y - 1, 7, 7, 14);
                     // Dark glyph on top
                     let s = ch.to_string();
-                    let _ = fb.print_text(&s, cell_x, cell_y, 15, true, 1, false);
+                    let _ = fb.print_text(&s, cell_x, cell_y, 15, true, 1, true);
                 } else {
                     // Normal glyph (no selection overlay)
                     let s = ch.to_string();
-                    // TIC default text color (no syntax) is white (12)
-                    let _ = fb.print_text(&s, cell_x, cell_y, 12, true, 1, false);
+                    // TIC default text color (no syntax) is white (12), 6px tall
+                    let _ = fb.print_text(&s, cell_x, cell_y, 12, true, 1, true);
                 }
             }
         }
@@ -318,7 +321,7 @@ impl CodeBuffer {
         if self.caret_line >= self.scroll_line && self.caret_line < self.scroll_line + lines_vis {
             let row = i32::try_from(self.caret_line - self.scroll_line).unwrap_or(0);
             let col = i32::try_from(self.caret_col.saturating_sub(self.scroll_col)).unwrap_or(0);
-            let cell_x = area.x + gutter_w + col * 6;
+            let cell_x = area.x + gutter_w + gap + col * 6;
             let cell_y = area.y + row * line_pitch;
             // TIC-80 caret style: drop shadow rect (black) then caret rect (cursor color, default 2), both 7x7, offset by 1px
             fb.rect(cell_x, cell_y, 7, 7, 0);
@@ -338,7 +341,7 @@ impl CodeBuffer {
                     let ch = full.chars().nth(idx).unwrap_or(' ');
                     let s = ch.to_string();
                     // Render underlying glyph in background color to simulate inversion
-                    let _ = fb.print_text(&s, cell_x, cell_y, 15, true, 1, false);
+                    let _ = fb.print_text(&s, cell_x, cell_y, 15, true, 1, true);
                 }
             }
         }

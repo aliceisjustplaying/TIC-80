@@ -133,21 +133,14 @@ impl EditorUi {
         // TIC-80 draws toolbar in white
         fb.rect(0, 0, 240, bar_h, 12);
 
-        // Tabs (underline only for CODE)
-        let (code_col, _cons_col) = match self.active {
-            // Use grey underline similar to CODE EDITOR text
-            Tab::Code | Tab::Console => (14, 14),
-        };
-        // Minimal underline only for CODE
-        fb.rect(self.tab_code.x, bar_h - 1, self.tab_code.w, 1, code_col);
+        // No tab underline for now; only the CODE label at top-left.
         // Buttons
         // Buttons: skip heavy boxes in code prototype
 
         // Labels (using small scale)
-        // Left title label: drop shadow 1px (dark grey 15) then grey (14), like "CODE EDITOR"
+        // Left title label: grey text only (no shadow for now)
         let title_x = 4;
         let title_y = 1; // 1px top margin
-        let _ = fb.print_text("CODE", title_x + 1, title_y + 1, 15, true, 1, true);
         let _ = fb.print_text("CODE", title_x, title_y, 14, true, 1, true);
         // Center button labels (placeholder, keep white for readability)
         let adv = 6i32;

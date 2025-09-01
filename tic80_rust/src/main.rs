@@ -611,7 +611,7 @@ fn run() -> anyhow::Result<()> {
                     ui.draw(&mut fbb);
                     if ui.active == tic80_rust::editor::ui::Tab::Code {
                         if let Some(cb) = code_buf.as_mut() {
-                            let area = CodeArea { x: 0, y: 12, w: 240, h: 124 };
+                            let area = CodeArea { x: 0, y: 7, w: 240, h: 129 };
                             cb.draw(&mut fbb, area);
                         }
                     }
@@ -713,12 +713,7 @@ fn run_headless(args: &Args) -> anyhow::Result<()> {
         {
             let mut fbb = fb.borrow_mut();
             ui.draw(&mut fbb);
-            let area = CodeArea {
-                x: 0,
-                y: 12,
-                w: 240,
-                h: 124,
-            };
+            let area = CodeArea { x: 0, y: 7, w: 240, h: 129 };
             code.draw(&mut fbb, area);
         }
     } else {

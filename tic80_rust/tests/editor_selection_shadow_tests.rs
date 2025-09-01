@@ -24,16 +24,11 @@ fn selection_no_seam_between_lines() {
 
     let fb_rc = Rc::new(RefCell::new(Framebuffer::new()));
     let mut fb = fb_rc.borrow_mut();
-    let area = Area {
-        x: 0,
-        y: 12,
-        w: 240,
-        h: 40,
-    };
+    let area = Area { x: 0, y: 7, w: 240, h: 40 };
     cb.draw(&mut fb, area);
 
     // Pick column 1 (the 'b') well inside selection run
-    let gutter_w = 24i32;
+    let gutter_w = 18i32; // plus 1px gap in renderer
     let col_x = gutter_w + 6 + 2; // inside col #1
 
     // With TIC-80 logic there should be NO black seam between consecutive lines.
@@ -60,16 +55,12 @@ fn selection_right_edge_shadow_height_is_7() {
 
     let fb_rc = Rc::new(RefCell::new(Framebuffer::new()));
     let mut fb = fb_rc.borrow_mut();
-    let area = Area {
-        x: 0,
-        y: 12,
-        w: 240,
-        h: 20,
-    };
+    let area = Area { x: 0, y: 7, w: 240, h: 20 };
     cb.draw(&mut fb, area);
 
-    let gutter_w = 24i32;
-    let right_edge_x = gutter_w + 3 * 6 - 1; // vertical shadow at right edge of col2
+    let gutter_w = 18i32; // plus 1px gap
+    let gap = 1i32;
+    let right_edge_x = gutter_w + gap + 3 * 6 - 1; // vertical shadow at right edge of col2
     let base_y = area.y - 1; // selection fill starts at y-1; shadow spans 7 px down from y
 
     let mut black_count = 0;
