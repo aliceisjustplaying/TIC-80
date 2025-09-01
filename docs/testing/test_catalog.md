@@ -77,6 +77,9 @@ Notes
 - `tic80_rust/tests/editor_selection_undo_tests.rs`: selection replace/cut/paste and undo/redo cycles; select-all.
 - `tic80_rust/tests/editor_selection_shadow_tests.rs`: multi-line selection renders without interior bottom seams; right-edge shadow is exactly 7 px tall.
 - `tic80_rust/tests/editor_selection_align_tests.rs`: selection top aligns with caret box (small font baseline at 6 px, pitch 7 px).
+- `tic80_rust/tests/editor_page_nav_tests.rs`: PageUp/Down movement by visible lines; Shift variants extend selection.
+- `tic80_rust/tests/editor_ctrl_home_end_tests.rs`: Ctrl/Cmd+Home/End jump to document bounds.
+- `tic80_rust/tests/editor_indent_outdent_tests.rs`: Block indent/outdent adds/removes a leading space per selected line.
 
 ## Screenshot Tests
 - `tic80_rust/tests/screenshot_smoke.rs`

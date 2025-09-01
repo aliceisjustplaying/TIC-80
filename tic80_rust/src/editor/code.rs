@@ -14,6 +14,8 @@ pub struct CodeBuffer {
     pub caret_col: usize,
     pub scroll_line: usize,
     pub scroll_col: usize,
+    // Desired horizontal column preserved across vertical/page moves
+    desired_col: Option<usize>,
     // Selection anchor as (line, col) if active
     sel_anchor: Option<(usize, usize)>,
     // Undo/redo stacks (each EditOp can be a batch of atomic edits)
@@ -44,6 +46,7 @@ impl CodeBuffer {
             caret_col: 0,
             scroll_line: 0,
             scroll_col: 0,
+            desired_col: None,
             sel_anchor: None,
             undo: Vec::new(),
             redo: Vec::new(),
@@ -212,6 +215,11 @@ impl CodeBuffer {
         }
     }
 
+    // Read-only access to rope for tests
+    #[must_use]
+    #[allow(clippy::missing_const_for_fn)]
+    pub fn rope(&self) -> &Rope { &self.rope }
+
     pub fn move_left(&mut self) {
         self.reset_caret_blink();
         if self.caret_col > 0 {
@@ -220,6 +228,7 @@ impl CodeBuffer {
             self.caret_line -= 1;
             self.caret_col = self.line_len(self.caret_line);
         }
+        self.desired_col = Some(self.caret_col);
     }
 
     pub fn move_right(&mut self) {
@@ -231,26 +240,108 @@ impl CodeBuffer {
             self.caret_line += 1;
             self.caret_col = 0;
         }
+        self.desired_col = Some(self.caret_col);
     }
 
     pub fn move_up(&mut self) {
         self.reset_caret_blink();
+        let want = self.desired_col.unwrap_or(self.caret_col);
         if self.caret_line > 0 {
             self.caret_line -= 1;
-            let len = self.line_len(self.caret_line);
-            if self.caret_col > len {
-                self.caret_col = len;
-            }
+            self.caret_col = self.line_len(self.caret_line).min(want);
         }
+        self.desired_col = Some(want);
     }
 
     pub fn move_down(&mut self) {
         self.reset_caret_blink();
+        let want = self.desired_col.unwrap_or(self.caret_col);
         if self.caret_line + 1 < self.line_count() {
             self.caret_line += 1;
-            let len = self.line_len(self.caret_line);
-            if self.caret_col > len {
-                self.caret_col = len;
+            self.caret_col = self.line_len(self.caret_line).min(want);
+        }
+        self.desired_col = Some(want);
+    }
+
+    // Page motion by visible line count
+    pub fn page_down(&mut self, vis: usize) {
+        self.reset_caret_blink();
+        let want = self.desired_col.unwrap_or(self.caret_col);
+        let lc = self.line_count();
+        if lc == 0 { return; }
+        let delta = vis.min(lc.saturating_sub(1) - self.caret_line);
+        self.caret_line += delta;
+        self.caret_col = self.line_len(self.caret_line).min(want);
+        self.desired_col = Some(want);
+    }
+    pub fn page_up(&mut self, vis: usize) {
+        self.reset_caret_blink();
+        let want = self.desired_col.unwrap_or(self.caret_col);
+        let delta = vis.min(self.caret_line);
+        self.caret_line -= delta;
+        self.caret_col = self.line_len(self.caret_line).min(want);
+        self.desired_col = Some(want);
+    }
+
+    pub fn doc_home(&mut self) {
+        self.reset_caret_blink();
+        self.caret_line = 0;
+        self.caret_col = 0;
+        self.desired_col = Some(0);
+    }
+    pub fn doc_end(&mut self) {
+        self.reset_caret_blink();
+        if self.line_count() == 0 { self.caret_line = 0; self.caret_col = 0; return; }
+        self.caret_line = self.line_count().saturating_sub(1);
+        self.caret_col = self.line_len(self.caret_line);
+        self.desired_col = Some(self.caret_col);
+    }
+
+    // Block indentation: selection required for indent; outdent also supports single line when no selection
+    pub fn block_indent(&mut self) {
+        if let Some((s, e)) = self.selection_range_idx() {
+            let mut op = EditOp { ops: Vec::new() };
+            let start_line = self.rope.char_to_line(s);
+            let end_line = if e > 0 { self.rope.char_to_line(e - 1) } else { self.rope.char_to_line(e) };
+            for l in start_line..=end_line {
+                let idx = self.rope.line_to_char(l);
+                self.rope.insert(idx, " ");
+                op.ops.push(EditKind::Insert { index: idx, text: " ".to_string() });
+                if self.caret_line == l { self.caret_col = self.caret_col.saturating_add(1); }
+                if let Some((al, ac)) = self.sel_anchor { if al == l { self.sel_anchor = Some((al, ac.saturating_add(1))); } }
+            }
+            self.undo.push(op);
+            self.clear_redo();
+        }
+    }
+    pub fn block_outdent(&mut self) {
+        if let Some((s, e)) = self.selection_range_idx() {
+            let mut op = EditOp { ops: Vec::new() };
+            let start_line = self.rope.char_to_line(s);
+            let end_line = if e > 0 { self.rope.char_to_line(e - 1) } else { self.rope.char_to_line(e) };
+            for l in start_line..=end_line {
+                let idx = self.rope.line_to_char(l);
+                // Remove leading space if any
+                if self.rope.line(l).chars().next() == Some(' ') {
+                    self.rope.remove(idx..=idx);
+                    op.ops.push(EditKind::Delete { index: idx, text: " ".to_string() });
+                    if self.caret_line == l { self.caret_col = self.caret_col.saturating_sub(1); }
+                    if let Some((al, ac)) = self.sel_anchor { if al == l { self.sel_anchor = Some((al, ac.saturating_sub(1))); } }
+                }
+            }
+            self.undo.push(op);
+            self.clear_redo();
+        } else {
+            // No selection: outdent current line if possible
+            let l = self.caret_line;
+            let idx = self.rope.line_to_char(l);
+            if self.rope.line(l).chars().next() == Some(' ') {
+                let mut op = EditOp { ops: Vec::new() };
+                self.rope.remove(idx..=idx);
+                op.ops.push(EditKind::Delete { index: idx, text: " ".to_string() });
+                self.undo.push(op);
+                self.caret_col = self.caret_col.saturating_sub(1);
+                self.clear_redo();
             }
         }
     }

@@ -82,6 +82,8 @@ Implemented (Editor)
 - CODE view: rope‑backed buffer; editable; gutter; selection highlight; TIC‑style caret (cursor color index 2 + shadow); 6 px small font on a 7 px pitch.
 - Layout: gutter 18 px wide (3 digits), 1 px gap before code; first row starts directly under the toolbar; no extra top/bottom padding.
 - Selection: per‑cell 7×7 shadow+fill; outer-perimeter shadow only; no inter‑line seams.
+- Navigation shortcuts: PageUp/PageDown (with Shift), Ctrl/Cmd+Home/End.
+- Editing shortcuts: Block indent/outdent with Tab/Shift+Tab on multi-line selections; Shift+Tab outdents current line when no selection.
 - Navigation: arrows, Home/End; auto‑scroll keeps caret visible.
 - Editing: insert chars/newline/tab (1 space), backspace/delete with line joins at SOL/EOL.
 - Selection/Clipboard: Shift+arrows; Select All (Cmd/Ctrl+A); copy/cut/paste via OS clipboard (Cmd/Ctrl+C/V/X).

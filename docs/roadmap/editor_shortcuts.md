@@ -6,23 +6,23 @@ This document tracks keyboard navigation and indentation features for the CODE v
 
 ## Scope (Phase 1)
 
-- [ ] Page Up / Page Down (plain)
+- [x] Page Up / Page Down (plain)
   - Move caret up/down by visible line count (viewport height / 7), clamped.
   - Maintain a virtual column (desired x) across ragged lines.
   - Ensure caret remains visible by adjusting `scroll_line`.
   - Tests: basic motion, clamping, viewport re-centering/visibility.
 
-- [ ] Page Up / Page Down with Shift
+- [x] Page Up / Page Down with Shift
   - Same movement but extend selection from anchor.
   - If no active selection, set anchor at caret before moving.
   - Tests: selection spans exactly N rows; correct range regardless of direction.
 
-- [ ] Ctrl+Home / Ctrl+End
+- [x] Ctrl+Home / Ctrl+End
   - Ctrl+Home → caret to (0,0); Ctrl+End → caret to (last line, `line_len(last)`).
   - Adjust viewport so caret is visible.
   - Tests: motion to start/end; clamping; viewport visibility.
 
-- [ ] Block Indent / Outdent (Tab / Shift+Tab)
+- [x] Block Indent / Outdent (Tab / Shift+Tab)
   - When selection spans lines:
     - Tab → insert one leading space on each selected line.
     - Shift+Tab → remove one leading space when present.

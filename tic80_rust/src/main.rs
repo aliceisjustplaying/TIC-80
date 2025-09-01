@@ -412,7 +412,7 @@ fn run() -> anyhow::Result<()> {
                             if ch == '\n' {
                                 cb.insert_newline();
                             } else if ch == '\t' {
-                                cb.insert_tab();
+                                // handled in KeyboardInput for block indent/outdent
                             } else if !ch.is_control() {
                                 cb.insert_char(ch);
                             }
@@ -466,6 +466,10 @@ fn run() -> anyhow::Result<()> {
                                 }
                                 // Navigation and editing
                                 match key {
+                                    VirtualKeyCode::PageUp => { if shift { cb.ensure_selection_anchor(); } else { cb.clear_selection(); } cb.page_up(18); },
+                                    VirtualKeyCode::PageDown => { if shift { cb.ensure_selection_anchor(); } else { cb.clear_selection(); } cb.page_down(18); },
+                                    VirtualKeyCode::Home if ctrl || cmd => { cb.doc_home(); },
+                                    VirtualKeyCode::End if ctrl || cmd => { cb.doc_end(); },
                                     VirtualKeyCode::Left => { if shift { cb.ensure_selection_anchor(); } else { cb.clear_selection(); } cb.move_left(); },
                                     VirtualKeyCode::Right => { if shift { cb.ensure_selection_anchor(); } else { cb.clear_selection(); } cb.move_right(); },
                                     VirtualKeyCode::Up => { if shift { cb.ensure_selection_anchor(); } else { cb.clear_selection(); } cb.move_up(); },
@@ -473,7 +477,9 @@ fn run() -> anyhow::Result<()> {
                                     VirtualKeyCode::Back => { cb.backspace(); },
                                     VirtualKeyCode::Delete => { cb.delete_forward(); },
                                     VirtualKeyCode::Return => { cb.insert_newline(); },
-                                    VirtualKeyCode::Tab => { cb.insert_tab(); },
+                                    VirtualKeyCode::Tab => {
+                                        if shift { cb.block_outdent(); } else if cb.has_selection() { cb.block_indent(); } else { cb.insert_tab(); }
+                                    },
                                     VirtualKeyCode::Home => { if shift { cb.ensure_selection_anchor(); } else { cb.clear_selection(); } cb.home(); },
                                     VirtualKeyCode::End => { if shift { cb.ensure_selection_anchor(); } else { cb.clear_selection(); } cb.end(); },
                                     _ => {}

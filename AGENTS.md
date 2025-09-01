@@ -168,6 +168,8 @@
    - Editor layout tightened: small-font baseline, 7 px line pitch, gutter=18 px with 1 px gap; first row starts immediately below the bar; removed extra paddings.
    - Fixed new-text baseline misalignment (was rendered 1 px too low); unified small-font rendering across normal/selected/caret glyphs.
    - Tests and docs updated; clippy/tests green.
+   - Keyboard shortcuts (Phase 1): implemented PageUp/PageDown (+Shift), Ctrl/Cmd+Home/End, and block indent/outdent (Tab/Shift+Tab with selection; Shift+Tab outdents current line). Added tests and a planning doc.
+   - Plan doc: `docs/roadmap/editor_shortcuts.md` with checkboxes (updated).
  - 2025-09-01:
    - Fixed editor selection drop shadow to avoid interior horizontal seams for multi-line selections.
      - Implemented per-row bottom shadow segmentation by subtracting next-row overlap; right-edge rule preserved.
