@@ -57,7 +57,8 @@
 - Audio capture foundation: `cpal` input stream with mono downmix into a lock‑free ring buffer (8192 samples); CLI flags `--list-audio`, `--audio-device`, `--audio-vu`, `--audio-disable`; simple VU feedback prints peak dBFS once per second.
  - FFT: 2k R2C (`realfft`) on tick thread; maintains raw/smoothed/normalized buffers with peak tracking; `--debug-fft` throttled print; Lua `fft/ffts/fftr/fftrs` wired with C-identical clamping/sum semantics; headless tests added; simple cart at `assets/fft_test.lua`.
 - Screenshots: CLI supports `--screenshot <path> [--screenshot-scale N] [--screenshot-frame N]` and `--headless` offscreen capture. In windowed mode, F12 saves to `./screenshots/scr-YYYYmmdd-HHMMSS.png` without exiting.
- - Editor: CODE view supports basic editing (insert chars/newline/tab, backspace/delete, Home/End), selection (Shift+arrows), clipboard (Ctrl/Cmd+C/V/X), undo/redo (Ctrl/Cmd+Z / Shift+Z or Y). Caret + auto-scroll; gutter and rendering intact; tests added.
+- Editor: CODE view supports basic editing (insert chars/newline/tab, backspace/delete, Home/End), selection (Shift+arrows), clipboard (Ctrl/Cmd+C/V/X), undo/redo (Ctrl/Cmd+Z / Shift+Z or Y). Caret + auto-scroll; gutter and rendering intact; tests added.
+ - Editor selection shadows: multi-line selection now renders without interior seams; bottom shadow is only drawn on outer perimeter segments. Headless diagnostic flag added to aid screenshots.
 
 **Near-Term Backlog**
 - FFT implementation (cpal + realfft) per `docs/specs/audio_fft_vqt.md` (see Implementation TODOs section); add headless tests and Lua `fft/ffts/fftr/fftrs`.
@@ -151,7 +152,13 @@
      - Hygiene verified: `cargo fmt`, `cargo clippy --all-targets --all-features -- -D warnings`, and `cargo test` all green.
    - Editor polish and bugfixes:
      - macOS Cmd shortcuts fixed by using per-event modifiers (`KeyboardInput.modifiers`) for Cmd/Ctrl detection.
-     - Selection highlight aligned with caret box (vertical off-by-one vs clip corrected); added unit test for alignment.
+   - Selection highlight aligned with caret box (vertical off-by-one vs clip corrected); added unit test for alignment.
+ - 2025-09-01:
+   - Fixed editor selection drop shadow to avoid interior horizontal seams for multi-line selections.
+     - Implemented per-row bottom shadow segmentation by subtracting next-row overlap; right-edge rule preserved.
+     - Added headless diagnostic flag `--editor-demo-select` to generate a 3-line selection for screenshots.
+     - Verified visually via headless screenshot; clippy/tests clean; formatted code.
+   - Docs updated: editor selection/shadow semantics in `docs/architecture/editor.md`; testing catalog notes planned conformance tests.
 
 **Docs Index**
 - Start here: `docs/README.md`

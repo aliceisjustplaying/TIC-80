@@ -75,6 +75,7 @@ Notes
 - `tic80_rust/tests/editor_code_view_tests.rs`: CODE viewport renders gutter digits and text cells.
 - `tic80_rust/tests/editor_editing_tests.rs`: basic editing behavior for insert/newline, backspace (join-prev), delete (join-next), Home/End, and Tab-as-spaces.
 - `tic80_rust/tests/editor_selection_undo_tests.rs`: selection replace/cut/paste and undo/redo cycles; select-all.
+ - Planned: `editor_selection_shadow_tests.rs`: verify multi-line selection renders without interior bottom seams and only draws right-edge shadow on the outer perimeter (uses deterministic framebuffer pixels).
 
 ## Screenshot Tests
 - `tic80_rust/tests/screenshot_smoke.rs`

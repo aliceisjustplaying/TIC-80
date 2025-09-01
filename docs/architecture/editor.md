@@ -19,6 +19,13 @@ The editor renders a TIC‑80‑style UI inside the 240×136 framebuffer and han
 - TIC‑80 style: a red box slightly larger than the glyph cell with a 1px drop shadow; glyph under the caret is redrawn in dark to simulate inversion.
 - Position stays aligned to the 6×8 grid; auto-scrolling keeps caret visible.
 
+## Selection & Shadows
+- Selection fill uses palette 14 (pink) and respects the 6×8 cell grid.
+- Drop shadow (palette 0) is rendered only on the outer perimeter:
+  - Right edge: draw a 1px vertical line unless the next row’s selection extends strictly further right (to keep the outer edge clean).
+  - Bottom edge: drawn per-segment by subtracting the next row’s covered columns. If the next row overlaps, no interior horizontal seam is drawn; only left/right overhangs render a bottom shadow.
+  - This matches TIC‑80’s visual continuity for multi-line selections (no interior seams).
+
 ## Input
 - Tabs and buttons: rectangle hit testing in framebuffer space.
 - Caret navigation: arrows (more keybinds to be added).
@@ -31,4 +38,3 @@ The editor renders a TIC‑80‑style UI inside the 240×136 framebuffer and han
 - Pixel assertions for UI scaffolding and code viewport.
 - Buffer operation tests for text edits and viewport mapping.
 - Integration tests for `.tic` round‑trip and hot reload gating.
-
