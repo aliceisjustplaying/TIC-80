@@ -8,7 +8,7 @@ This document summarizes the current test coverage with file paths and intent.
   - `pix_read_write_and_bounds`: `pix` read/write semantics; OOB reads return `None` and writes are ignored.
   - `rect_fill_and_clipping`: `rect` fills and clips to viewport; fully OOB rects are no‑ops.
   - `line_basic_counts_and_endpoints`: Line endpoints colored; counts match `max(dx,dy)+1` both directions.
-  - `blit_to_rgba_maps_palette`: Palette index→RGBA mapping matches expected sRGB bytes.
+  - `blit_to_rgba_maps_palette`: Palette index→RGBA mapping matches Sweetie16 sRGB bytes (white=idx12, greys idx13/14/15).
   - `rectb_draws_border`: `rectb` draws a 1‑px border; interior remains unchanged.
   - `clip_limits_drawing_and_reset`: Clip restricts drawing; reset restores full viewport.
   - `print_width_fixed_vs_variable_and_newline`: `print_text` width (fixed vs variable), newline row advance, and scale behavior.
@@ -75,7 +75,8 @@ Notes
 - `tic80_rust/tests/editor_code_view_tests.rs`: CODE viewport renders gutter digits and text cells.
 - `tic80_rust/tests/editor_editing_tests.rs`: basic editing behavior for insert/newline, backspace (join-prev), delete (join-next), Home/End, and Tab-as-spaces.
 - `tic80_rust/tests/editor_selection_undo_tests.rs`: selection replace/cut/paste and undo/redo cycles; select-all.
- - Planned: `editor_selection_shadow_tests.rs`: verify multi-line selection renders without interior bottom seams and only draws right-edge shadow on the outer perimeter (uses deterministic framebuffer pixels).
+- `tic80_rust/tests/editor_selection_shadow_tests.rs`: multi-line selection renders without interior bottom seams; right-edge shadow is exactly 7 px tall.
+- `tic80_rust/tests/editor_selection_align_tests.rs`: selection top aligns with caret box (small font baseline at 6 px, pitch 7 px).
 
 ## Screenshot Tests
 - `tic80_rust/tests/screenshot_smoke.rs`

@@ -77,8 +77,11 @@ Pending APIs (not implemented yet)
   - `fget`, `fset`.
 
 Implemented (Editor)
-- UI shell: top bar (tabs + buttons) rendered in framebuffer; integer-scaling window.
-- CODE view: rope‑backed buffer; editable; gutter; selection highlight; TIC‑style caret (red box + shadow with inverted glyph); 6×8 cell grid.
+- UI shell: top bar rendered in framebuffer; integer-scaling window.
+- Toolbar: 7 px tall; background white (index 12); left title “CODE” in grey (14); RUN/STOP/RESET labels in grey.
+- CODE view: rope‑backed buffer; editable; gutter; selection highlight; TIC‑style caret (cursor color index 2 + shadow); 6 px small font on a 7 px pitch.
+- Layout: gutter 18 px wide (3 digits), 1 px gap before code; first row starts directly under the toolbar; no extra top/bottom padding.
+- Selection: per‑cell 7×7 shadow+fill; outer-perimeter shadow only; no inter‑line seams.
 - Navigation: arrows, Home/End; auto‑scroll keeps caret visible.
 - Editing: insert chars/newline/tab (1 space), backspace/delete with line joins at SOL/EOL.
 - Selection/Clipboard: Shift+arrows; Select All (Cmd/Ctrl+A); copy/cut/paste via OS clipboard (Cmd/Ctrl+C/V/X).
@@ -95,3 +98,4 @@ See also
 - API parity checklist: `docs/specs/lua_api_parity.md`.
 - Testing strategy and catalog: `docs/testing/strategy.md`, `docs/testing/test_catalog.md`.
  - Hygiene: clippy pedantic baseline enforced with curated allows for DSP and TIC-style APIs; see `AGENTS.md` for current lint policy and status.
+ - Palette: uses Sweetie16 (TIC‑80 default) with white at index 12 and greys at 13/14/15.

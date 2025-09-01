@@ -14,7 +14,7 @@ This folder organizes the rewrite plan, specs, architecture notes, testing strat
 - `docs/specs/lua_api_parity.md`: API parity checklist for Lua (name, signature, side effects).
 - `docs/specs/graphics.md`: Framebuffer, palette mapping, text/print semantics (stub to be expanded).
 - `docs/specs/audio_fft_vqt.md`: FFT/VQT behavior and Rust implementation plan (cpal + realfft), with links to `CLAUDE.md`.
-- `docs/specs/implementation_status.md`: What’s implemented vs pending, with notes on behavior.
+- `docs/specs/implementation_status.md`: What’s implemented vs pending, with notes on behavior. Palette is Sweetie16 (white=12; greys 13/14/15).
 
 ## Architecture
 - `docs/architecture/workspace.md`: Crate layout and module boundaries.

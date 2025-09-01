@@ -20,11 +20,18 @@ The editor renders a TIC‑80‑style UI inside the 240×136 framebuffer and han
 - Position stays aligned to the 6×8 grid; auto-scrolling keeps caret visible.
 
 ## Selection & Shadows
-- Selection fill uses palette 14 (pink) and respects the 6×8 cell grid.
+- Selection fill uses palette index 14 (grey, Sweetie16) and respects the 6×8 cell grid.
 - Drop shadow (palette 0) is rendered only on the outer perimeter:
   - Right edge: draw a 1px vertical line unless the next row’s selection extends strictly further right (to keep the outer edge clean).
   - Bottom edge: drawn per-segment by subtracting the next row’s covered columns. If the next row overlaps, no interior horizontal seam is drawn; only left/right overhangs render a bottom shadow.
   - This matches TIC‑80’s visual continuity for multi-line selections (no interior seams).
+
+## Top Bar & Layout
+- Toolbar height: 7 px (1 px margins around 6 px small font).
+- Title: left‑aligned “CODE” in grey (palette 14); no shadow in the current build (can be re‑enabled later).
+- Background: white (palette 12).
+- Gutter: 3 digits (18 px) width; a 1 px gap separates gutter and code.
+- Text grid: 6 px small font on a 7 px line pitch; first code row starts immediately under the toolbar (no extra padding).
 
 ## Input
 - Tabs and buttons: rectangle hit testing in framebuffer space.

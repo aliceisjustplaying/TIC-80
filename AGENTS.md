@@ -58,6 +58,14 @@
  - FFT: 2k R2C (`realfft`) on tick thread; maintains raw/smoothed/normalized buffers with peak tracking; `--debug-fft` throttled print; Lua `fft/ffts/fftr/fftrs` wired with C-identical clamping/sum semantics; headless tests added; simple cart at `assets/fft_test.lua`.
 - Screenshots: CLI supports `--screenshot <path> [--screenshot-scale N] [--screenshot-frame N]` and `--headless` offscreen capture. In windowed mode, F12 saves to `./screenshots/scr-YYYYmmdd-HHMMSS.png` without exiting.
 - Editor: CODE view supports basic editing (insert chars/newline/tab, backspace/delete, Home/End), selection (Shift+arrows), clipboard (Ctrl/Cmd+C/V/X), undo/redo (Ctrl/Cmd+Z / Shift+Z or Y). Caret + auto-scroll; gutter and rendering intact; tests added.
+
+ - Editor visuals parity:
+   - Palette switched to Sweetie16 (source-accurate); white is idx=12; greys 13/14/15.
+   - Selection shadows fixed: per-cell 7×7 shadow+fill with outer-perimeter edges; no interior seams; right-edge shadow 7 px tall.
+   - Toolbar top bar matches TIC-80: 7 px white bar; left “CODE” label in grey (14); RUN/STOP/RESET labels in grey; no left underline.
+   - Code grid: small font (6 px) on 7 px pitch; first row starts immediately under the bar; gutter is 18 px (3 digits) plus a 1 px gap before code.
+   - Caret uses cursor color idx 2 with 1 px drop shadow; glyph under caret redrawn in background color.
+   - Fixed text insertion baseline (no 1 px vertical drift); selection and caret aligned to same baseline.
  - Editor selection shadows: multi-line selection now renders without interior seams; bottom shadow is only drawn on outer perimeter segments. Headless diagnostic flag added to aid screenshots.
 
 **Near-Term Backlog**
@@ -142,7 +150,7 @@
    - Ran `cargo fmt`, `cargo clippy --all-targets --all-features -D warnings`, and `cargo test`: all green.
  - Conducted a full code review of the `tic80_rust` crate. Findings are positive; suggestions for minor refactorings have been logged in `docs/roadmap/todos_code_review.md` and a summary added to `docs/adr/codereviews/001.md`.
  - Performed a second code review. The summary is located at `docs/adr/codereviews/002_ai_review.md` and actionable suggestions are in `docs/roadmap/todos_from_ai_review.md`.
-- 2025-08-27 (cont.):
+ - 2025-08-27 (cont.):
    - Editor basic editing implemented and tested:
      - Text input (ReceivedCharacter), Enter newline, Tab → one space; Backspace/Delete; Home/End.
      - Selection with Shift+arrows; clipboard shortcuts (copy/cut/paste) using OS clipboard; select-all.
@@ -153,6 +161,13 @@
    - Editor polish and bugfixes:
      - macOS Cmd shortcuts fixed by using per-event modifiers (`KeyboardInput.modifiers`) for Cmd/Ctrl detection.
    - Selection highlight aligned with caret box (vertical off-by-one vs clip corrected); added unit test for alignment.
+ - 2025-09-01:
+   - Switched framebuffer palette to Sweetie16 (exact TIC-80 ordering); updated palette mapping tests.
+   - Implemented selection per-cell shadowing; removed interior seams; added tests for no-seam and 7 px right-edge shadow.
+   - Top bar parity: 7 px white toolbar; “CODE” grey label; removed shadow for title; removed CONSOLE tab visuals.
+   - Editor layout tightened: small-font baseline, 7 px line pitch, gutter=18 px with 1 px gap; first row starts immediately below the bar; removed extra paddings.
+   - Fixed new-text baseline misalignment (was rendered 1 px too low); unified small-font rendering across normal/selected/caret glyphs.
+   - Tests and docs updated; clippy/tests green.
  - 2025-09-01:
    - Fixed editor selection drop shadow to avoid interior horizontal seams for multi-line selections.
      - Implemented per-row bottom shadow segmentation by subtracting next-row overlap; right-edge rule preserved.
