@@ -19,6 +19,9 @@ pub struct CodeBuffer {
     // Undo/redo stacks (each EditOp can be a batch of atomic edits)
     undo: Vec<EditOp>,
     redo: Vec<EditOp>,
+    // Caret blink state
+    tick_counter: u32,
+    cursor_delay: i32,
 }
 
 #[derive(Clone, Debug)]
@@ -44,6 +47,8 @@ impl CodeBuffer {
             sel_anchor: None,
             undo: Vec::new(),
             redo: Vec::new(),
+            tick_counter: 0,
+            cursor_delay: 0,
         }
     }
 
@@ -55,6 +60,7 @@ impl CodeBuffer {
     }
 
     pub fn insert_char(&mut self, ch: char) {
+        self.reset_caret_blink();
         if ch == '\r' {
             return;
         }
@@ -78,6 +84,7 @@ impl CodeBuffer {
     }
 
     pub fn insert_tab(&mut self) {
+        self.reset_caret_blink();
         // Default to a single space for compact 240x136 layout
         if self.has_selection() {
             self.replace_selection_with(" ");
@@ -94,6 +101,7 @@ impl CodeBuffer {
     }
 
     pub fn insert_newline(&mut self) {
+        self.reset_caret_blink();
         if self.has_selection() {
             self.replace_selection_with("\n");
             return;
@@ -109,6 +117,7 @@ impl CodeBuffer {
     }
 
     pub fn backspace(&mut self) {
+        self.reset_caret_blink();
         if self.has_selection() {
             if let Some((start, end)) = self.selection_range_idx() {
                 let deleted = self.delete_range(start, end);
@@ -150,6 +159,7 @@ impl CodeBuffer {
     }
 
     pub fn delete_forward(&mut self) {
+        self.reset_caret_blink();
         if self.has_selection() {
             if let Some((start, end)) = self.selection_range_idx() {
                 let deleted = self.delete_range(start, end);
@@ -178,11 +188,13 @@ impl CodeBuffer {
 
     #[allow(clippy::missing_const_for_fn)]
     pub fn home(&mut self) {
+        self.reset_caret_blink();
         self.caret_col = 0;
     }
 
     #[allow(clippy::missing_const_for_fn)]
     pub fn end(&mut self) {
+        self.reset_caret_blink();
         self.caret_col = self.line_len(self.caret_line);
     }
 
@@ -201,6 +213,7 @@ impl CodeBuffer {
     }
 
     pub fn move_left(&mut self) {
+        self.reset_caret_blink();
         if self.caret_col > 0 {
             self.caret_col -= 1;
         } else if self.caret_line > 0 {
@@ -210,6 +223,7 @@ impl CodeBuffer {
     }
 
     pub fn move_right(&mut self) {
+        self.reset_caret_blink();
         let len = self.line_len(self.caret_line);
         if self.caret_col < len {
             self.caret_col += 1;
@@ -220,6 +234,7 @@ impl CodeBuffer {
     }
 
     pub fn move_up(&mut self) {
+        self.reset_caret_blink();
         if self.caret_line > 0 {
             self.caret_line -= 1;
             let len = self.line_len(self.caret_line);
@@ -230,6 +245,7 @@ impl CodeBuffer {
     }
 
     pub fn move_down(&mut self) {
+        self.reset_caret_blink();
         if self.caret_line + 1 < self.line_count() {
             self.caret_line += 1;
             let len = self.line_len(self.caret_line);
@@ -259,6 +275,7 @@ impl CodeBuffer {
 
     #[allow(clippy::cast_possible_truncation, clippy::too_many_lines)]
     pub fn draw(&mut self, fb: &mut crate::gfx::framebuffer::Framebuffer, area: Area) {
+        const TEXT_CURSOR_BLINK_PERIOD: u32 = 60; // ~60 FPS
         // Gutter width: 3 digits * 6px = 18px, plus a 1px gap before code
         let gutter_w = 18i32;
         let gap = 1i32;
@@ -342,9 +359,14 @@ impl CodeBuffer {
             let col = i32::try_from(self.caret_col.saturating_sub(self.scroll_col)).unwrap_or(0);
             let cell_x = area.x + gutter_w + gap + col * 6;
             let cell_y = area.y + row * line_pitch;
-            // TIC-80 caret style: drop shadow rect (black) then caret rect (cursor color, default 2), both 7x7, offset by 1px
-            fb.rect(cell_x, cell_y, 7, 7, 0);
-            fb.rect(cell_x - 1, cell_y - 1, 7, 7, 2);
+            // Blink logic parity: visible during delay or first half of blink period
+            let half = TEXT_CURSOR_BLINK_PERIOD / 2;
+            let show = self.cursor_delay > 0 || (self.tick_counter % TEXT_CURSOR_BLINK_PERIOD) < half;
+            if show {
+                // TIC-80 caret style: drop shadow rect (black) then caret rect (cursor color, default 2), both 7x7, offset by 1px
+                fb.rect(cell_x, cell_y, 7, 7, 0);
+                fb.rect(cell_x - 1, cell_y - 1, 7, 7, 2);
+            }
 
             // Draw the underlying glyph in dark color to simulate inversion
             let line_idx = self.caret_line;
@@ -360,9 +382,17 @@ impl CodeBuffer {
                     let ch = full.chars().nth(idx).unwrap_or(' ');
                     let s = ch.to_string();
                     // Render underlying glyph in background color to simulate inversion
-                    let _ = fb.print_text(&s, cell_x, cell_y, 15, true, 1, true);
+                    if show {
+                        let _ = fb.print_text(&s, cell_x, cell_y, 15, true, 1, true);
+                    }
                 }
             }
+        }
+
+        // Advance blink timers
+        self.tick_counter = self.tick_counter.wrapping_add(1);
+        if self.cursor_delay > 0 {
+            self.cursor_delay -= 1;
         }
 
         fb.clip_reset();
@@ -554,5 +584,10 @@ impl CodeBuffer {
         } else {
             self.paste_text(text);
         }
+    }
+
+    #[allow(clippy::missing_const_for_fn)]
+    fn reset_caret_blink(&mut self) {
+        self.cursor_delay = 30; // ~0.5s at 60 FPS
     }
 }
