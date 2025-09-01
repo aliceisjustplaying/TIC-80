@@ -284,11 +284,13 @@ impl CodeBuffer {
             // Right-justified 3-digit label, drawn flush to gutter (no extra left/right padding)
             let _ = fb.print_text(&label, area.x, gutter_y, 14, true, 1, true);
 
-            // Text slice
-            let mut line = self.rope.line(line_idx).to_string();
-            if line.ends_with('\n') {
-                line.pop();
+            // Text slice (track newline separately to handle selection over EOL/empty lines)
+            let mut src_line = self.rope.line(line_idx).to_string();
+            let had_nl = src_line.ends_with('\n');
+            if had_nl {
+                src_line.pop();
             }
+            let line = src_line;
             let start = self.scroll_col.min(line.chars().count());
             let mut iter = line.chars().skip(start);
             let vis: String = iter.by_ref().take(cols_vis).collect();
@@ -313,6 +315,23 @@ impl CodeBuffer {
                     let s = ch.to_string();
                     // TIC default text color (no syntax) is white (12), 6px tall
                     let _ = fb.print_text(&s, cell_x, cell_y, 12, true, 1, true);
+                }
+            }
+            // Extra selection cell for newline (EOL) when selected
+            if had_nl {
+                if let Some((sel_start, sel_end)) = sel {
+                    let display_len = line.chars().count();
+                    let nl_idx = line_char_start + display_len; // index of '\n' in rope for this line
+                    if sel_start <= nl_idx && sel_end > nl_idx {
+                        let nl_col = i32::try_from(display_len).unwrap_or(0);
+                        let col_vis = nl_col - self.scroll_col as i32;
+                        if col_vis >= 0 && col_vis < cols_vis as i32 {
+                            let cell_x = area.x + gutter_w + gap + col_vis * 6;
+                            let cell_y = gutter_y;
+                            fb.rect(cell_x, cell_y, 7, 7, 0);
+                            fb.rect(cell_x - 1, cell_y - 1, 7, 7, 14);
+                        }
+                    }
                 }
             }
         }
