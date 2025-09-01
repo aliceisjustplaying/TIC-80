@@ -8,23 +8,24 @@ use std::sync::OnceLock;
 
 // Default 16-color TIC-80 palette (sRGB) as RGBA8
 const COLOR_MASK: u8 = 0x0F;
+// Sweetie16 palette (TIC-80 default), in index order 0..15
 const PALETTE: [[u8; 4]; 16] = [
-    [0x00, 0x00, 0x00, 0xFF],
-    [0x1D, 0x2B, 0x53, 0xFF],
-    [0x7E, 0x25, 0x53, 0xFF],
-    [0x00, 0x87, 0x51, 0xFF],
-    [0xAB, 0x52, 0x36, 0xFF],
-    [0x5F, 0x57, 0x4F, 0xFF],
-    [0xC2, 0xC3, 0xC7, 0xFF],
-    [0xFF, 0xF1, 0xE8, 0xFF],
-    [0xFF, 0x00, 0x4D, 0xFF],
-    [0xFF, 0xA3, 0x00, 0xFF],
-    [0xFF, 0xEC, 0x27, 0xFF],
-    [0x00, 0xE4, 0x36, 0xFF],
-    [0x29, 0xAD, 0xFF, 0xFF],
-    [0x83, 0x76, 0x9C, 0xFF],
-    [0xFF, 0x77, 0xA8, 0xFF],
-    [0xFF, 0xCC, 0xAA, 0xFF],
+    [0x1A, 0x1C, 0x2C, 0xFF], // 0 black (dark indigo)
+    [0x5D, 0x27, 0x5D, 0xFF], // 1 purple
+    [0xB1, 0x3E, 0x53, 0xFF], // 2 red
+    [0xEF, 0x7D, 0x57, 0xFF], // 3 orange
+    [0xFF, 0xCD, 0x75, 0xFF], // 4 yellow
+    [0xA7, 0xF0, 0x70, 0xFF], // 5 light green
+    [0x38, 0xB7, 0x64, 0xFF], // 6 green
+    [0x25, 0x71, 0x79, 0xFF], // 7 dark green/teal
+    [0x29, 0x36, 0x6F, 0xFF], // 8 dark blue
+    [0x3B, 0x5D, 0xC9, 0xFF], // 9 blue
+    [0x41, 0xA6, 0xF6, 0xFF], // 10 light blue
+    [0x73, 0xEF, 0xF7, 0xFF], // 11 cyan
+    [0xF4, 0xF4, 0xF4, 0xFF], // 12 white
+    [0x94, 0xB0, 0xC2, 0xFF], // 13 light grey
+    [0x56, 0x6C, 0x86, 0xFF], // 14 grey
+    [0x33, 0x3C, 0x57, 0xFF], // 15 dark grey
 ];
 
 const WIDTH: u32 = 240;
@@ -484,12 +485,14 @@ impl Framebuffer {
         color: u8,
         fixed: bool,
         scale: i32,
-        _small: bool,
+        small: bool,
     ) -> i32 {
         // Match TIC-80 print/drawText behavior
         const GLYPH_W: usize = 8;
-        const GLYPH_H: usize = 8;
+        const GLYPH_H_FULL: usize = 8;
+        const GLYPH_H_SMALL: usize = 6; // TIC_FONT_HEIGHT
         const ADV: i32 = 6; // TIC_FONT_WIDTH
+        let glyph_h = if small { GLYPH_H_SMALL } else { GLYPH_H_FULL };
         if scale <= 0 {
             return 0;
         }
@@ -510,8 +513,8 @@ impl Framebuffer {
             }
 
             let code = (ch as u32 & 0x7F) as usize;
-            let base = code * GLYPH_H;
-            if base + GLYPH_H > font.len() {
+            let base = code * GLYPH_H_FULL;
+            if base + GLYPH_H_FULL > font.len() {
                 pos += ADV * scale;
                 continue;
             }
@@ -523,7 +526,7 @@ impl Framebuffer {
                 // Variable-width: trim empty columns using LSB-left orientation
                 let mut left = GLYPH_W;
                 let mut right = 0;
-                for row in 0..GLYPH_H {
+                for row in 0..glyph_h {
                     let mask = font[base + row];
                     if mask != 0 {
                         // find first 1 from the left (LSB)
@@ -549,7 +552,7 @@ impl Framebuffer {
             };
 
             // Draw glyph
-            for row in 0..GLYPH_H {
+            for row in 0..glyph_h {
                 let mask = font[base + row];
                 for col in 0..width_cols {
                     let bit_idx = start_col + col;

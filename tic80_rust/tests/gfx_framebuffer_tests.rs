@@ -142,8 +142,8 @@ fn blit_to_rgba_maps_palette() {
     fb.cls(0);
     // set three sample pixels to known colors
     fb.set_pixel(0, 0, 0); // black
-    fb.set_pixel(1, 0, 9); // orange
-    fb.set_pixel(2, 0, 15); // peach
+    fb.set_pixel(1, 0, 12); // white
+    fb.set_pixel(2, 0, 15); // dark grey
 
     let (w, h) = dimensions();
     let mut rgba = vec![0u8; (w * h * 4) as usize];
@@ -153,9 +153,9 @@ fn blit_to_rgba_maps_palette() {
     let idx = |x: u32, y: u32| -> usize { ((y * w + x) * 4) as usize };
 
     // Known palette entries from framebuffer.rs
-    assert_eq!(&rgba[idx(0, 0)..idx(0, 0) + 4], &[0x00, 0x00, 0x00, 0xFF]);
-    assert_eq!(&rgba[idx(1, 0)..idx(1, 0) + 4], &[0xFF, 0xA3, 0x00, 0xFF]);
-    assert_eq!(&rgba[idx(2, 0)..idx(2, 0) + 4], &[0xFF, 0xCC, 0xAA, 0xFF]);
+    assert_eq!(&rgba[idx(0, 0)..idx(0, 0) + 4], &[0x1A, 0x1C, 0x2C, 0xFF]);
+    assert_eq!(&rgba[idx(1, 0)..idx(1, 0) + 4], &[0xF4, 0xF4, 0xF4, 0xFF]);
+    assert_eq!(&rgba[idx(2, 0)..idx(2, 0) + 4], &[0x33, 0x3C, 0x57, 0xFF]);
 }
 
 #[test]

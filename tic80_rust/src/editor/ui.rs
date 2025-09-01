@@ -126,73 +126,30 @@ impl EditorUi {
     }
 
     pub fn draw(&self, fb: &mut Framebuffer) {
-        // Clear background lightly
+        // Clear
         fb.cls(0);
-        // Top bar
-        fb.rect(0, 0, 240, 12, 5);
+        // Top bar: 7px tall with 1px margins around 6px text
+        let bar_h = 7;
+        // TIC-80 draws toolbar in white
+        fb.rect(0, 0, 240, bar_h, 12);
 
-        // Tabs
-        let (code_col, cons_col) = match self.active {
-            Tab::Code => (12, 8),
-            Tab::Console => (8, 12),
+        // Tabs (underline only for CODE)
+        let (code_col, _cons_col) = match self.active {
+            // Use grey underline similar to CODE EDITOR text
+            Tab::Code | Tab::Console => (14, 14),
         };
-        fb.rect(
-            self.tab_code.x,
-            self.tab_code.y,
-            self.tab_code.w,
-            self.tab_code.h,
-            code_col,
-        );
-        fb.rect(
-            self.tab_console.x,
-            self.tab_console.y,
-            self.tab_console.w,
-            self.tab_console.h,
-            cons_col,
-        );
+        // Minimal underline only for CODE
+        fb.rect(self.tab_code.x, bar_h - 1, self.tab_code.w, 1, code_col);
         // Buttons
-        fb.rect(
-            self.btn_run.x,
-            self.btn_run.y,
-            self.btn_run.w,
-            self.btn_run.h,
-            3,
-        );
-        fb.rect(
-            self.btn_stop.x,
-            self.btn_stop.y,
-            self.btn_stop.w,
-            self.btn_stop.h,
-            9,
-        );
-        fb.rect(
-            self.btn_reset.x,
-            self.btn_reset.y,
-            self.btn_reset.w,
-            self.btn_reset.h,
-            10,
-        );
+        // Buttons: skip heavy boxes in code prototype
 
         // Labels (using small scale)
-        let _ = fb.print_text(
-            "CODE",
-            self.tab_code.x + 5,
-            self.tab_code.y + 2,
-            0,
-            true,
-            1,
-            false,
-        );
-        let _ = fb.print_text(
-            "CONSOLE",
-            self.tab_console.x + 3,
-            self.tab_console.y + 2,
-            0,
-            true,
-            1,
-            false,
-        );
-        // Center button labels
+        // Left title label: drop shadow 1px (dark grey 15) then grey (14), like "CODE EDITOR"
+        let title_x = 4;
+        let title_y = 1; // 1px top margin
+        let _ = fb.print_text("CODE", title_x + 1, title_y + 1, 15, true, 1, true);
+        let _ = fb.print_text("CODE", title_x, title_y, 14, true, 1, true);
+        // Center button labels (placeholder, keep white for readability)
         let adv = 6i32;
         let run_tx =
             self.btn_run.x + (self.btn_run.w - adv * i32::try_from("RUN".len()).unwrap_or(3)) / 2;
@@ -200,17 +157,18 @@ impl EditorUi {
             + (self.btn_stop.w - adv * i32::try_from("STOP".len()).unwrap_or(4)) / 2;
         let reset_tx = self.btn_reset.x
             + (self.btn_reset.w - adv * i32::try_from("RESET".len()).unwrap_or(5)) / 2;
-        let _ = fb.print_text("RUN", run_tx, self.btn_run.y + 2, 0, true, 1, false);
-        let _ = fb.print_text("STOP", stop_tx, self.btn_stop.y + 2, 0, true, 1, false);
-        let _ = fb.print_text("RESET", reset_tx, self.btn_reset.y + 2, 0, true, 1, false);
+        let _ = fb.print_text("RUN", run_tx, 1, 14, true, 1, true);
+        let _ = fb.print_text("STOP", stop_tx, 1, 14, true, 1, true);
+        let _ = fb.print_text("RESET", reset_tx, 1, 14, true, 1, true);
 
         // Active panel background
         match self.active {
             Tab::Code => {
-                fb.rect(0, 12, 240, 124, 1);
+                // Code area background uses theme BG (default dark grey 15)
+                fb.rect(0, bar_h, 240, 136 - bar_h, 15);
             }
             Tab::Console => {
-                fb.rect(0, 12, 240, 124, 2);
+                fb.rect(0, bar_h, 240, 136 - bar_h, 15);
             }
         }
     }

@@ -300,13 +300,15 @@ impl CodeBuffer {
                 if selected {
                     // Shadow and fill per TIC-80
                     fb.rect(cell_x, cell_y, 7, 7, 0);
+                    // selection fill uses theme SELECT color (default 14)
                     fb.rect(cell_x - 1, cell_y - 1, 7, 7, 14);
                     // Dark glyph on top
                     let s = ch.to_string();
-                    let _ = fb.print_text(&s, cell_x, cell_y, 5, true, 1, false);
+                    let _ = fb.print_text(&s, cell_x, cell_y, 15, true, 1, false);
                 } else {
                     // Normal glyph (no selection overlay)
                     let s = ch.to_string();
+                    // TIC default text color (no syntax) is white (12)
                     let _ = fb.print_text(&s, cell_x, cell_y, 12, true, 1, false);
                 }
             }
@@ -318,9 +320,9 @@ impl CodeBuffer {
             let col = i32::try_from(self.caret_col.saturating_sub(self.scroll_col)).unwrap_or(0);
             let cell_x = area.x + gutter_w + col * 6;
             let cell_y = area.y + row * line_pitch;
-            // TIC-80 caret style: drop shadow rect (black) then caret rect (red), both 7x7, offset by 1px
+            // TIC-80 caret style: drop shadow rect (black) then caret rect (cursor color, default 2), both 7x7, offset by 1px
             fb.rect(cell_x, cell_y, 7, 7, 0);
-            fb.rect(cell_x - 1, cell_y - 1, 7, 7, 8);
+            fb.rect(cell_x - 1, cell_y - 1, 7, 7, 2);
 
             // Draw the underlying glyph in dark color to simulate inversion
             let line_idx = self.caret_line;
@@ -335,8 +337,8 @@ impl CodeBuffer {
                 if idx < total {
                     let ch = full.chars().nth(idx).unwrap_or(' ');
                     let s = ch.to_string();
-                    // Render in dark grey monospaced aligned to cell; this simulates inversion
-                    let _ = fb.print_text(&s, cell_x, cell_y, 5, true, 1, false);
+                    // Render underlying glyph in background color to simulate inversion
+                    let _ = fb.print_text(&s, cell_x, cell_y, 15, true, 1, false);
                 }
             }
         }
