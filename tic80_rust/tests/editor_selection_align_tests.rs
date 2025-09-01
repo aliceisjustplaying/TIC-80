@@ -14,10 +14,15 @@ fn selection_aligned_with_caret_box() {
     cb.caret_col = 1;
     cb.start_selection();
     cb.caret_col = 3; // selection [1,3)
-    // Also place caret for box at col 3
+                      // Also place caret for box at col 3
     let fb = Rc::new(RefCell::new(Framebuffer::new()));
     let mut fbb = fb.borrow_mut();
-    let area = Area { x: 0, y: 12, w: 240, h: 124 };
+    let area = Area {
+        x: 0,
+        y: 12,
+        w: 240,
+        h: 124,
+    };
     cb.draw(&mut fbb, area);
 
     // Expected coordinates
@@ -25,7 +30,7 @@ fn selection_aligned_with_caret_box() {
     let row = 0i32; // first line
     let gutter_y = area.y + row * 8;
     let caret_fill_top = (gutter_y - 1).max(area.y); // caret fills 7px starting 1px above baseline, clipped to area
-    // Selection starts at col 1 (from) over a space (no glyph ink)
+                                                     // Selection starts at col 1 (from) over a space (no glyph ink)
     let sel_x = area.x + gutter_w + 6;
     let sel_y = caret_fill_top;
 

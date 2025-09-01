@@ -257,10 +257,12 @@ impl CodeBuffer {
         }
     }
 
-    #[allow(clippy::cast_possible_truncation)]
+    #[allow(clippy::cast_possible_truncation, clippy::too_many_lines)]
     pub fn draw(&mut self, fb: &mut crate::gfx::framebuffer::Framebuffer, area: Area) {
         let gutter_w = 24i32;
-        let lines_vis = (area.h / 8).max(1) as usize;
+        // Match TIC-80 editor line pitch: 7px (TIC_FONT_HEIGHT + 1)
+        let line_pitch = 7i32;
+        let lines_vis = (area.h / line_pitch).max(1) as usize;
         let cols_vis = ((area.w - gutter_w) / 6).max(1) as usize;
         self.ensure_visible(lines_vis, cols_vis);
 
@@ -274,7 +276,7 @@ impl CodeBuffer {
                 break;
             }
             // Gutter (1-based line numbers)
-            let gutter_y = area.y + i32::try_from(i).unwrap_or(0) * 8;
+            let gutter_y = area.y + i32::try_from(i).unwrap_or(0) * line_pitch;
             let ln = line_idx + 1;
             let label = format!("{ln:>3}");
             let _ = fb.print_text(&label, area.x + 2, gutter_y, 6, true, 1, false);
@@ -287,64 +289,27 @@ impl CodeBuffer {
             let start = self.scroll_col.min(line.chars().count());
             let mut iter = line.chars().skip(start);
             let vis: String = iter.by_ref().take(cols_vis).collect();
-            // Selection highlight for this line (with TIC-80-style drop shadow)
-            if let Some((sel_start, sel_end)) = self.selection_range_idx() {
-                // Compute selection coverage in columns for this visible segment
-                let line_char_start = self.rope.line_to_char(line_idx);
-                let line_char_end = line_char_start + self.line_len(line_idx);
-                let s = sel_start.max(line_char_start);
-                let e = sel_end.min(line_char_end);
-                if e > s {
-                    let a = (s - line_char_start) as i32;
-                    let b = (e - line_char_start) as i32;
-                    let a_vis = (a - self.scroll_col as i32).max(0);
-                    let b_vis = (b - self.scroll_col as i32).max(0);
-                    let from = a_vis.min(cols_vis as i32).max(0);
-                    let to = b_vis.min(cols_vis as i32).max(from);
-                    if to > from {
-                        let sel_x = area.x + gutter_w + from * 6;
-                        let y_top = (gutter_y - 1).max(area.y);
-                        let sel_w = (to - from) * 6;
-                        // Fill (7px tall), like caret box
-                        fb.rect(sel_x, y_top, sel_w, 7, 14);
-                        // Decide whether to draw the right shadow for this row segment.
-                        // Only draw if the next line's selection doesn't extend as far right (outer perimeter).
-                        let mut draw_right_shadow = true;
-                        if line_idx + 1 < self.line_count() {
-                            let next_line_char_start = self.rope.line_to_char(line_idx + 1);
-                            let next_line_char_end = next_line_char_start + self.line_len(line_idx + 1);
-                            // Next line selection coverage
-                            let ns = sel_start.max(next_line_char_start);
-                            let ne = sel_end.min(next_line_char_end);
-                            if ne > ns {
-                                let na = (ns.saturating_sub(next_line_char_start)) as i32;
-                                let nb = (ne.saturating_sub(next_line_char_start)) as i32;
-                                let na_vis = (na - self.scroll_col as i32).max(0);
-                                let nb_vis = (nb - self.scroll_col as i32).max(0);
-                                let nfrom = na_vis.min(cols_vis as i32).max(0);
-                                let nto = nb_vis.min(cols_vis as i32).max(nfrom);
-                                // If next line's right edge is strictly greater than this line's,
-                                // skip right shadow here (it's interior to the overall blob).
-                                // Equal width should draw to produce a continuous vertical edge.
-                                if nto > to {
-                                    draw_right_shadow = false;
-                                }
-                            }
-                        }
-                        if draw_right_shadow {
-                            // Right edge: start at the same top as fill and span 8px so adjacent rows abut exactly
-                            fb.rect(sel_x + sel_w, y_top, 1, 8, 0);
-                        }
-                        // Only draw bottom shadow if selection does not continue to next line
-                        let continues_down = sel_end >= line_char_end;
-                        if !continues_down {
-                            fb.rect(sel_x, y_top + 7, sel_w, 1, 0);
-                        }
-                    }
+            // Draw characters cell-by-cell, applying selection overlays where needed
+            let line_char_start = self.rope.line_to_char(line_idx);
+            let sel = self.selection_range_idx();
+            for (i_vis, ch) in vis.chars().enumerate() {
+                let cell_x = area.x + gutter_w + i32::try_from(i_vis).unwrap_or(0) * 6;
+                let cell_y = gutter_y;
+                let global_idx = line_char_start + start + i_vis;
+                let selected = sel.is_some_and(|(s, e)| global_idx >= s && global_idx < e);
+                if selected {
+                    // Shadow and fill per TIC-80
+                    fb.rect(cell_x, cell_y, 7, 7, 0);
+                    fb.rect(cell_x - 1, cell_y - 1, 7, 7, 14);
+                    // Dark glyph on top
+                    let s = ch.to_string();
+                    let _ = fb.print_text(&s, cell_x, cell_y, 5, true, 1, false);
+                } else {
+                    // Normal glyph (no selection overlay)
+                    let s = ch.to_string();
+                    let _ = fb.print_text(&s, cell_x, cell_y, 12, true, 1, false);
                 }
             }
-            // Monospace rendering for alignment (fixed=true)
-            let _ = fb.print_text(&vis, area.x + gutter_w, gutter_y, 12, true, 1, false);
         }
 
         // Caret (red box aligned to 6x8 cell, with 1px drop shadow; underlying glyph drawn dark)
@@ -352,17 +317,10 @@ impl CodeBuffer {
             let row = i32::try_from(self.caret_line - self.scroll_line).unwrap_or(0);
             let col = i32::try_from(self.caret_col.saturating_sub(self.scroll_col)).unwrap_or(0);
             let cell_x = area.x + gutter_w + col * 6;
-            let cell_y = area.y + row * 8;
-            // Box aligned to cell: width 6, height 7 (reserve 1px bottom for shadow)
-            let fill_x = cell_x;
-            let fill_y = (cell_y - 1).max(area.y);
-            let fill_w = 6;
-            let fill_h = 7;
-            // Fill: palette 8 (red)
-            fb.rect(fill_x, fill_y, fill_w, fill_h, 8);
-            // Shadow (palette 0) to the right and along bottom
-            fb.rect(fill_x + fill_w, fill_y, 1, fill_h, 0);
-            fb.rect(fill_x, fill_y + fill_h, fill_w, 1, 0);
+            let cell_y = area.y + row * line_pitch;
+            // TIC-80 caret style: drop shadow rect (black) then caret rect (red), both 7x7, offset by 1px
+            fb.rect(cell_x, cell_y, 7, 7, 0);
+            fb.rect(cell_x - 1, cell_y - 1, 7, 7, 8);
 
             // Draw the underlying glyph in dark color to simulate inversion
             let line_idx = self.caret_line;
@@ -377,8 +335,8 @@ impl CodeBuffer {
                 if idx < total {
                     let ch = full.chars().nth(idx).unwrap_or(' ');
                     let s = ch.to_string();
-                    // Render in color 0 (dark) monospaced aligned to cell; this simulates inversion
-                    let _ = fb.print_text(&s, cell_x, cell_y, 0, true, 1, false);
+                    // Render in dark grey monospaced aligned to cell; this simulates inversion
+                    let _ = fb.print_text(&s, cell_x, cell_y, 5, true, 1, false);
                 }
             }
         }

@@ -33,7 +33,9 @@ use std::time::{Duration, Instant};
 
 use pixels::{Pixels, SurfaceTexture};
 use winit::dpi::LogicalSize;
-use winit::event::{ElementState, Event, KeyboardInput, ModifiersState, VirtualKeyCode, WindowEvent};
+use winit::event::{
+    ElementState, Event, KeyboardInput, ModifiersState, VirtualKeyCode, WindowEvent,
+};
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::{Window, WindowBuilder};
 
@@ -85,6 +87,8 @@ struct Args {
     quiet: bool,
     help: bool,
     editor: bool,
+    // Editor helpers (headless diagnostics)
+    editor_demo_select: bool,
     // Screenshot/headless
     headless: bool,
     screenshot_path: Option<PathBuf>,
@@ -105,6 +109,7 @@ fn parse_args() -> Args {
         quiet: false,
         help: false,
         editor: false,
+        editor_demo_select: false,
         headless: false,
         screenshot_path: None,
         screenshot_scale: 1,
@@ -120,6 +125,7 @@ fn parse_args() -> Args {
             "--debug-fx" => out.debug_fx = true,
             "--quiet" => out.quiet = true,
             "--editor" => out.editor = true,
+            "--editor-demo-select" => out.editor_demo_select = true,
             "--headless" => out.headless = true,
             "--screenshot" => {
                 if let Some(val) = args_iter.next() {
@@ -284,7 +290,7 @@ fn print_help() {
         },
     );
     println!(
-        "Usage: {prog} [OPTIONS] [CART.lua]\n\nOptions:\n  -h, --help                 Show this help message and exit\n      --quiet                Suppress once-only warnings and Lua BOOT()/TIC() error prints\n      --editor               Launch the editor UI (CODE/CONSOLE)\n      --headless             Run offscreen without opening a window (for screenshots/CI)\n      --screenshot <PATH>    Save a screenshot and exit (first frame by default)\n      --screenshot-scale <N> Integer scale for screenshot (default 1)\n      --screenshot-frame <N> Capture after N frames (windowed/headless)\n      --list-audio           List input audio devices and exit\n      --audio-device <SUBSTR>  Select input device by substring match (case-insensitive)\n      --audio-disable        Disable audio capture and analysis\n      --audio-vu             Print VU peak dBFS once per second\n      --debug-fft            Print first 16 FFT bins (smoothed, normalized) ~every 500 ms\n      --debug-fx             Print per-second FX timings plus ring stats (dp/ovf/underrun/consumed, EMA samples/tick, occupancy)\n\nArguments:\n  CART.lua                   Optional path to a Lua cart; defaults to bundled demo when omitted\n\nNotes:\n- Window: fixed 240x136 internal resolution with integer scaling in a desktop window.\n- Audio: selects nearest supported sample rate to 44100 Hz and logs the choice.\n- Ring stats (with --debug-fx): dp=pushed, ovf=overflows, underrun=no-data, consumed=samples, EMA samples/tick, occupancy.\n\nExamples:\n  {prog} --screenshot out.png --screenshot-scale 3\n  {prog} --headless --screenshot out.png --screenshot-frame 60\n  {prog} --editor\n        ");
+        "Usage: {prog} [OPTIONS] [CART.lua]\n\nOptions:\n  -h, --help                 Show this help message and exit\n      --quiet                Suppress once-only warnings and Lua BOOT()/TIC() error prints\n      --editor               Launch the editor UI (CODE/CONSOLE)\n      --editor-demo-select   In headless editor mode, create a 3-line demo selection before drawing\n      --headless             Run offscreen without opening a window (for screenshots/CI)\n      --screenshot <PATH>    Save a screenshot and exit (first frame by default)\n      --screenshot-scale <N> Integer scale for screenshot (default 1)\n      --screenshot-frame <N> Capture after N frames (windowed/headless)\n      --list-audio           List input audio devices and exit\n      --audio-device <SUBSTR>  Select input device by substring match (case-insensitive)\n      --audio-disable        Disable audio capture and analysis\n      --audio-vu             Print VU peak dBFS once per second\n      --debug-fft            Print first 16 FFT bins (smoothed, normalized) ~every 500 ms\n      --debug-fx             Print per-second FX timings plus ring stats (dp/ovf/underrun/consumed, EMA samples/tick, occupancy)\n\nArguments:\n  CART.lua                   Optional path to a Lua cart; defaults to bundled demo when omitted\n\nNotes:\n- Window: fixed 240x136 internal resolution with integer scaling in a desktop window.\n- Audio: selects nearest supported sample rate to 44100 Hz and logs the choice.\n- Ring stats (with --debug-fx): dp=pushed, ovf=overflows, underrun=no-data, consumed=samples, EMA samples/tick, occupancy.\n\nExamples:\n  {prog} --screenshot out.png --screenshot-scale 3\n  {prog} --headless --screenshot out.png --screenshot-frame 60\n  {prog} --editor\n        ");
 }
 
 fn load_script(script_path: Option<&PathBuf>) -> String {
@@ -701,6 +707,9 @@ fn run_headless(args: &Args) -> anyhow::Result<()> {
         let initial = load_script(args.script_path.as_ref());
         let ui = EditorUi::new(1.0);
         let mut code = CodeBuffer::from_text(&initial);
+        if args.editor_demo_select {
+            apply_demo_selection(&mut code);
+        }
         {
             let mut fbb = fb.borrow_mut();
             ui.draw(&mut fbb);
@@ -727,6 +736,21 @@ fn run_headless(args: &Args) -> anyhow::Result<()> {
     fb.borrow().blit_to_rgba(&mut rgba);
     save_screenshot_from_rgba(args, &rgba)?;
     Ok(())
+}
+
+// Create a 3-line demo selection with ragged edges to inspect drop shadows.
+fn apply_demo_selection(cb: &mut CodeBuffer) {
+    // Choose lines 6..=8 (0-based) which are likely to exist in default carts.
+    let l0 = 6usize;
+    let l2 = 8usize;
+    // Start mid-line, end a few chars into line 8 to create overhangs.
+    let c0 = (cb.line_len(l0) / 2).max(2);
+    let c2 = cb.line_len(l2).min(8);
+    cb.caret_line = l0;
+    cb.caret_col = c0;
+    cb.start_selection();
+    cb.caret_line = l2;
+    cb.caret_col = c2;
 }
 
 // -- Clipboard helpers -------------------------------------------------------------------------
