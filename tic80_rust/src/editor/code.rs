@@ -263,10 +263,106 @@ impl CodeBuffer {
         self.desired_col = Some(want);
     }
 
+    // Word navigation helpers -------------------------------------------------
+    pub fn word_left(&mut self) {
+        self.reset_caret_blink();
+        if self.caret_col == 0 {
+            if self.caret_line == 0 { self.desired_col = Some(self.caret_col); return; }
+            self.caret_line -= 1;
+            self.caret_col = self.line_len(self.caret_line);
+        }
+        if self.caret_col == 0 { self.desired_col = Some(self.caret_col); return; }
+        let line = self.rope.line(self.caret_line).to_string();
+        let chars: Vec<char> = line.chars().collect();
+        if self.caret_col > chars.len() { self.caret_col = chars.len(); }
+        let mut i = self.caret_col;
+        while i > 0 && chars[i-1].is_whitespace() { i -= 1; }
+        if i > 0 {
+            let c = chars[i-1];
+            let classify = |ch: char| -> u8 { if ch.is_alphanumeric() || ch == '_' {1} else if ch.is_whitespace() {0} else {2} };
+            let cls = classify(c);
+            while i > 0 && classify(chars[i-1]) == cls { i -= 1; }
+        }
+        self.caret_col = i;
+        self.desired_col = Some(self.caret_col);
+    }
+
+    pub fn word_right(&mut self) {
+        self.reset_caret_blink();
+        let len = self.line_len(self.caret_line);
+        if self.caret_col >= len {
+            if self.caret_line + 1 >= self.line_count() { self.desired_col = Some(self.caret_col); return; }
+            self.caret_line += 1;
+            self.caret_col = 0;
+        }
+        let line = self.rope.line(self.caret_line).to_string();
+        let chars: Vec<char> = line.chars().collect();
+        let mut i = self.caret_col;
+        while i < chars.len() && chars[i].is_whitespace() { i += 1; }
+        if i < chars.len() {
+            let classify = |ch: char| -> u8 { if ch.is_alphanumeric() || ch == '_' {1} else if ch.is_whitespace() {0} else {2} };
+            let cls = classify(chars[i]);
+            while i < chars.len() && classify(chars[i]) == cls { i += 1; }
+        }
+        self.caret_col = i;
+        self.desired_col = Some(self.caret_col);
+    }
+
+    #[allow(clippy::missing_panics_doc)]
+    pub fn delete_word_left(&mut self) {
+        self.reset_caret_blink();
+        if self.has_selection() {
+            let (s, e) = self.selection_range_idx().unwrap();
+            let _ = self.delete_range(s, e);
+            return;
+        }
+        let end = self.caret_char_index();
+        // move to previous word start
+        let orig_line = self.caret_line; let orig_col = self.caret_col;
+        self.word_left();
+        let start = self.caret_char_index();
+        if start < end {
+            let deleted = self.delete_range(start, end);
+            self.push_undo(EditKind::Delete { index: start, text: deleted });
+            self.clear_redo();
+        } else {
+            self.caret_line = orig_line; self.caret_col = orig_col;
+        }
+    }
+
+    #[allow(clippy::missing_panics_doc)]
+    pub fn delete_word_right(&mut self) {
+        self.reset_caret_blink();
+        if self.has_selection() {
+            let (s, e) = self.selection_range_idx().unwrap();
+            let _ = self.delete_range(s, e);
+            return;
+        }
+        let start = self.caret_char_index();
+        let orig_line = self.caret_line; let orig_col = self.caret_col;
+        self.word_right();
+        let end = self.caret_char_index();
+        if start < end {
+            let deleted = self.delete_range(start, end);
+            self.push_undo(EditKind::Delete { index: start, text: deleted });
+            self.clear_redo();
+        } else {
+            self.caret_line = orig_line; self.caret_col = orig_col;
+        }
+    }
+
+    pub fn smart_home(&mut self, _with_shift: bool) {
+        self.reset_caret_blink();
+        let line = self.rope.line(self.caret_line).to_string();
+        let first_non_ws = line.chars().position(|c| !c.is_whitespace()).unwrap_or(0);
+        if self.caret_col == first_non_ws { self.caret_col = 0; } else { self.caret_col = first_non_ws; }
+        self.desired_col = Some(self.caret_col);
+    }
     // Page motion by visible line count
     pub fn page_down(&mut self, vis: usize) {
         self.reset_caret_blink();
-        let want = self.desired_col.unwrap_or(self.caret_col);
+        // For paging, pin desired column to current caret column to avoid using a stale value.
+        let want = self.caret_col;
         let lc = self.line_count();
         if lc == 0 { return; }
         let delta = vis.min(lc.saturating_sub(1) - self.caret_line);
@@ -276,7 +372,8 @@ impl CodeBuffer {
     }
     pub fn page_up(&mut self, vis: usize) {
         self.reset_caret_blink();
-        let want = self.desired_col.unwrap_or(self.caret_col);
+        // For paging, pin desired column to current caret column to avoid using a stale value.
+        let want = self.caret_col;
         let delta = vis.min(self.caret_line);
         self.caret_line -= delta;
         self.caret_col = self.line_len(self.caret_line).min(want);

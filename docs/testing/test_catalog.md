@@ -87,3 +87,5 @@ Notes
 - `tic80_rust/tests/e2e_headless_cli.rs`
   - `e2e_headless_default_cart_screenshot`: Runs the CLI binary with `--headless --screenshot` and decodes the PNG.
   - `e2e_headless_editor_screenshot`: Runs with `--headless --editor --screenshot` and verifies the PNG.
+- `tic80_rust/tests/editor_word_nav_tests.rs`: Ctrl/Alt word navigation and word deletion (left/right).
+- `tic80_rust/tests/editor_smart_home_doc_select_tests.rs`: Smart Home toggle and Ctrl/Cmd+Shift+Home/End document selection.

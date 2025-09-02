@@ -434,6 +434,8 @@ fn run() -> anyhow::Result<()> {
                                 let shift = m.shift();
                                 let ctrl = m.ctrl();
                                 let cmd = m.logo();
+                                let alt = m.alt();
+                                let word_mod = ctrl || cmd || alt; // treat Cmd/Alt/Ctrl as word modifier on mac/win/linux
                                 // Shortcuts (cmd/ctrl)
                                 if ctrl || cmd {
                                     match key {
@@ -470,12 +472,18 @@ fn run() -> anyhow::Result<()> {
                                     VirtualKeyCode::PageDown => { if shift { cb.ensure_selection_anchor(); } else { cb.clear_selection(); } cb.page_down(18); },
                                     VirtualKeyCode::Home if ctrl || cmd => { cb.doc_home(); },
                                     VirtualKeyCode::End if ctrl || cmd => { cb.doc_end(); },
-                                    VirtualKeyCode::Left => { if shift { cb.ensure_selection_anchor(); } else { cb.clear_selection(); } cb.move_left(); },
-                                    VirtualKeyCode::Right => { if shift { cb.ensure_selection_anchor(); } else { cb.clear_selection(); } cb.move_right(); },
+                                    VirtualKeyCode::Left => {
+                                        if shift { cb.ensure_selection_anchor(); } else { cb.clear_selection(); }
+                                        if word_mod { cb.word_left(); } else { cb.move_left(); }
+                                    },
+                                    VirtualKeyCode::Right => {
+                                        if shift { cb.ensure_selection_anchor(); } else { cb.clear_selection(); }
+                                        if word_mod { cb.word_right(); } else { cb.move_right(); }
+                                    },
                                     VirtualKeyCode::Up => { if shift { cb.ensure_selection_anchor(); } else { cb.clear_selection(); } cb.move_up(); },
                                     VirtualKeyCode::Down => { if shift { cb.ensure_selection_anchor(); } else { cb.clear_selection(); } cb.move_down(); },
-                                    VirtualKeyCode::Back => { cb.backspace(); },
-                                    VirtualKeyCode::Delete => { cb.delete_forward(); },
+                                    VirtualKeyCode::Back => { if word_mod { cb.delete_word_left(); } else { cb.backspace(); } },
+                                    VirtualKeyCode::Delete => { if word_mod { cb.delete_word_right(); } else { cb.delete_forward(); } },
                                     VirtualKeyCode::Return => { cb.insert_newline(); },
                                     VirtualKeyCode::Tab => {
                                         if shift { cb.block_outdent(); } else if cb.has_selection() { cb.block_indent(); } else { cb.insert_tab(); }
