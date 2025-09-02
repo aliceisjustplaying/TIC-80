@@ -198,7 +198,14 @@ impl CodeBuffer {
     #[allow(clippy::missing_const_for_fn)]
     pub fn end(&mut self) {
         self.reset_caret_blink();
-        self.caret_col = self.line_len(self.caret_line);
+        // Move to visual end of line (exclude trailing newline)
+        let len_vis = if self.caret_line >= self.rope.len_lines() { 0 } else {
+            let seg = self.rope.line(self.caret_line);
+            let len = seg.len_chars();
+            if len > 0 && seg.chars().last() == Some('\n') { len - 1 } else { len }
+        };
+        self.caret_col = len_vis;
+        self.desired_col = Some(self.caret_col);
     }
 
     #[must_use]
@@ -233,7 +240,11 @@ impl CodeBuffer {
 
     pub fn move_right(&mut self) {
         self.reset_caret_blink();
-        let len = self.line_len(self.caret_line);
+        let len = {
+            let seg = self.rope.line(self.caret_line);
+            let l = seg.len_chars();
+            if l > 0 && seg.chars().last() == Some('\n') { l - 1 } else { l }
+        };
         if self.caret_col < len {
             self.caret_col += 1;
         } else if self.caret_line + 1 < self.line_count() {
@@ -248,7 +259,11 @@ impl CodeBuffer {
         let want = self.desired_col.unwrap_or(self.caret_col);
         if self.caret_line > 0 {
             self.caret_line -= 1;
-            self.caret_col = self.line_len(self.caret_line).min(want);
+            let len_vis = {
+                let seg = self.rope.line(self.caret_line);
+                let l = seg.len_chars(); if l > 0 && seg.chars().last() == Some('\n') { l - 1 } else { l }
+            };
+            self.caret_col = len_vis.min(want);
         }
         self.desired_col = Some(want);
     }
@@ -258,7 +273,11 @@ impl CodeBuffer {
         let want = self.desired_col.unwrap_or(self.caret_col);
         if self.caret_line + 1 < self.line_count() {
             self.caret_line += 1;
-            self.caret_col = self.line_len(self.caret_line).min(want);
+            let len_vis = {
+                let seg = self.rope.line(self.caret_line);
+                let l = seg.len_chars(); if l > 0 && seg.chars().last() == Some('\n') { l - 1 } else { l }
+            };
+            self.caret_col = len_vis.min(want);
         }
         self.desired_col = Some(want);
     }
@@ -367,7 +386,11 @@ impl CodeBuffer {
         if lc == 0 { return; }
         let delta = vis.min(lc.saturating_sub(1) - self.caret_line);
         self.caret_line += delta;
-        self.caret_col = self.line_len(self.caret_line).min(want);
+        let len_vis = {
+            let seg = self.rope.line(self.caret_line);
+            let l = seg.len_chars(); if l > 0 && seg.chars().last() == Some('\n') { l - 1 } else { l }
+        };
+        self.caret_col = len_vis.min(want);
         self.desired_col = Some(want);
     }
     pub fn page_up(&mut self, vis: usize) {
@@ -376,7 +399,11 @@ impl CodeBuffer {
         let want = self.caret_col;
         let delta = vis.min(self.caret_line);
         self.caret_line -= delta;
-        self.caret_col = self.line_len(self.caret_line).min(want);
+        let len_vis = {
+            let seg = self.rope.line(self.caret_line);
+            let l = seg.len_chars(); if l > 0 && seg.chars().last() == Some('\n') { l - 1 } else { l }
+        };
+        self.caret_col = len_vis.min(want);
         self.desired_col = Some(want);
     }
 
@@ -502,6 +529,18 @@ impl CodeBuffer {
             // Draw characters cell-by-cell, applying selection overlays where needed
             let line_char_start = self.rope.line_to_char(line_idx);
             let sel = self.selection_range_idx();
+            // Syntax highlighting: get token runs and map to per-column colors
+            let mut col_colors: Vec<u8> = vec![crate::editor::highlight::default_theme().fg; line.chars().count()];
+            {
+                use crate::editor::highlight as hl;
+                let toks = hl::lex_line(&line, hl::State::Normal);
+                let theme = hl::default_theme();
+                for (a, b, k) in toks.runs {
+                    let color = hl::color_for(k, theme);
+                    let end = b.min(col_colors.len());
+                    if a < end { col_colors[a..end].fill(color); }
+                }
+            }
             for (i_vis, ch) in vis.chars().enumerate() {
                 let cell_x = area.x + gutter_w + gap + i32::try_from(i_vis).unwrap_or(0) * 6;
                 let cell_y = gutter_y;
@@ -516,10 +555,10 @@ impl CodeBuffer {
                     let s = ch.to_string();
                     let _ = fb.print_text(&s, cell_x, cell_y, 15, true, 1, true);
                 } else {
-                    // Normal glyph (no selection overlay)
+                    // Normal glyph (no selection overlay): use token color
                     let s = ch.to_string();
-                    // TIC default text color (no syntax) is white (12), 6px tall
-                    let _ = fb.print_text(&s, cell_x, cell_y, 12, true, 1, true);
+                    let color = *col_colors.get(i_vis).unwrap_or(&12u8);
+                    let _ = fb.print_text(&s, cell_x, cell_y, color, true, 1, true);
                 }
             }
             // Extra selection cell for newline (EOL) when selected

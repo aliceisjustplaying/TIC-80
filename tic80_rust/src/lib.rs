@@ -36,6 +36,7 @@ pub mod audio {
 pub mod editor {
     pub mod code;
     pub mod ui;
+    pub mod highlight;
 }
 
 pub mod util {

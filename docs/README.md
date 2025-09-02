@@ -8,6 +8,7 @@ This folder organizes the rewrite plan, specs, architecture notes, testing strat
  - `docs/roadmap/editor_livecoding.md`: Livecoding editor plan (TIC‑80 UI vibes): CODE + CONSOLE only.
  - `docs/roadmap/editor_shortcuts.md`: Implementation checklist for PageUp/Down, Shift variants, Ctrl+Home/End, and block indent/outdent.
  - `docs/roadmap/editor_shortcuts_phase2.md`: Plan for word navigation/edit, smart line bounds, and document selection (Ctrl/Cmd+Shift+Home/End).
+ - `docs/roadmap/editor_syntax_highlighting.md`: Plan and TODOs for Lua syntax highlighting with CODE_THEME colors.
  - `docs/roadmap/todos_code_review.md`: Rolling TODOs from code review (high/medium/low priority) with checkboxes.
  - `docs/roadmap/todos_from_ai_review.md`: Rolling TODOs from AI code review (2025-08-27).
 
